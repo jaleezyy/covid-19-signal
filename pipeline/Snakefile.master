@@ -1,0 +1,156 @@
+# TODO: log files
+# TODO: conda environments
+# TODO: incorporate kraken2.sh, lmat.sh, quast.sh
+# TODO: needs final debug iteration, after the dust settles
+
+# The config file contains a high-level summary of pipeline configuration and inputs.
+# It is ingested by the Snakefile, and also intended to be human-readable.
+# For an example config file, see pipeline/example_config.yaml in the covid-19-sequencing repo.
+
+configfile: "config.yaml"
+
+
+######################################   High-level targets   ######################################
+
+
+rule sort:
+    input: expand('fastq_sorted/{p}_R{r}_fastqc.html', p=[config['prefix']], r=[1,2])
+    
+rule remove_primers:
+    input: expand('fastq_primers_removed/{p}_R{r}.fastq.gz', p=[config['prefix']], r=[1,2])
+
+rule trim:
+    input: expand('fastq_trimmed/{p}_R{r}_{s}_fastqc.html', p=[config['prefix']], r=[1,2], s=['paired','unpaired'])
+
+rule assemble:
+    input: expand('{p}_assembled/assembly.fasta', p=[config['prefix']])
+
+rule breseq:
+    input: expand('{p}_breseq/output/index.html', p=[config['prefix']])
+    
+rule hisat2:
+    input: expand('{p}_hisat2/output.bam', p=[config['prefix']])
+
+rule all:
+    input:
+        rules.sort.input,
+        rules.remove_primers.input,
+        rules.trim.input,
+        rules.assemble.input,
+        rules.breseq.input,
+        rules.hisat2.input
+
+
+#################################   Based on scripts/assemble.sh   #################################
+
+
+rule concat_and_sort:
+    output:
+        expand('fastq_sorted/{p}_R{{r}}.fastq.gz', p=[config['prefix']])
+    input:
+        lambda wildcards: config[f'input_fastq_files_R{wildcards.r}']
+    shell:
+        'zcat {input} | paste - - - - | sort -k1,1 -t " " | tr "\\t" "\\n" | gzip > {output}'
+
+
+rule run_fastqc:
+    output: multiext('{s}_fastqc', '.html', '.zip')
+    input: '{s}.fastq.gz'
+    shell: 'fastqc {input}'
+
+
+rule run_cutadapt:
+    threads: 25
+    output:
+        expand('fastq_primers_removed/{{p}}_R{r}.fastq.gz', r=[1,2])
+    input:
+        expand('fastq_sorted/{{p}}_R{r}.fastq.gz', r=[1,2])
+    params:
+        primer_R1 = config['primer_R1'],
+        primer_R2 = config['primer_R2']
+    shell:
+        'cutadapt -j {threads}'
+	' -a file:{params.primer_R1} -A file:{params.primer_R2}'   # primers
+	' -o {output[0]} -p {output[1]}'     # output files
+	' {input}'                           # input files
+
+
+# Note: expand()-statements in 'output:' and 'input:' have been written so that the ordering
+# of their outputs is consistent with the ordering of trimmomatic's command-line arguments.
+
+rule run_trimmomatic:
+    threads: 20
+    output:
+        expand('fastq_trimmed/{{p}}_R{r}_{s}.fastq.gz', r=[1,2], s=['paired','unpaired'])
+    input:
+        expand('fastq_primers_removed/{{p}}_R{r}.fastq.gz', r=[1,2])
+    params:
+        targs = config['trimmomatic_args']
+    shell:
+        'trimmomatic PE -threads {threads} {input} {output} {params.targs}'
+
+
+rule run_unicycler:
+    threads: 20
+    output:
+        '{p}_assembled/assembly.fasta'
+    input:
+        expand('fastq_trimmed/{{p}}_R{r}_paired.fastq.gz', r=[1,2])
+    params:
+        outdir = '{p}_assembled'
+    shell:
+        'unicycler -1 {input[0]} -2 {input[1]} --threads {threads} --mode conservative --verbosity 2 -o {params.outdir}'
+
+
+################################   Based on scripts/breseq.sh   ####################################
+
+
+rule run_breseq:
+    threads: 80
+    output:
+        '{p}_breseq/output/index.html'
+    input:
+        expand('fastq_trimmed/{{p}}_R{r}_paired.fastq.gz', r=[1,2])
+    params:
+        ref = config['breseq_reference'],
+	outdir = '{p}_breseq'
+    shell:
+        'breseq --reference {params.ref} --num-processors {threads} --polymorphism-prediction --brief-html-output --output {params.outdir} {input}'
+
+
+################################   Based on scripts/hisat2.sh   ####################################
+
+
+rule run_hisat2_build:
+    output:
+        '{s}_hisat2/genome.1.ht2'
+    input:
+         '{s}_assembled/assembly.fasta'
+    shell:
+         'mkdir -p {wildcards.s}_hisat2 && hisat2-build {input} {wildcards.s}_hisat2/genome'
+
+
+rule run_hisat2:
+    threads: 20
+    output:
+        '{s}_hisat2/output.sam'
+    input:
+        'fastq_trimmed/{s}_R1_paired.fastq.gz',
+        'fastq_trimmed/{s}_R2_paired.fastq.gz',
+        '{s}_hisat2/genome.1.ht2'
+    shell:
+        'hisat2 --threads {threads}'
+        ' -x {wildcards.s}_hisat2/genome'
+	' -1 {input[0]} -2 {input[1]}'
+	' --summary-file {wildcards.s}_hisat2/summary.txt'
+	' -S {wildcards.s}_hisat2/output.sam'
+
+
+rule hisat2_sam_to_bam:
+    threads: 20
+    output:
+        '{s}_hisat2/output.bam'
+    input:
+        '{s}_hisat2/output.sam'
+    shell:
+        'samtools view --threads {threads} -b {input} > {output}'
