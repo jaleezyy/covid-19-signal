@@ -1,6 +1,7 @@
 # TODO: log files
 # TODO: conda environments
-# TODO: incorporate kraken2.sh, lmat.sh, quast.sh
+# TODO: incorporate kraken2.sh (decided to wait for access to DB)
+# TODO: lmat part is incomplete (decided to wait for lmat conda recipe)
 # TODO: needs final debug iteration, after the dust settles
 
 # The config file contains a high-level summary of pipeline configuration and inputs.
@@ -31,6 +32,12 @@ rule breseq:
 rule hisat2:
     input: expand('{p}_hisat2/output.bam', p=[config['prefix']])
 
+rule lmat:
+    input: expand('{p}_lmat/assembly.tiled.fasta', p=[config['prefix']])
+    
+rule quast:
+    input: expand('{p}_quast/report.html', p=[config['prefix']])
+
 rule all:
     input:
         rules.sort.input,
@@ -38,7 +45,8 @@ rule all:
         rules.trim.input,
         rules.assemble.input,
         rules.breseq.input,
-        rules.hisat2.input
+        rules.hisat2.input,
+        rules.quast.input
 
 
 #################################   Based on scripts/assemble.sh   #################################
@@ -154,3 +162,35 @@ rule hisat2_sam_to_bam:
         '{s}_hisat2/output.sam'
     shell:
         'samtools view --threads {threads} -b {input} > {output}'
+
+
+
+##################################   Based on scripts/lmat.sh   ####################################
+
+
+rule lmat_fatile:
+    output:
+        '{s}_lmat/assembly.tiled.fasta'
+    input:
+        '{s}_assembled/assembly.fasta'
+    params:
+        fsize = config['lmat_fragment_size']
+    shell:
+        'fatile {input} {params.fsize} > {output}'
+
+
+##################################  Based on scripts/quast.sh   ####################################
+
+
+rule run_quast:
+    threads: 20
+    output:
+         '{s}_quast/report.html'
+    input:
+         '{s}_assembled/assembly.fasta'
+    params:
+         outdir = '{s}_quast',
+         genome = config['quast_reference_genome'],
+         fcoords = config['quast_feature_coords']
+    shell:
+         'quast {input} -r {params.genome} -g {params.fcoords} --output-dir {params.outdir} --threads {threads}'
