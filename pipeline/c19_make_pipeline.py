@@ -11,7 +11,7 @@ Usage (on galaxylab):
 
     # Run pipeline
     cd Iran1/   # directory created by 'c19_make_pipeline.py'
-    snakemake --cores=16 all
+    snakemake --cores=16 --use-conda all
 
 Current pipeline status:
   - Amplification primers removed using cutadapt
@@ -182,7 +182,7 @@ class Pipeline:
     def write(self):
         self.create_directory_layout()
         self.write_config_yaml()
-        self.write_snakefile()
+        self.copy_workflow_files()
         self.copy_input_fastq_files()
 
 
@@ -191,7 +191,7 @@ class Pipeline:
         
         self._mkdir(self.outdir)
 
-        for subdir in ['fastq_inputs', 'fastq_sorted']:
+        for subdir in ['fastq_inputs', 'fastq_sorted', 'conda_envs']:
             self._mkdir(os.path.join(self.outdir, subdir))
 
     
@@ -242,18 +242,24 @@ class Pipeline:
                     print(f"  - {filename}", file=f)
 
             
-    def write_snakefile(self):
-        """Writes {pipeline_output_dir}/Snakefile."""
+    def copy_workflow_files(self):
+        """Writes {pipeline_output_dir}/Snakefile, and {pipeline_output_dir}/conda_envs/*.yaml."""
 
-        # TODO currently assume that 'Snakefile.master' is in same dir as 'c19_make_pipeline.py' script.
-        # This is OK if we're running 'c19_make_pipeline.py' out of the git repository, but will fail
-        # if the script is installed anywhere.
+        # List of (src_relpath, dst_relpath) pairs
+        todo = [ ('Snakefile.master', 'Snakefile') ]
+
+        for conda_envname in [ 'trim_qc', 'assembly', 'assembly_qc', 'snp_mapping' ]:
+            filename = f'conda_envs/{conda_envname}.yaml'
+            todo.append((filename, filename))
+            
+        for (src_relpath, dst_relpath) in todo:
+            # TODO this 'src_filename' is OK if we're running 'c19_make_pipeline.py' out of the git repository,
+            # but will fail if the script is installed anywhere.
+            src_filename = os.path.join(os.path.dirname(__file__), src_relpath)
+            dst_filename = os.path.join(self.outdir, dst_relpath)
         
-        src_filename = os.path.join(os.path.dirname(__file__), 'Snakefile.master')
-        dst_filename = os.path.join(self.outdir, "Snakefile")
-        
-        print(f"Copying {src_filename} -> {dst_filename}")
-        shutil.copyfile(src_filename, dst_filename)
+            print(f"Copying {src_filename} -> {dst_filename}")
+            shutil.copyfile(src_filename, dst_filename)
 
     
     def copy_input_fastq_files(self):

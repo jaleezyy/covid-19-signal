@@ -1,7 +1,8 @@
+# Note: this workflow uses specialized conda envs, run with 'snakemake --use-conda'.
+
 # TODO: log files
-# TODO: conda environments
+# TODO: lmat part is incomplete
 # TODO: incorporate kraken2.sh (decided to wait for access to DB)
-# TODO: lmat part is incomplete (decided to wait for lmat conda recipe)
 # TODO: needs final debug iteration, after the dust settles
 
 # The config file contains a high-level summary of pipeline configuration and inputs.
@@ -62,6 +63,7 @@ rule concat_and_sort:
 
 
 rule run_fastqc:
+    conda: 'conda_envs/trim_qc.yaml'
     output: multiext('{s}_fastqc', '.html', '.zip')
     input: '{s}.fastq.gz'
     shell: 'fastqc {input}'
@@ -69,6 +71,7 @@ rule run_fastqc:
 
 rule run_cutadapt:
     threads: 25
+    conda: 'conda_envs/trim_qc.yaml'
     output:
         expand('fastq_primers_removed/{{p}}_R{r}.fastq.gz', r=[1,2])
     input:
@@ -88,6 +91,7 @@ rule run_cutadapt:
 
 rule run_trimmomatic:
     threads: 20
+    conda: 'conda_envs/trim_qc.yaml'
     output:
         expand('fastq_trimmed/{{p}}_R{r}_{s}.fastq.gz', r=[1,2], s=['paired','unpaired'])
     input:
@@ -100,6 +104,7 @@ rule run_trimmomatic:
 
 rule run_unicycler:
     threads: 20
+    conda: 'conda_envs/assembly.yaml'
     output:
         '{p}_assembled/assembly.fasta'
     input:
@@ -115,6 +120,7 @@ rule run_unicycler:
 
 rule run_breseq:
     threads: 80
+    conda: 'conda_envs/snp_mapping.yaml'
     output:
         '{p}_breseq/output/index.html'
     input:
@@ -130,6 +136,7 @@ rule run_breseq:
 
 
 rule run_hisat2_build:
+    conda: 'conda_envs/snp_mapping.yaml'
     output:
         '{s}_hisat2/genome.1.ht2'
     input:
@@ -140,6 +147,7 @@ rule run_hisat2_build:
 
 rule run_hisat2:
     threads: 20
+    conda: 'conda_envs/snp_mapping.yaml'
     output:
         '{s}_hisat2/output.sam'
     input:
@@ -156,6 +164,7 @@ rule run_hisat2:
 
 rule hisat2_sam_to_bam:
     threads: 20
+    conda: 'conda_envs/snp_mapping.yaml'
     output:
         '{s}_hisat2/output.bam'
     input:
@@ -184,6 +193,7 @@ rule lmat_fatile:
 
 rule run_quast:
     threads: 20
+    conda: 'conda_envs/assembly_qc.yaml'
     output:
          '{s}_quast/report.html'
     input:
