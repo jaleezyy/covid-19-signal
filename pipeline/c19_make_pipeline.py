@@ -56,7 +56,7 @@ class Pipeline:
     primer_R2 = '/home/kmsmith/data/wuhan_primers_28.01.20_trim_FW.fa'
 
     # Last arguments on 'trimmomatic' command line (after input, output files)
-    trimmomatic_args = 'ILLUMINACLIP:/workspace/tsangkk2/ORF/scripts/Trimmomatic/Trimmomatic-0.36/adapters/NexteraPE-PE.fa:2:30:10 SLIDINGWINDOW:4:20'
+    trimmomatic_args = 'ILLUMINACLIP:/home/kmsmith/data/NexteraPE-PE.fa:2:30:10 SLIDINGWINDOW:4:20'
 
     # Used as --reference argument to 'breseq'
     breseq_reference = '/home/kmsmith/data/MN908947_3.gbk'
