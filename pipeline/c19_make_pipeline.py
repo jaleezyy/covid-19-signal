@@ -61,6 +61,9 @@ class Pipeline:
     # Used as --reference argument to 'breseq'
     breseq_reference = '/home/kmsmith/data/MN908947_3.gbk'
 
+    # Used as --db argument to 'kraken2'
+    kraken2_db = '/home/kmsmith/data/Kraken2/db'
+
     # Size of fragments (in bp) analyzed by 'lmat'
     lmat_fragment_size = 250
 
@@ -220,6 +223,10 @@ class Pipeline:
             
             print(f"# Used as --reference argument to 'breseq'", file=f)
             print(f"breseq_reference: {repr(self.breseq_reference)}", file=f)
+            print(file=f)
+            
+            print(f"# Used as --db argument to 'kraken2'", file=f)
+            print(f"kraken2_db: {repr(self.kraken2_db)}", file=f)
             print(file=f)
 
             print(f"# Size of fragments (in bp) analyzed by 'lmat'", file=f)
