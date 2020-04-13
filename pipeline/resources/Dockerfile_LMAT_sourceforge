@@ -1,0 +1,33 @@
+FROM ubuntu:18.04
+
+LABEL base.image="ubunut"
+LABEL version="1"
+LABEL software="LMAT"
+LABEL software.version="1.2.6/sourceforge"
+LABEL description="Livermore Metagenome Analysis Toolkit"
+LABEL website="https://github.com/LivGen/LMAT"
+LABEL documentation="https://rawgit.com/LivGen/LMAT/master/doc/lmat-doc/index.html"
+
+# install deps
+RUN apt-get update && \
+        apt-get install -y git python3 python3-dev \
+            zlib1g-dev build-essential cmake mpi libboost-dev
+
+# download LMAT
+RUN wget -O LMAT-1.2.6.tgz "https://downloads.sourceforge.net/project/lmat/LMAT-1.2.6.tgz?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Flmat%2Ffiles%2FLMAT-1.2.6.tgz" && \
+    tar xvf LMAT-1.2.6.tgz
+
+# compile LMAT
+
+RUN cd LMAT-1.2.6 && \
+        sed -i "s/CXXFLAGS = /CXXFLAGS = -fpermissive /" Makefile.inc && \
+        make && \
+        chmod +x bin/* && \
+        cp bin/* /bin
+
+# patch get_db.sh
+RUN wget https://gist.githubusercontent.com/fmaguire/f81cb90b1e7690d09c8ec22974c8e01a/raw/d1d7c98c5595d682fb28bd3b6d15e08115092c23/get_db.patch && \
+    patch /bin/get_db.sh get_db.patch
+
+WORKDIR /data/
+ENV LMAT_DIR /data
