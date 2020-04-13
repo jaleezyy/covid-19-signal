@@ -11,7 +11,7 @@ LABEL documentation="https://rawgit.com/LivGen/LMAT/master/doc/lmat-doc/index.ht
 # install deps
 RUN apt-get update && \
         apt-get install -y git python3 python3-dev \
-            zlib1g-dev build-essential cmake mpi
+            zlib1g-dev build-essential cmake mpi gawk python time
 
 # build and install LMAT
 RUN git clone https://github.com/LivGen/LMAT && \
@@ -21,5 +21,7 @@ RUN git clone https://github.com/LivGen/LMAT && \
         chmod +x bin/* && \
         cp bin/* /bin
 
+# configure directory structure
+RUN mkdir -p /runtime_inputs /pipeline /data
 WORKDIR /data/
-ENV LMAT_DIR /data
+ENV LMAT_DIR /runtime_inputs
