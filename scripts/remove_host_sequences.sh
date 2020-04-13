@@ -2,7 +2,7 @@
 SAMPLE=$1
 threads=20
 # build db
-hisat2-build -p 20 MN908947_3.fasta sars-cov-2
+hisat2-build -p ${threads} MN908947_3.fasta sars-cov-2
 
 # align reads to reference
 # bowtie2 mapping against host sequence database, keep both mapped and unmapped reads (paired-end reads)
