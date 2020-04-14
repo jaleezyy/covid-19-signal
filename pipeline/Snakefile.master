@@ -222,7 +222,7 @@ rule run_lmat:
     output:
         '{prefix}_lmat/assembly.tiled.fasta.{db}.lo.rl_output0.out'
     input:
-        '{prefix}_assembled/assembly.fasta'
+        '{prefix}_lmat/assembly.tiled.fasta'
     params:
         outdir = '{prefix}_lmat',
         logfile = '{prefix}_lmat/assembly.tiled.fasta.{db}.lo.rl_output.log',
