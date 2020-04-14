@@ -11,7 +11,7 @@ Usage (on galaxylab):
 
     # Run pipeline
     cd Iran1/   # directory created by 'c19_make_pipeline.py'
-    snakemake --cores=16 all
+    snakemake --cores=16 --use-conda all
 
 Current pipeline status:
   - Amplification primers removed using cutadapt
@@ -21,11 +21,8 @@ Current pipeline status:
       using HiSAT2 alignment of the sequencing reads against the assembled contigs
   - Assess sequence variation in the assembled genomes using BreSeq
   - Generate assembly statistics using QUAST
-
-Coming soon:
   - Determine percentage of reads derived from SARS-CoV-2 RNA using Kraken2
   - Assess assembly of non-SARS-CoV-2 genetic material using LMAT
-  - Assess sequence variation in the assembled genomes using BLASTN
 """
 
 import os
@@ -56,13 +53,20 @@ class Pipeline:
     primer_R2 = '/home/kmsmith/data/wuhan_primers_28.01.20_trim_FW.fa'
 
     # Last arguments on 'trimmomatic' command line (after input, output files)
-    trimmomatic_args = 'ILLUMINACLIP:/workspace/tsangkk2/ORF/scripts/Trimmomatic/Trimmomatic-0.36/adapters/NexteraPE-PE.fa:2:30:10 SLIDINGWINDOW:4:20'
+    trimmomatic_args = 'ILLUMINACLIP:/home/kmsmith/data/NexteraPE-PE.fa:2:30:10 SLIDINGWINDOW:4:20'
 
     # Used as --reference argument to 'breseq'
     breseq_reference = '/home/kmsmith/data/MN908947_3.gbk'
 
-    # Size of fragments (in bp) analyzed by 'lmat'
+    # Used as --db argument to 'kraken2'
+    kraken2_db = '/home/kmsmith/data/Kraken2/db'
+
+    # lmat_fragment_size: size of fragments (in bp) analyzed by 'lmat'
+    # Absolute pathname of the LMAT DB is {lmat_basedir}/data/{lmat_db}.
+    # LMAT's expected "runtime inputs" (e.g. 'ncbi_taxid_to_rank.txt') should be in {lmat_basedir}/runtime_inputs.
     lmat_fragment_size = 250
+    lmat_basedir = '/home/kmsmith/data/LMAT-1.2.6'
+    lmat_db = 'kML+Human.v4-14.20.g10.db'
 
     # Used as -r,-g arguments to 'quast'
     quast_reference_genome = '/home/kmsmith/data/MN908947_3.fasta'
@@ -182,7 +186,7 @@ class Pipeline:
     def write(self):
         self.create_directory_layout()
         self.write_config_yaml()
-        self.write_snakefile()
+        self.copy_workflow_files()
         self.copy_input_fastq_files()
 
 
@@ -191,7 +195,7 @@ class Pipeline:
         
         self._mkdir(self.outdir)
 
-        for subdir in ['fastq_inputs', 'fastq_sorted']:
+        for subdir in ['fastq_inputs', 'fastq_sorted', 'conda_envs']:
             self._mkdir(os.path.join(self.outdir, subdir))
 
     
@@ -221,9 +225,18 @@ class Pipeline:
             print(f"# Used as --reference argument to 'breseq'", file=f)
             print(f"breseq_reference: {repr(self.breseq_reference)}", file=f)
             print(file=f)
+            
+            print(f"# Used as --db argument to 'kraken2'", file=f)
+            print(f"kraken2_db: {repr(self.kraken2_db)}", file=f)
+            print(file=f)
 
-            print(f"# Size of fragments (in bp) analyzed by 'lmat'", file=f)
-            print(f"lmat_fragment_size: 250", file=f)
+            
+            print(f"# lmat_fragment_size: size of fragments (in bp) analyzed by 'lmat'", file=f)
+            print(f"# Absolute pathname of the LMAT DB is {{lmat_basedir}}/data/{{lmat_db}}.", file=f)
+            print(f"# LMAT's expected \"runtime inputs\" (e.g. 'ncbi_taxid_to_rank.txt') should be in {{lmat_basedir}}/runtime_inputs.", file=f)
+            print(f"lmat_fragment_size: {repr(self.lmat_fragment_size)}", file=f)
+            print(f"lmat_basedir: {repr(self.lmat_basedir)}", file=f)
+            print(f"lmat_db: {repr(self.lmat_db)}", file=f)
             print(file=f)
 
             print(f"# Used as -r,-g arguments to 'quast'", file=f)
@@ -242,18 +255,25 @@ class Pipeline:
                     print(f"  - {filename}", file=f)
 
             
-    def write_snakefile(self):
-        """Writes {pipeline_output_dir}/Snakefile."""
+    def copy_workflow_files(self):
+        """Writes {pipeline_output_dir}/Snakefile, and {pipeline_output_dir}/conda_envs/*.yaml."""
 
-        # TODO currently assume that 'Snakefile.master' is in same dir as 'c19_make_pipeline.py' script.
-        # This is OK if we're running 'c19_make_pipeline.py' out of the git repository, but will fail
-        # if the script is installed anywhere.
+        # List of (src_relpath, dst_relpath) pairs
+        todo = [ ('Snakefile.master', 'Snakefile'),
+                 ('lmat_wrapper.py', 'lmat_wrapper.py') ]
+
+        for conda_envname in [ 'trim_qc', 'assembly', 'assembly_qc', 'snp_mapping' ]:
+            filename = f'conda_envs/{conda_envname}.yaml'
+            todo.append((filename, filename))
+            
+        for (src_relpath, dst_relpath) in todo:
+            # TODO this 'src_filename' is OK if we're running 'c19_make_pipeline.py' out of the git repository,
+            # but will fail if the script is installed anywhere.
+            src_filename = os.path.join(os.path.dirname(__file__), src_relpath)
+            dst_filename = os.path.join(self.outdir, dst_relpath)
         
-        src_filename = os.path.join(os.path.dirname(__file__), 'Snakefile.master')
-        dst_filename = os.path.join(self.outdir, "Snakefile")
-        
-        print(f"Copying {src_filename} -> {dst_filename}")
-        shutil.copyfile(src_filename, dst_filename)
+            print(f"Copying {src_filename} -> {dst_filename}")
+            shutil.copyfile(src_filename, dst_filename)
 
     
     def copy_input_fastq_files(self):

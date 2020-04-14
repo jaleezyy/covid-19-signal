@@ -1,7 +1,6 @@
+# Note: this workflow uses specialized conda envs, run with 'snakemake --use-conda'.
+
 # TODO: log files
-# TODO: conda environments
-# TODO: incorporate kraken2.sh (decided to wait for access to DB)
-# TODO: lmat part is incomplete (decided to wait for lmat conda recipe)
 # TODO: needs final debug iteration, after the dust settles
 
 # The config file contains a high-level summary of pipeline configuration and inputs.
@@ -22,7 +21,7 @@ rule remove_primers:
 
 rule trim:
     input: expand('fastq_trimmed/{p}_R{r}_{s}_fastqc.html', p=[config['prefix']], r=[1,2], s=['paired','unpaired'])
-
+    
 rule assemble:
     input: expand('{p}_assembled/assembly.fasta', p=[config['prefix']])
 
@@ -32,9 +31,12 @@ rule breseq:
 rule hisat2:
     input: expand('{p}_hisat2/output.bam', p=[config['prefix']])
 
+rule kraken2:
+    input: expand('{p}_kraken2/kraken2.out', p=[config['prefix']])
+
 rule lmat:
-    input: expand('{p}_lmat/assembly.tiled.fasta', p=[config['prefix']])
-    
+    input: expand('{p}_lmat/parseLMAT_output.txt', p=[config['prefix']])
+
 rule quast:
     input: expand('{p}_quast/report.html', p=[config['prefix']])
 
@@ -46,6 +48,8 @@ rule all:
         rules.assemble.input,
         rules.breseq.input,
         rules.hisat2.input,
+        rules.kraken2.input,
+        rules.lmat.input,
         rules.quast.input
 
 
@@ -62,6 +66,7 @@ rule concat_and_sort:
 
 
 rule run_fastqc:
+    conda: 'conda_envs/trim_qc.yaml'
     output: multiext('{s}_fastqc', '.html', '.zip')
     input: '{s}.fastq.gz'
     shell: 'fastqc {input}'
@@ -69,6 +74,7 @@ rule run_fastqc:
 
 rule run_cutadapt:
     threads: 25
+    conda: 'conda_envs/trim_qc.yaml'
     output:
         expand('fastq_primers_removed/{{p}}_R{r}.fastq.gz', r=[1,2])
     input:
@@ -88,6 +94,7 @@ rule run_cutadapt:
 
 rule run_trimmomatic:
     threads: 20
+    conda: 'conda_envs/trim_qc.yaml'
     output:
         expand('fastq_trimmed/{{p}}_R{r}_{s}.fastq.gz', r=[1,2], s=['paired','unpaired'])
     input:
@@ -100,6 +107,7 @@ rule run_trimmomatic:
 
 rule run_unicycler:
     threads: 20
+    conda: 'conda_envs/assembly.yaml'
     output:
         '{p}_assembled/assembly.fasta'
     input:
@@ -115,6 +123,7 @@ rule run_unicycler:
 
 rule run_breseq:
     threads: 80
+    conda: 'conda_envs/snp_mapping.yaml'
     output:
         '{p}_breseq/output/index.html'
     input:
@@ -130,6 +139,7 @@ rule run_breseq:
 
 
 rule run_hisat2_build:
+    conda: 'conda_envs/snp_mapping.yaml'
     output:
         '{s}_hisat2/genome.1.ht2'
     input:
@@ -140,6 +150,7 @@ rule run_hisat2_build:
 
 rule run_hisat2:
     threads: 20
+    conda: 'conda_envs/snp_mapping.yaml'
     output:
         '{s}_hisat2/output.sam'
     input:
@@ -156,6 +167,7 @@ rule run_hisat2:
 
 rule hisat2_sam_to_bam:
     threads: 20
+    conda: 'conda_envs/snp_mapping.yaml'
     output:
         '{s}_hisat2/output.bam'
     input:
@@ -164,11 +176,37 @@ rule hisat2_sam_to_bam:
         'samtools view --threads {threads} -b {input} > {output}'
 
 
+################################   Based on scripts/kraken2.sh   ###################################
+
+
+rule run_kraken2:
+    threads: 20
+    conda: 'conda_envs/trim_qc.yaml'
+    output:
+        '{s}_kraken2/kraken2.out'
+    input:
+        expand('fastq_trimmed/{{s}}_R{r}_paired.fastq.gz', r=[1,2])
+    params:
+        outdir = '{s}_kraken2',
+	db = config['kraken2_db']
+    shell:
+        'mkdir -p {params.outdir} '
+	'&& cd {params.outdir} '
+	'&& kraken2'
+	' --db {params.db}'
+	' --threads {threads}'
+	' --quick --unclassified-out unclassified-sequences# --classified-out classified-sequences#'
+	' --output kraken2.out'
+	' --paired --gzip-compressed'
+	' ../{input[0]} ../{input[1]}'
+	' --report report'
+
+
 
 ##################################   Based on scripts/lmat.sh   ####################################
 
 
-rule lmat_fatile:
+rule lmat_pretile:
     output:
         '{s}_lmat/assembly.tiled.fasta'
     input:
@@ -179,11 +217,36 @@ rule lmat_fatile:
         'fatile {input} {params.fsize} > {output}'
 
 
+rule run_lmat:
+    threads: 20
+    output:
+        '{prefix}_lmat/assembly.tiled.fasta.{db}.lo.rl_output0.out'
+    input:
+        '{prefix}_lmat/assembly.tiled.fasta'
+    params:
+        outdir = '{prefix}_lmat',
+        logfile = '{prefix}_lmat/assembly.tiled.fasta.{db}.lo.rl_output.log',
+        lmat_basedir = config['lmat_basedir'],
+        lmat_db = '{db}'
+    script:
+        'lmat_wrapper.py'
+
+
+rule lmat_postprocess:
+    output:
+        '{prefix}_lmat/parseLMAT_output.txt'
+    input:
+        expand('{{prefix}}_lmat/assembly.tiled.fasta.{db}.lo.rl_output0.out', db=[config['lmat_db']])
+    shell:
+        'cd {wildcards.prefix}_lmat && parseLMAT > parseLMAT_output.txt'
+
+
 ##################################  Based on scripts/quast.sh   ####################################
 
 
 rule run_quast:
     threads: 20
+    conda: 'conda_envs/assembly_qc.yaml'
     output:
          '{s}_quast/report.html'
     input:
