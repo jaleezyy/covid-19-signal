@@ -1,0 +1,21 @@
+package:
+    name: lmat 
+    version: "1.2.6"
+
+source:
+    fn: LMAT-1.2.6.tgz 
+    url: "https://downloads.sourceforge.net/project/lmat/LMAT-1.2.6.tgz?r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Flmat%2Ffiles%2FLMAT-1.2.6.tgz"
+    sha256: 4e0a6bcde7a3e549bcd9f7233444016fedf4970009d4233a916f5f4987f101ea
+
+
+requirements:
+    build:
+        - {{ compiler('cxx') }}
+        - {{ compiler('c') }}
+    run:
+        - python=2.7
+        - gawk
+
+about:
+    home: https://computing.llnl.gov/projects/livermore-metagenomics-analysis-toolkit
+    license: unspecified
