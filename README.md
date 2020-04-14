@@ -5,7 +5,7 @@
   - fastqc 0.11.5 ([docs](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
   - cutadapt 1.18 ([docs](https://cutadapt.readthedocs.io/en/stable/)
   - trimmomatic 0.36 ([docs](http://www.usadellab.org/cms/?page=trimmomatic))
-  - kraken2 2.0.7-beta ([docs](https://ccb.jhu.edu/software/kraken2/))xs
+  - kraken2 2.0.7-beta ([docs](https://ccb.jhu.edu/software/kraken2/))
   - unicycler 0.4.8 ([github](https://github.com/rrwick/Unicycler))
   - quast 5.0.2 ([docs](http://quast.sourceforge.net/quast))
   - hisat 2.1.0 ([docs](http://daehwankimlab.github.io/hisat2/))
