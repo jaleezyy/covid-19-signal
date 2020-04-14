@@ -1,7 +1,6 @@
 # Note: this workflow uses specialized conda envs, run with 'snakemake --use-conda'.
 
 # TODO: log files
-# TODO: lmat part is incomplete
 # TODO: needs final debug iteration, after the dust settles
 
 # The config file contains a high-level summary of pipeline configuration and inputs.
@@ -36,8 +35,8 @@ rule kraken2:
     input: expand('{p}_kraken2/kraken2.out', p=[config['prefix']])
 
 rule lmat:
-    input: expand('{p}_lmat/assembly.tiled.fasta', p=[config['prefix']])
-    
+    input: expand('{p}_lmat/parseLMAT_output.txt', p=[config['prefix']])
+
 rule quast:
     input: expand('{p}_quast/report.html', p=[config['prefix']])
 
@@ -50,6 +49,7 @@ rule all:
         rules.breseq.input,
         rules.hisat2.input,
         rules.kraken2.input,
+        rules.lmat.input,
         rules.quast.input
 
 
@@ -206,7 +206,7 @@ rule run_kraken2:
 ##################################   Based on scripts/lmat.sh   ####################################
 
 
-rule lmat_fatile:
+rule lmat_pretile:
     output:
         '{s}_lmat/assembly.tiled.fasta'
     input:
@@ -215,6 +215,30 @@ rule lmat_fatile:
         fsize = config['lmat_fragment_size']
     shell:
         'fatile {input} {params.fsize} > {output}'
+
+
+rule run_lmat:
+    threads: 20
+    output:
+        '{prefix}_lmat/assembly.tiled.fasta.{db}.lo.rl_output0.out'
+    input:
+        '{prefix}_assembled/assembly.fasta'
+    params:
+        outdir = '{prefix}_lmat',
+        logfile = '{prefix}_lmat/assembly.tiled.fasta.{db}.lo.rl_output.log',
+        lmat_basedir = config['lmat_basedir'],
+        lmat_db = '{db}'
+    script:
+        'lmat_wrapper.py'
+
+
+rule lmat_postprocess:
+    output:
+        '{prefix}_lmat/parseLMAT_output.txt'
+    input:
+        expand('{{prefix}}_lmat/assembly.tiled.fasta.{db}.lo.rl_output0.out', db=[config['lmat_db']])
+    shell:
+        'cd {wildcards.prefix}_lmat && parseLMAT > parseLMAT_output.txt'
 
 
 ##################################  Based on scripts/quast.sh   ####################################

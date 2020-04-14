@@ -21,11 +21,8 @@ Current pipeline status:
       using HiSAT2 alignment of the sequencing reads against the assembled contigs
   - Assess sequence variation in the assembled genomes using BreSeq
   - Generate assembly statistics using QUAST
-
-Coming soon:
   - Determine percentage of reads derived from SARS-CoV-2 RNA using Kraken2
   - Assess assembly of non-SARS-CoV-2 genetic material using LMAT
-  - Assess sequence variation in the assembled genomes using BLASTN
 """
 
 import os
@@ -64,8 +61,12 @@ class Pipeline:
     # Used as --db argument to 'kraken2'
     kraken2_db = '/home/kmsmith/data/Kraken2/db'
 
-    # Size of fragments (in bp) analyzed by 'lmat'
+    # lmat_fragment_size: size of fragments (in bp) analyzed by 'lmat'
+    # Absolute pathname of the LMAT DB is {lmat_basedir}/data/{lmat_db}.
+    # LMAT's expected "runtime inputs" (e.g. 'ncbi_taxid_to_rank.txt') should be in {lmat_basedir}/runtime_inputs.
     lmat_fragment_size = 250
+    lmat_basedir = '/home/kmsmith/data/LMAT-1.2.6'
+    lmat_db = 'kML+Human.v4-14.20.g10.db'
 
     # Used as -r,-g arguments to 'quast'
     quast_reference_genome = '/home/kmsmith/data/MN908947_3.fasta'
@@ -229,8 +230,13 @@ class Pipeline:
             print(f"kraken2_db: {repr(self.kraken2_db)}", file=f)
             print(file=f)
 
-            print(f"# Size of fragments (in bp) analyzed by 'lmat'", file=f)
-            print(f"lmat_fragment_size: 250", file=f)
+            
+            print(f"# lmat_fragment_size: size of fragments (in bp) analyzed by 'lmat'", file=f)
+            print(f"# Absolute pathname of the LMAT DB is {{lmat_basedir}}/data/{{lmat_db}}.", file=f)
+            print(f"# LMAT's expected \"runtime inputs\" (e.g. 'ncbi_taxid_to_rank.txt') should be in {{lmat_basedir}}/runtime_inputs.", file=f)
+            print(f"lmat_fragment_size: {repr(self.lmat_fragment_size)}", file=f)
+            print(f"lmat_basedir: {repr(self.lmat_basedir)}", file=f)
+            print(f"lmat_db: {repr(self.lmat_db)}", file=f)
             print(file=f)
 
             print(f"# Used as -r,-g arguments to 'quast'", file=f)
@@ -253,7 +259,8 @@ class Pipeline:
         """Writes {pipeline_output_dir}/Snakefile, and {pipeline_output_dir}/conda_envs/*.yaml."""
 
         # List of (src_relpath, dst_relpath) pairs
-        todo = [ ('Snakefile.master', 'Snakefile') ]
+        todo = [ ('Snakefile.master', 'Snakefile'),
+                 ('lmat_wrapper.py', 'lmat_wrapper.py') ]
 
         for conda_envname in [ 'trim_qc', 'assembly', 'assembly_qc', 'snp_mapping' ]:
             filename = f'conda_envs/{conda_envname}.yaml'
