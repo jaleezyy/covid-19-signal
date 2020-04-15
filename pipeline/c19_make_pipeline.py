@@ -9,20 +9,9 @@ Usage (on galaxylab):
     # Create pipeline
     ./c19_make_pipeline.py -o Iran1 /home/kmsmith/data/MT-swab-Iran-Liverpool*.fastq.gz
 
-    # Run pipeline
+    # Run pipeline (cacheing conda envs in $HOME/.snakemake)
     cd Iran1/   # directory created by 'c19_make_pipeline.py'
-    snakemake --cores=16 --use-conda all
-
-Current pipeline status:
-  - Amplification primers removed using cutadapt
-  - Trim/remove Illumina adapters and low quality sequences using Trimmomatic
-  - Confirm final sequence quality and adapter/primer trimming using FASTQC
-  - Assess sequencing depth and completeness of coverage of the assembled genomes,
-      using HiSAT2 alignment of the sequencing reads against the assembled contigs
-  - Assess sequence variation in the assembled genomes using BreSeq
-  - Generate assembly statistics using QUAST
-  - Determine percentage of reads derived from SARS-CoV-2 RNA using Kraken2
-  - Assess assembly of non-SARS-CoV-2 genetic material using LMAT
+    snakemake -p --cores=16 --use-conda --conda-prefix=$HOME/.snakemake all
 """
 
 import os
@@ -54,6 +43,9 @@ class Pipeline:
 
     # Last arguments on 'trimmomatic' command line (after input, output files)
     trimmomatic_args = 'ILLUMINACLIP:/home/kmsmith/data/NexteraPE-PE.fa:2:30:10 SLIDINGWINDOW:4:20'
+
+    # Used as hisat2 reference genome when removing host sequences
+    hostremove_reference = '/home/kmsmith/data/MN908947_3.fasta'
 
     # Used as --reference argument to 'breseq'
     breseq_reference = '/home/kmsmith/data/MN908947_3.gbk'
@@ -220,6 +212,10 @@ class Pipeline:
             
             print(f"# Last arguments on 'trimmomatic' command line (after input, output files)", file=f)
             print(f"trimmomatic_args: {repr(self.trimmomatic_args)}", file=f)
+            print(file=f)
+
+            print("# Used as hisat2 reference genome when removing host sequences", file =f)
+            print(f"hostremove_reference: {repr(self.hostremove_reference)}", file=f)
             print(file=f)
             
             print(f"# Used as --reference argument to 'breseq'", file=f)
