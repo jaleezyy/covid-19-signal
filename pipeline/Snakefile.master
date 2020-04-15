@@ -14,31 +14,31 @@ configfile: "config.yaml"
 
 
 rule sort:
-    input: expand('fastq_sorted/{p}_R{r}_fastqc.html', p=[config['prefix']], r=[1,2])
+    input: expand('fastq_sorted/R{r}_fastqc.html')
     
 rule remove_primers:
-    input: expand('fastq_primers_removed/{p}_R{r}.fastq.gz', p=[config['prefix']], r=[1,2])
+    input: expand('fastq_primers_removed/R{r}.fastq.gz', r=[1,2])
 
 rule trim:
-    input: expand('fastq_trimmed/{p}_R{r}_{s}_fastqc.html', p=[config['prefix']], r=[1,2], s=['paired','unpaired'])
+    input: expand('fastq_trimmed/R{r}_{s}_fastqc.html', r=[1,2], s=['paired','unpaired'])
     
 rule assemble:
-    input: expand('{p}_assembled/assembly.fasta', p=[config['prefix']])
+    'assembled/assembly.fasta'
 
 rule breseq:
-    input: expand('{p}_breseq/output/index.html', p=[config['prefix']])
+    'breseq/output/index.html'
     
 rule hisat2:
-    input: expand('{p}_hisat2/output.bam', p=[config['prefix']])
+    'hisat2/output.bam'
 
 rule kraken2:
-    input: expand('{p}_kraken2/kraken2.out', p=[config['prefix']])
+    'kraken2/kraken2.out'
 
 rule lmat:
-    input: expand('{p}_lmat/parseLMAT_output.txt', p=[config['prefix']])
+    'lmat/parseLMAT_output.txt'
 
 rule quast:
-    input: expand('{p}_quast/report.html', p=[config['prefix']])
+    'quast/report.html'
 
 rule all:
     input:
@@ -58,7 +58,7 @@ rule all:
 
 rule concat_and_sort:
     output:
-        expand('fastq_sorted/{p}_R{{r}}.fastq.gz', p=[config['prefix']])
+        expand('fastq_sorted/R{r}.fastq.gz')
     input:
         lambda wildcards: config[f'input_fastq_files_R{wildcards.r}']
     shell:
@@ -77,11 +77,11 @@ rule run_cutadapt:
     threads: 25
     conda: 'conda_envs/trim_qc.yaml'
     output:
-        expand('fastq_primers_removed/{{p}}_R{r}.fastq.gz', r=[1,2])
+        expand('fastq_primers_removed/R{r}.fastq.gz', r=[1,2])
     input:
-        expand('fastq_sorted/{{p}}_R{r}.fastq.gz', r=[1,2])
+        expand('fastq_sorted/R{r}.fastq.gz', r=[1,2])
     log:
-        'fastq_primers_removed/{p}_cutadapt.log'
+        'fastq_primers_removed/cutadapt.log'
     params:
         primer_R1 = config['primer_R1'],
         primer_R2 = config['primer_R2']
@@ -99,11 +99,11 @@ rule run_trimmomatic:
     threads: 20
     conda: 'conda_envs/trim_qc.yaml'
     output:
-        expand('fastq_trimmed/{{p}}_R{r}_{s}.fastq.gz', r=[1,2], s=['paired','unpaired'])
+        expand('fastq_trimmed/R{r}_{s}.fastq.gz', r=[1,2], s=['paired','unpaired'])
     input:
-        expand('fastq_primers_removed/{{p}}_R{r}.fastq.gz', r=[1,2])
+        expand('fastq_primers_removed/R{r}.fastq.gz', r=[1,2])
     log:
-        'fastq_trimmed/{p}_trim.log'
+        'fastq_trimmed/trim.log'
     params:
         targs = config['trimmomatic_args']
     shell:
@@ -114,13 +114,13 @@ rule run_unicycler:
     threads: 20
     conda: 'conda_envs/assembly.yaml'
     output:
-        '{p}_assembled/assembly.fasta'
+        'assembled/assembly.fasta'
     input:
-        expand('fastq_trimmed/{{p}}_R{r}_paired.fastq.gz', r=[1,2])
+        expand('fastq_trimmed/R{r}_paired.fastq.gz', r=[1,2])
     log:
-        '{p}_assembled/assembly.log'
+        'assembled/assembly.log'
     params:
-        outdir = '{p}_assembled'
+        outdir = 'assembled'
     shell:
         'unicycler -1 {input[0]} -2 {input[1]} --threads {threads} --mode conservative --verbosity 2 -o {params.outdir} >{log}'
 
@@ -132,14 +132,14 @@ rule run_breseq:
     threads: 80
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        '{p}_breseq/output/index.html'
+        'breseq/output/index.html'
     input:
-        expand('fastq_trimmed/{{p}}_R{r}_paired.fastq.gz', r=[1,2])
+        expand('fastq_trimmed/R{r}_paired.fastq.gz', r=[1,2])
     log:
-        '{p}_breseq/breseq.log',
+        'breseq/breseq.log',
     params:
-        ref = config['breseq_reference'],
-	outdir = '{p}_breseq'
+        ref = config['breseq_reference']
+	outdir = 'breseq'
     shell:
         'breseq --reference {params.ref} --num-processors {threads} --polymorphism-prediction --brief-html-output --output {params.outdir} {input} >{log} 2>&1'
 
@@ -150,32 +150,32 @@ rule run_breseq:
 rule run_hisat2_build:
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        '{s}_hisat2/genome.1.ht2'
+        'hisat2/genome.1.ht2'
     input:
-         '{s}_assembled/assembly.fasta'
+         'assembled/assembly.fasta'
     log:
-         '{s}_hisat2/hisat2-build.log'
+         'hisat2/hisat2-build.log'
     shell:
-         'hisat2-build {input} {wildcards.s}_hisat2/genome >{log} 2>&1'
+         'hisat2-build {input} hisat2/genome >{log} 2>&1'
 
 
 rule run_hisat2:
     threads: 20
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        '{s}_hisat2/output.sam'
+        'hisat2/output.sam'
     input:
-        'fastq_trimmed/{s}_R1_paired.fastq.gz',
-        'fastq_trimmed/{s}_R2_paired.fastq.gz',
-        '{s}_hisat2/genome.1.ht2'
+        'fastq_trimmed/R1_paired.fastq.gz',
+        'fastq_trimmed/R2_paired.fastq.gz',
+        'hisat2/genome.1.ht2'
     log:
-         '{s}_hisat2/hisat2.log'
+        'hisat2/hisat2.log'
     shell:
         'hisat2 --threads {threads}'
-        ' -x {wildcards.s}_hisat2/genome'
+        ' -x hisat2/genome'
 	' -1 {input[0]} -2 {input[1]}'
-	' --summary-file {wildcards.s}_hisat2/summary.txt'
-	' -S {wildcards.s}_hisat2/output.sam'
+	' --summary-file hisat2/summary.txt'
+	' -S hisat2/output.sam'
 	' 2>{log}'
 
 
@@ -183,9 +183,9 @@ rule hisat2_sam_to_bam:
     threads: 20
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        '{s}_hisat2/output.bam'
+        'hisat2/output.bam'
     input:
-        '{s}_hisat2/output.sam'
+        'hisat2/output.sam'
     shell:
         'samtools view --threads {threads} -b {input} > {output}'
 
@@ -197,13 +197,13 @@ rule run_kraken2:
     threads: 20
     conda: 'conda_envs/trim_qc.yaml'
     output:
-        '{s}_kraken2/kraken2.out'
+        'kraken2/kraken2.out'
     input:
-        expand('fastq_trimmed/{{s}}_R{r}_paired.fastq.gz', r=[1,2])
+        expand('fastq_trimmed/R{r}_paired.fastq.gz', r=[1,2])
     log:
-         '{s}_kraken2/kraken2.log'
+        'kraken2/kraken2.log'
     params:
-        outdir = '{s}_kraken2',
+        outdir = 'kraken2',
 	db = config['kraken2_db']
     shell:
         'cd {params.outdir} '
@@ -223,9 +223,9 @@ rule run_kraken2:
 
 rule lmat_pretile:
     output:
-        '{s}_lmat/assembly.tiled.fasta'
+        'lmat/assembly.tiled.fasta'
     input:
-        '{s}_assembled/assembly.fasta'
+        'assembled/assembly.fasta'
     params:
         fsize = config['lmat_fragment_size']
     shell:
@@ -235,12 +235,12 @@ rule lmat_pretile:
 rule run_lmat:
     threads: 20
     output:
-        '{prefix}_lmat/assembly.tiled.fasta.{db}.lo.rl_output0.out'
+        'lmat/assembly.tiled.fasta.{db}.lo.rl_output0.out'
     input:
-        '{prefix}_lmat/assembly.tiled.fasta'
+        'lmat/assembly.tiled.fasta'
     params:
-        outdir = '{prefix}_lmat',
-        logfile = '{prefix}_lmat/assembly.tiled.fasta.{db}.lo.rl_output.log',
+        outdir = 'lmat',
+        logfile = 'lmat/assembly.tiled.fasta.{db}.lo.rl_output.log',
         lmat_basedir = config['lmat_basedir'],
         lmat_db = '{db}'
     script:
@@ -249,9 +249,9 @@ rule run_lmat:
 
 rule lmat_postprocess:
     output:
-        '{prefix}_lmat/parseLMAT_output.txt'
+        'lmat/parseLMAT_output.txt'
     input:
-        expand('{{prefix}}_lmat/assembly.tiled.fasta.{db}.lo.rl_output0.out', db=[config['lmat_db']])
+        expand('lmat/assembly.tiled.fasta.{db}.lo.rl_output0.out', db=[config['lmat_db']])
     shell:
         'cd {wildcards.prefix}_lmat && parseLMAT > parseLMAT_output.txt'
 
@@ -263,13 +263,13 @@ rule run_quast:
     threads: 20
     conda: 'conda_envs/assembly_qc.yaml'
     output:
-         '{s}_quast/report.html'
+         'quast/report.html'
     input:
-         '{s}_assembled/assembly.fasta'
+         'assembled/assembly.fasta'
     log:
-         '{s}_quast/quast.log'
+         'quast/quast.log'
     params:
-         outdir = '{s}_quast',
+         outdir = 'quast',
          genome = config['quast_reference_genome'],
          fcoords = config['quast_feature_coords']
     shell:
