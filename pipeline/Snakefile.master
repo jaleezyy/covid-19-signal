@@ -69,7 +69,8 @@ rule run_fastqc:
     conda: 'conda_envs/trim_qc.yaml'
     output: multiext('{s}_fastqc', '.html', '.zip')
     input: '{s}.fastq.gz'
-    shell: 'fastqc {input}'
+    log: '{s}_fastqc.log',
+    shell: 'fastqc {input} 2>{log}'
 
 
 rule run_cutadapt:
@@ -79,6 +80,8 @@ rule run_cutadapt:
         expand('fastq_primers_removed/{{p}}_R{r}.fastq.gz', r=[1,2])
     input:
         expand('fastq_sorted/{{p}}_R{r}.fastq.gz', r=[1,2])
+    log:
+        'fastq_primers_removed/{p}_cutadapt.log'
     params:
         primer_R1 = config['primer_R1'],
         primer_R2 = config['primer_R2']
@@ -87,7 +90,7 @@ rule run_cutadapt:
 	' -a file:{params.primer_R1} -A file:{params.primer_R2}'   # primers
 	' -o {output[0]} -p {output[1]}'     # output files
 	' {input}'                           # input files
-
+        ' >{log}'                            # log file
 
 # Note: expand()-statements in 'output:' and 'input:' have been written so that the ordering
 # of their outputs is consistent with the ordering of trimmomatic's command-line arguments.
@@ -99,10 +102,12 @@ rule run_trimmomatic:
         expand('fastq_trimmed/{{p}}_R{r}_{s}.fastq.gz', r=[1,2], s=['paired','unpaired'])
     input:
         expand('fastq_primers_removed/{{p}}_R{r}.fastq.gz', r=[1,2])
+    log:
+        'fastq_trimmed/{p}_trim.log'
     params:
         targs = config['trimmomatic_args']
     shell:
-        'trimmomatic PE -threads {threads} {input} {output} {params.targs}'
+        'trimmomatic PE -threads {threads} {input} {output} {params.targs} 2>{log}'
 
 
 rule run_unicycler:
@@ -112,10 +117,12 @@ rule run_unicycler:
         '{p}_assembled/assembly.fasta'
     input:
         expand('fastq_trimmed/{{p}}_R{r}_paired.fastq.gz', r=[1,2])
+    log:
+        '{p}_assembled/assembly.log'
     params:
         outdir = '{p}_assembled'
     shell:
-        'unicycler -1 {input[0]} -2 {input[1]} --threads {threads} --mode conservative --verbosity 2 -o {params.outdir}'
+        'unicycler -1 {input[0]} -2 {input[1]} --threads {threads} --mode conservative --verbosity 2 -o {params.outdir} >{log}'
 
 
 ################################   Based on scripts/breseq.sh   ####################################
@@ -128,11 +135,13 @@ rule run_breseq:
         '{p}_breseq/output/index.html'
     input:
         expand('fastq_trimmed/{{p}}_R{r}_paired.fastq.gz', r=[1,2])
+    log:
+        '{p}_breseq/breseq.log',
     params:
         ref = config['breseq_reference'],
 	outdir = '{p}_breseq'
     shell:
-        'breseq --reference {params.ref} --num-processors {threads} --polymorphism-prediction --brief-html-output --output {params.outdir} {input}'
+        'breseq --reference {params.ref} --num-processors {threads} --polymorphism-prediction --brief-html-output --output {params.outdir} {input} >{log} 2>&1'
 
 
 ################################   Based on scripts/hisat2.sh   ####################################
@@ -144,8 +153,10 @@ rule run_hisat2_build:
         '{s}_hisat2/genome.1.ht2'
     input:
          '{s}_assembled/assembly.fasta'
+    log:
+         '{s}_hisat2/hisat2-build.log'
     shell:
-         'mkdir -p {wildcards.s}_hisat2 && hisat2-build {input} {wildcards.s}_hisat2/genome'
+         'hisat2-build {input} {wildcards.s}_hisat2/genome >{log} 2>&1'
 
 
 rule run_hisat2:
@@ -157,12 +168,15 @@ rule run_hisat2:
         'fastq_trimmed/{s}_R1_paired.fastq.gz',
         'fastq_trimmed/{s}_R2_paired.fastq.gz',
         '{s}_hisat2/genome.1.ht2'
+    log:
+         '{s}_hisat2/hisat2.log'
     shell:
         'hisat2 --threads {threads}'
         ' -x {wildcards.s}_hisat2/genome'
 	' -1 {input[0]} -2 {input[1]}'
 	' --summary-file {wildcards.s}_hisat2/summary.txt'
 	' -S {wildcards.s}_hisat2/output.sam'
+	' 2>{log}'
 
 
 rule hisat2_sam_to_bam:
@@ -186,12 +200,13 @@ rule run_kraken2:
         '{s}_kraken2/kraken2.out'
     input:
         expand('fastq_trimmed/{{s}}_R{r}_paired.fastq.gz', r=[1,2])
+    log:
+         '{s}_kraken2/kraken2.log'
     params:
         outdir = '{s}_kraken2',
 	db = config['kraken2_db']
     shell:
-        'mkdir -p {params.outdir} '
-	'&& cd {params.outdir} '
+        'cd {params.outdir} '
 	'&& kraken2'
 	' --db {params.db}'
 	' --threads {threads}'
@@ -200,7 +215,7 @@ rule run_kraken2:
 	' --paired --gzip-compressed'
 	' ../{input[0]} ../{input[1]}'
 	' --report report'
-
+        ' 2>../{log}'
 
 
 ##################################   Based on scripts/lmat.sh   ####################################
@@ -251,9 +266,11 @@ rule run_quast:
          '{s}_quast/report.html'
     input:
          '{s}_assembled/assembly.fasta'
+    log:
+         '{s}_quast/quast.log'
     params:
          outdir = '{s}_quast',
          genome = config['quast_reference_genome'],
          fcoords = config['quast_feature_coords']
     shell:
-         'quast {input} -r {params.genome} -g {params.fcoords} --output-dir {params.outdir} --threads {threads}'
+         'quast {input} -r {params.genome} -g {params.fcoords} --output-dir {params.outdir} --threads {threads} >{log}'
