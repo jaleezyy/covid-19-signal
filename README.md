@@ -2,7 +2,7 @@
 
 ## Software components:
 
-  - fastqc 0.11.5 ([docs](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
+  - fastqc 0.11.8 ([docs](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
   - cutadapt 1.18 ([docs](https://cutadapt.readthedocs.io/en/stable/)
   - trimmomatic 0.36 ([docs](http://www.usadellab.org/cms/?page=trimmomatic))
   - kraken2 2.0.7-beta ([docs](https://ccb.jhu.edu/software/kraken2/))
