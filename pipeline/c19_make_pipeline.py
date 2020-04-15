@@ -9,20 +9,9 @@ Usage (on galaxylab):
     # Create pipeline
     ./c19_make_pipeline.py -o Iran1 /home/kmsmith/data/MT-swab-Iran-Liverpool*.fastq.gz
 
-    # Run pipeline
+    # Run pipeline (cacheing conda envs in $HOME/.snakemake)
     cd Iran1/   # directory created by 'c19_make_pipeline.py'
-    snakemake --cores=16 --use-conda all
-
-Current pipeline status:
-  - Amplification primers removed using cutadapt
-  - Trim/remove Illumina adapters and low quality sequences using Trimmomatic
-  - Confirm final sequence quality and adapter/primer trimming using FASTQC
-  - Assess sequencing depth and completeness of coverage of the assembled genomes,
-      using HiSAT2 alignment of the sequencing reads against the assembled contigs
-  - Assess sequence variation in the assembled genomes using BreSeq
-  - Generate assembly statistics using QUAST
-  - Determine percentage of reads derived from SARS-CoV-2 RNA using Kraken2
-  - Assess assembly of non-SARS-CoV-2 genetic material using LMAT
+    snakemake -p --cores=16 --use-conda --conda-prefix=$HOME/.snakemake all
 """
 
 import os
