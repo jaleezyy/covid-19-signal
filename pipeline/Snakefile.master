@@ -1,6 +1,5 @@
 # Note: this workflow uses specialized conda envs, run with 'snakemake --use-conda'.
 
-# TODO: log files
 # TODO: needs final debug iteration, after the dust settles
 
 # The config file contains a high-level summary of pipeline configuration and inputs.
@@ -21,6 +20,9 @@ rule remove_primers:
 
 rule trim:
     input: expand('fastq_trimmed/R{r}_{s}_fastqc.html', r=[1,2], s=['paired','unpaired'])
+
+rule hostremove:
+    input: expand('fastq_host_removed/R{r}.fastq.gz', r=[1,2])
     
 rule assemble:
     input: 'assembled/assembly.fasta'
@@ -45,6 +47,7 @@ rule all:
         rules.sort.input,
         rules.remove_primers.input,
         rules.trim.input,
+        rules.hostremove.input,
         rules.assemble.input,
         rules.breseq.input,
         rules.hisat2.input,
@@ -109,6 +112,93 @@ rule run_trimmomatic:
     shell:
         'trimmomatic PE -threads {threads} {input} {output} {params.targs} 2>{log}'
 
+############################  Based on scripts/remove_host_sequences.sh  ###########################
+
+
+rule hostremove_hisat2_build:
+    conda: 'conda_envs/snp_mapping.yaml'
+    output:
+        'fastq_host_removed/sars-cov-2.1.ht2'
+    log:
+        'fastq_host_removed/hisat2-build.log'
+    params:
+        reference = config['hostremove_reference']
+    shell:
+        'hisat2-build {params.reference} fastq_host_removed/sars-cov-2 >{log} 2>&1'
+
+
+rule hostremove_hisat2:
+    threads: 20
+    conda: 'conda_envs/snp_mapping.yaml'
+    output:
+        'fastq_host_removed/mapped_and_unmapped.sam'
+    input:
+        'fastq_trimmed/R1_paired.fastq.gz',
+        'fastq_trimmed/R2_paired.fastq.gz',
+        'fastq_host_removed/sars-cov-2.1.ht2'
+    log:
+        'fastq_host_removed/hisat2.log'
+    shell:
+        'hisat2 --threads {threads}'
+        ' -x fastq_host_removed/sars-cov-2'
+	' -1 {input[0]} -2 {input[1]}'
+	' --summary-file fastq_host_removed/hisat2_summary.txt'
+	' -S {output}'
+	' 2>{log}'
+
+
+rule hostremove_sam_to_bam:
+    conda: 'conda_envs/snp_mapping.yaml'
+    output:
+        'fastq_host_removed/mapped_and_unmapped.bam'
+    input:
+        'fastq_host_removed/mapped_and_unmapped.sam'
+    shell:
+        'samtools view -bS {input} > {output}'
+
+
+rule hostremove_map_pairs:
+    conda: 'conda_envs/snp_mapping.yaml'
+    output:
+        'fastq_host_removed/both_ends_mapped.bam'
+    input:
+        'fastq_host_removed/mapped_and_unmapped.bam'
+    shell:
+        'samtools view -b -f 3 -F 4 {input} > {output}'
+
+
+rule hostremove_sort:
+    conda: 'conda_envs/snp_mapping.yaml'
+    output:
+        'fastq_host_removed/both_ends_mapped_sorted.bam'
+    input:
+        'fastq_host_removed/both_ends_mapped.bam'
+    shell:
+        'samtools sort -T tmp -n {input} -o {output}'
+
+
+rule hostremove_bam_to_fastq:
+    conda: 'conda_envs/snp_mapping.yaml'
+    output:
+        'fastq_host_removed/R1.fastq',
+        'fastq_host_removed/R2.fastq'
+    input:
+        'fastq_host_removed/both_ends_mapped_sorted.bam'
+    shell:
+        'bedtools bamtofastq -i {input} -fq {output[0]} -fq2 {output[1]}'
+
+
+rule hostremove_gzip:
+    output:
+        'fastq_host_removed/R{r}.fastq.gz'
+    input:
+        'fastq_host_removed/R{r}.fastq'
+    shell:
+         'gzip {input}'
+
+
+#########################  placeholder: assembling with unicycler for now  #########################
+
 
 rule run_unicycler:
     threads: 20
@@ -116,7 +206,7 @@ rule run_unicycler:
     output:
         'assembled/assembly.fasta'
     input:
-        expand('fastq_trimmed/R{r}_paired.fastq.gz', r=[1,2])
+        expand('fastq_host_removed/R{r}.fastq.gz', r=[1,2])
     log:
         'assembled/assembly.log'
     params:

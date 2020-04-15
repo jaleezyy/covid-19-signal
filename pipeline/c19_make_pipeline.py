@@ -55,6 +55,9 @@ class Pipeline:
     # Last arguments on 'trimmomatic' command line (after input, output files)
     trimmomatic_args = 'ILLUMINACLIP:/home/kmsmith/data/NexteraPE-PE.fa:2:30:10 SLIDINGWINDOW:4:20'
 
+    # Used as hisat2 reference genome when removing host sequences
+    hostremove_reference = '/home/kmsmith/data/MN908947_3.fasta'
+
     # Used as --reference argument to 'breseq'
     breseq_reference = '/home/kmsmith/data/MN908947_3.gbk'
 
@@ -220,6 +223,10 @@ class Pipeline:
             
             print(f"# Last arguments on 'trimmomatic' command line (after input, output files)", file=f)
             print(f"trimmomatic_args: {repr(self.trimmomatic_args)}", file=f)
+            print(file=f)
+
+            print("# Used as hisat2 reference genome when removing host sequences", file =f)
+            print(f"hostremove_reference: {repr(self.hostremove_reference)}", file=f)
             print(file=f)
             
             print(f"# Used as --reference argument to 'breseq'", file=f)
