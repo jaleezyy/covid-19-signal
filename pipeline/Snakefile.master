@@ -14,7 +14,7 @@ configfile: "config.yaml"
 
 
 rule sort:
-    input: expand('fastq_sorted/R{r}_fastqc.html')
+    input: expand('fastq_sorted/R{r}_fastqc.html', r=[1,2])
     
 rule remove_primers:
     input: expand('fastq_primers_removed/R{r}.fastq.gz', r=[1,2])
@@ -23,22 +23,22 @@ rule trim:
     input: expand('fastq_trimmed/R{r}_{s}_fastqc.html', r=[1,2], s=['paired','unpaired'])
     
 rule assemble:
-    'assembled/assembly.fasta'
+    input: 'assembled/assembly.fasta'
 
 rule breseq:
-    'breseq/output/index.html'
+    input: 'breseq/output/index.html'
     
 rule hisat2:
-    'hisat2/output.bam'
+    input: 'hisat2/output.bam'
 
 rule kraken2:
-    'kraken2/kraken2.out'
+    input: 'kraken2/kraken2.out'
 
 rule lmat:
-    'lmat/parseLMAT_output.txt'
+    input: 'lmat/parseLMAT_output.txt'
 
 rule quast:
-    'quast/report.html'
+    input: 'quast/report.html'
 
 rule all:
     input:
@@ -58,7 +58,7 @@ rule all:
 
 rule concat_and_sort:
     output:
-        expand('fastq_sorted/R{r}.fastq.gz')
+        'fastq_sorted/R{r}.fastq.gz'
     input:
         lambda wildcards: config[f'input_fastq_files_R{wildcards.r}']
     shell:
@@ -138,7 +138,7 @@ rule run_breseq:
     log:
         'breseq/breseq.log',
     params:
-        ref = config['breseq_reference']
+        ref = config['breseq_reference'],
 	outdir = 'breseq'
     shell:
         'breseq --reference {params.ref} --num-processors {threads} --polymorphism-prediction --brief-html-output --output {params.outdir} {input} >{log} 2>&1'
@@ -253,7 +253,7 @@ rule lmat_postprocess:
     input:
         expand('lmat/assembly.tiled.fasta.{db}.lo.rl_output0.out', db=[config['lmat_db']])
     shell:
-        'cd {wildcards.prefix}_lmat && parseLMAT > parseLMAT_output.txt'
+        'cd lmat && parseLMAT > parseLMAT_output.txt'
 
 
 ##################################  Based on scripts/quast.sh   ####################################
