@@ -11,6 +11,7 @@
   - hisat 2.1.0 ([docs](http://daehwankimlab.github.io/hisat2/))
   - lmat, "sourceforge" version ([sourceforge](https://sourceforge.net/projects/lmat/))
   - samtools 1.7 ([docs](http://www.htslib.org/))
+  - bedtools 2.26.0 ([docs](https://bedtools.readthedocs.io/en/latest/))
 
 **Question:** These are the versions installed on galaxylab (with the exception of kraken2, see below).
  Are these the versions we want to use in all cases?
@@ -22,6 +23,8 @@
  version by at least 4 years.  I plan to reinvestigate this too.
 
 ## Pipeline steps and running example:
+
+**Note:** Slightly out of date, will udpate soon!
 
 For each step in the pipeline, we give a high-level description,
 followed by the shell commands executed (obtained from `snakemake -p`),
