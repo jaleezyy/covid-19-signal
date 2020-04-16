@@ -38,8 +38,8 @@ class Pipeline:
     # TODO currently hardcoding some pipeline parameters, in the next few lines.
 
     # Used as -a,-A arguments to 'cutadapt'
-    primer_R1 = '/home/kmsmith/data/wuhan_primers_28.01.20_trim_RC.fa'
-    primer_R2 = '/home/kmsmith/data/wuhan_primers_28.01.20_trim_FW.fa'
+    primer_rc = '/home/kmsmith/data/wuhan_primers_28.01.20_trim_RC.fa'
+    primer_fw = '/home/kmsmith/data/wuhan_primers_28.01.20_trim_FW.fa'
 
     # Last arguments on 'trimmomatic' command line (after input, output files)
     trimmomatic_args = 'ILLUMINACLIP:/home/kmsmith/data/NexteraPE-PE.fa:2:30:10 SLIDINGWINDOW:4:20'
@@ -52,6 +52,17 @@ class Pipeline:
 
     # Used as --db argument to 'kraken2'
     kraken2_db = '/home/kmsmith/data/Kraken2/db'
+
+    # Consensus and variant calling ivar/samtools params from https://github.com/connor-lab/ncov2019-artic-nf/blob/master/conf/illumina.config
+    mpileup_depth = 100000
+    # ivar frequency threshold to build consensus
+    ivar_freq_threshold = 0.75
+    # Minimum coverage depth to call variant 
+    ivar_min_coverage_depth = 10
+    # iVar frequency threshold to call variant (ivar variants: -t )
+    ivar_min_freq_threshold = 0.25
+    # iVar minimum mapQ to call variant (ivar variants: -q)
+    ivar_min_variant_quality = 20
 
     # lmat_fragment_size: size of fragments (in bp) analyzed by 'lmat'
     # Absolute pathname of the LMAT DB is {lmat_basedir}/data/{lmat_db}.
@@ -206,8 +217,8 @@ class Pipeline:
             print(file=f)
             
             print("# Used as -a,-A arguments to 'cutadapt'", file=f)
-            print(f"primer_R1: {repr(self.primer_R1)}", file=f)
-            print(f"primer_R2: {repr(self.primer_R2)}", file=f)
+            print(f"primer_rc: {repr(self.primer_rc)}", file=f)
+            print(f"primer_fw: {repr(self.primer_fw)}", file=f)
             print(file=f)
             
             print(f"# Last arguments on 'trimmomatic' command line (after input, output files)", file=f)
@@ -226,6 +237,17 @@ class Pipeline:
             print(f"kraken2_db: {repr(self.kraken2_db)}", file=f)
             print(file=f)
 
+            print(f"# Consensus and variant calling ivar/samtools params from https://github.com/connor-lab/ncov2019-artic-nf/blob/master/conf/illumina.config", file=f)
+            print(f"mpileup_depth: {repr(self.mpileup_depth)}", file=f)
+            print(f"# ivar frequency threshold to build consensus", file=f)
+            print(f"ivar_freq_threshold: {repr(self.ivar_freq_threshold)}", file=f)
+            print(f"# Minimum coverage depth to call variant", file=f)
+            print(f"ivar_min_coverage_depth: {repr(self.ivar_min_coverage_depth)}", file=f)
+            print(f"# iVar frequency threshold to call variant (ivar variants: -t )", file=f)
+            print(f"ivar_min_freq_threshold: {repr(self.ivar_min_freq_threshold)}", file=f)
+            print(f"# iVar minimum mapQ to call variant (ivar variants: -q)", file=f)
+            print(f"ivar_min_variant_quality: {repr(self.ivar_min_variant_quality)}", file=f)
+            print(file=f)
             
             print(f"# lmat_fragment_size: size of fragments (in bp) analyzed by 'lmat'", file=f)
             print(f"# Absolute pathname of the LMAT DB is {{lmat_basedir}}/data/{{lmat_db}}.", file=f)
@@ -258,7 +280,7 @@ class Pipeline:
         todo = [ ('Snakefile.master', 'Snakefile'),
                  ('lmat_wrapper.py', 'lmat_wrapper.py') ]
 
-        for conda_envname in [ 'trim_qc', 'assembly', 'assembly_qc', 'snp_mapping' ]:
+        for conda_envname in [ 'trim_qc', 'assembly', 'assembly_qc', 'snp_mapping', 'ivar' ]:
             filename = f'conda_envs/{conda_envname}.yaml'
             todo.append((filename, filename))
             
