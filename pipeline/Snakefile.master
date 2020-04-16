@@ -6,7 +6,7 @@
 # It is ingested by the Snakefile, and also intended to be human-readable.
 # For an example config file, see pipeline/example_config.yaml in the covid-19-sequencing repo.
 
-configfile: "config.yaml"
+configfile: "example_config.yaml"
 
 
 ######################################   High-level targets   ######################################
@@ -33,6 +33,9 @@ rule breseq:
 rule hisat2:
     input: 'hisat2/output.bam'
 
+rule consensus:
+    input: 'consensus/virus.consensus'
+
 rule kraken2:
     input: 'kraken2/kraken2.out'
 
@@ -51,6 +54,7 @@ rule all:
         rules.assemble.input,
         rules.breseq.input,
         rules.hisat2.input,
+        rules.consensus.input,
         rules.kraken2.input,
         rules.lmat.input,
         rules.quast.input
@@ -364,3 +368,27 @@ rule run_quast:
          fcoords = config['quast_feature_coords']
     shell:
          'quast {input} -r {params.genome} -g {params.fcoords} --output-dir {params.outdir} --threads {threads} >{log}'
+
+
+###### Based on github.com/connor-lab/ncov2019-artic-nf/blob/master/modules/illumina.nf#L124 ######
+
+rule run_consensus:
+    threads: 20
+    conda: 'conda_envs/ivar.yaml'
+    output:
+        'consensus/virus.consensus'
+    input:
+        reference = 'hisat2/genome.1.ht2',
+        read_bam = 'hisat2/output.bam'
+    log:
+        'consensus/ivar.log'
+    params:
+        mpileup_depth = config['mpileup_depth'],
+        ivar_min_coverage_depth = config['ivar_min_coverage_depth'],
+        ivar_freq_threshold = config['ivar_freq_threshold']
+    shell:
+        """
+        samtools mpileup -A -d {params.mpileup_depth} -Q0 {input.read_bam} | \
+        ivar consensus -t {params.ivar_freq_threshold} -m {params.ivar_min_coverage_depth} \
+                                    -n N -p {output} 2> >> {log}
+        """
