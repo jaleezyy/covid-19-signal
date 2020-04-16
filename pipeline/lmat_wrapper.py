@@ -21,7 +21,7 @@ if os.path.exists(logfile):
     os.remove(logfile)
 
 docker_cmd = (
-    f'docker run'
+    f'docker run --rm'
     f' -v {lmat_basedir}/data:/data'
     f' -v {lmat_basedir}/runtime_inputs:/runtime_inputs'
     f' -v {os.getcwd()}/{outdir}:/pipeline'
