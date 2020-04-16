@@ -8,45 +8,52 @@
 
 configfile: "config.yaml"
 
+sample_names = sorted(config['samples'].keys())
+
+
+def get_input_fastq_files(sample_name, r):
+    relpaths = config['samples'][sample_name][f'input_fastq_files_R{r}']
+    return [ os.path.join(sample_name,r) for r in relpaths ]
+
 
 ######################################   High-level targets   ######################################
 
 
 rule sort:
-    input: expand('fastq_sorted/R{r}_fastqc.html', r=[1,2])
+    input: expand('{sn}/fastq_sorted/R{r}_fastqc.html', sn=sample_names, r=[1,2])
     
 rule remove_primers:
-    input: expand('fastq_primers_removed/R{r}.fastq.gz', r=[1,2])
+    input: expand('{sn}/fastq_primers_removed/R{r}.fastq.gz', sn=sample_names, r=[1,2])
 
 rule trim:
-    input: expand('fastq_trimmed/R{r}_{s}_fastqc.html', r=[1,2], s=['paired','unpaired'])
+    input: expand('{sn}/fastq_trimmed/R{r}_{s}_fastqc.html', sn=sample_names, r=[1,2], s=['paired','unpaired'])
 
 rule hostremove:
-    input: expand('fastq_host_removed/R{r}.fastq.gz', r=[1,2])
+    input: expand('{sn}/fastq_host_removed/R{r}.fastq.gz', sn=sample_names, r=[1,2])
     
 rule assemble:
-    input: 'assembled/assembly.fasta'
+    input: expand('{sn}/assembled/assembly.fasta', sn=sample_names)
 
 rule breseq:
-    input: 'breseq/output/index.html'
+    input: expand('{sn}/breseq/output/index.html', sn=sample_names)
     
 rule hisat2:
-    input: 'hisat2/output.bam'
+    input: expand('{sn}/hisat2/output.bam', sn=sample_names)
 
 rule consensus:
-    input: 'consensus/virus.consensus'
+    input: expand('{sn}/consensus/virus.consensus', sn=sample_names)
 
 rule ivar_variants:
-    input: 'ivar_variants/ivar_variants'
+    input: expand('{sn}/ivar_variants/ivar_variants', sn=sample_names)
 
 rule kraken2:
-    input: 'kraken2/kraken2.out'
+    input: expand('{sn}/kraken2/kraken2.out', sn=sample_names)
 
 rule lmat:
-    input: 'lmat/parseLMAT_output.txt'
+    input: expand('{sn}/lmat/parseLMAT_output.txt', sn=sample_names)
 
 rule quast:
-    input: 'quast/report.html'
+    input: expand('{sn}/quast/report.html', sn=sample_names)
 
 rule all:
     input:
@@ -69,9 +76,9 @@ rule all:
 
 rule concat_and_sort:
     output:
-        'fastq_sorted/R{r}.fastq.gz'
+        '{sn}/fastq_sorted/R{r}.fastq.gz'
     input:
-        lambda wildcards: config[f'input_fastq_files_R{wildcards.r}']
+        lambda wildcards: get_input_fastq_files(wildcards.sn, wildcards.r)
     shell:
         'zcat {input} | paste - - - - | sort -k1,1 -t " " | tr "\\t" "\\n" | gzip > {output}'
 
@@ -88,11 +95,11 @@ rule run_cutadapt:
     threads: 25
     conda: 'conda_envs/trim_qc.yaml'
     output:
-        expand('fastq_primers_removed/R{r}.fastq.gz', r=[1,2])
+        expand('{{sn}}/fastq_primers_removed/R{r}.fastq.gz', r=[1,2])
     input:
-        expand('fastq_sorted/R{r}.fastq.gz', r=[1,2])
+        expand('{{sn}}/fastq_sorted/R{r}.fastq.gz', r=[1,2])
     log:
-        'fastq_primers_removed/cutadapt.log'
+        '{sn}/fastq_primers_removed/cutadapt.log'
     params:
         primer_fw = config['primer_fw'],
         primer_rc = config['primer_rc']
@@ -110,15 +117,16 @@ rule run_trimmomatic:
     threads: 20
     conda: 'conda_envs/trim_qc.yaml'
     output:
-        expand('fastq_trimmed/R{r}_{s}.fastq.gz', r=[1,2], s=['paired','unpaired'])
+        expand('{{sn}}/fastq_trimmed/R{r}_{s}.fastq.gz', r=[1,2], s=['paired','unpaired'])
     input:
-        expand('fastq_primers_removed/R{r}.fastq.gz', r=[1,2])
+        expand('{{sn}}/fastq_primers_removed/R{r}.fastq.gz', r=[1,2])
     log:
-        'fastq_trimmed/trim.log'
+        '{sn}/fastq_trimmed/trim.log'
     params:
         targs = config['trimmomatic_args']
     shell:
         'trimmomatic PE -threads {threads} {input} {output} {params.targs} 2>{log}'
+
 
 ############################  Based on scripts/remove_host_sequences.sh  ###########################
 
@@ -126,31 +134,35 @@ rule run_trimmomatic:
 rule hostremove_hisat2_build:
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        'fastq_host_removed/sars-cov-2.1.ht2'
+        '{sn}/fastq_host_removed/sars-cov-2.1.ht2'
     log:
-        'fastq_host_removed/hisat2-build.log'
+        '{sn}/fastq_host_removed/hisat2-build.log'
     params:
-        reference = config['hostremove_reference']
+        reference = config['hostremove_reference'],
+	genome = '{sn}/fastq_host_removed/sars-cov-2'
     shell:
-        'hisat2-build {params.reference} fastq_host_removed/sars-cov-2 >{log} 2>&1'
+        'hisat2-build {params.reference} {params.genome} >{log} 2>&1'
 
 
 rule hostremove_hisat2:
     threads: 20
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        'fastq_host_removed/mapped_and_unmapped.sam'
+        '{sn}/fastq_host_removed/mapped_and_unmapped.sam'
     input:
-        'fastq_trimmed/R1_paired.fastq.gz',
-        'fastq_trimmed/R2_paired.fastq.gz',
-        'fastq_host_removed/sars-cov-2.1.ht2'
+        '{sn}/fastq_trimmed/R1_paired.fastq.gz',
+        '{sn}/fastq_trimmed/R2_paired.fastq.gz',
+        '{sn}/fastq_host_removed/sars-cov-2.1.ht2'
     log:
-        'fastq_host_removed/hisat2.log'
+        '{sn}/fastq_host_removed/hisat2.log'
+    params:
+        genome = '{sn}/fastq_host_removed/sars-cov-2',
+	summary_file = '{sn}/fastq_hist_removed/hisat2_summary.txt'
     shell:
         'hisat2 --threads {threads}'
-        ' -x fastq_host_removed/sars-cov-2'
+        ' -x {params.genome}'
 	' -1 {input[0]} -2 {input[1]}'
-	' --summary-file fastq_host_removed/hisat2_summary.txt'
+	' --summary-file {params.summary_file}'
 	' -S {output}'
 	' 2>{log}'
 
@@ -158,9 +170,9 @@ rule hostremove_hisat2:
 rule hostremove_sam_to_bam:
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        'fastq_host_removed/mapped_and_unmapped.bam'
+        '{sn}/fastq_host_removed/mapped_and_unmapped.bam'
     input:
-        'fastq_host_removed/mapped_and_unmapped.sam'
+        '{sn}/fastq_host_removed/mapped_and_unmapped.sam'
     shell:
         'samtools view -bS {input} > {output}'
 
@@ -168,9 +180,9 @@ rule hostremove_sam_to_bam:
 rule hostremove_map_pairs:
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        'fastq_host_removed/both_ends_mapped.bam'
+        '{sn}/fastq_host_removed/both_ends_mapped.bam'
     input:
-        'fastq_host_removed/mapped_and_unmapped.bam'
+        '{sn}/fastq_host_removed/mapped_and_unmapped.bam'
     shell:
         'samtools view -b -f 3 -F 4 {input} > {output}'
 
@@ -178,9 +190,9 @@ rule hostremove_map_pairs:
 rule hostremove_sort:
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        'fastq_host_removed/both_ends_mapped_sorted.bam'
+        '{sn}/fastq_host_removed/both_ends_mapped_sorted.bam'
     input:
-        'fastq_host_removed/both_ends_mapped.bam'
+        '{sn}/fastq_host_removed/both_ends_mapped.bam'
     shell:
         'samtools sort -T tmp -n {input} -o {output}'
 
@@ -188,19 +200,19 @@ rule hostremove_sort:
 rule hostremove_bam_to_fastq:
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        'fastq_host_removed/R1.fastq',
-        'fastq_host_removed/R2.fastq'
+        '{sn}/fastq_host_removed/R1.fastq',
+        '{sn}/fastq_host_removed/R2.fastq'
     input:
-        'fastq_host_removed/both_ends_mapped_sorted.bam'
+        '{sn}/fastq_host_removed/both_ends_mapped_sorted.bam'
     shell:
         'bedtools bamtofastq -i {input} -fq {output[0]} -fq2 {output[1]}'
 
 
 rule hostremove_gzip:
     output:
-        'fastq_host_removed/R{r}.fastq.gz'
+        '{sn}/fastq_host_removed/R{r}.fastq.gz'
     input:
-        'fastq_host_removed/R{r}.fastq'
+        '{sn}/fastq_host_removed/R{r}.fastq'
     shell:
          'gzip {input}'
 
@@ -212,13 +224,13 @@ rule run_unicycler:
     threads: 20
     conda: 'conda_envs/assembly.yaml'
     output:
-        'assembled/assembly.fasta'
+        '{sn}/assembled/assembly.fasta'
     input:
-        expand('fastq_host_removed/R{r}.fastq.gz', r=[1,2])
+        expand('{{sn}}/fastq_host_removed/R{r}.fastq.gz', r=[1,2])
     log:
-        'assembled/assembly.log'
+        '{sn}/assembled/assembly.log'
     params:
-        outdir = 'assembled'
+        outdir = '{sn}/assembled'
     shell:
         'unicycler -1 {input[0]} -2 {input[1]} --threads {threads} --mode conservative --verbosity 2 -o {params.outdir} >{log}'
 
@@ -227,17 +239,17 @@ rule run_unicycler:
 
 
 rule run_breseq:
-    threads: 80
+    threads: 6
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        'breseq/output/index.html'
+        '{sn}/breseq/output/index.html'
     input:
-        expand('fastq_trimmed/R{r}_paired.fastq.gz', r=[1,2])
+        expand('{{sn}}/fastq_trimmed/R{r}_paired.fastq.gz', r=[1,2])
     log:
-        'breseq/breseq.log',
+        '{sn}/breseq/breseq.log',
     params:
         ref = config['breseq_reference'],
-	outdir = 'breseq'
+	outdir = '{sn}/breseq'
     shell:
         'breseq --reference {params.ref} --num-processors {threads} --polymorphism-prediction --brief-html-output --output {params.outdir} {input} >{log} 2>&1'
 
@@ -248,32 +260,37 @@ rule run_breseq:
 rule run_hisat2_build:
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        'hisat2/genome.1.ht2'
+        '{sn}/hisat2/genome.1.ht2'
     input:
-         'assembled/assembly.fasta'
+        '{sn}/assembled/assembly.fasta'
     log:
-         'hisat2/hisat2-build.log'
+        '{sn}/hisat2/hisat2-build.log'
+    params:
+        genome = '{sn}/hisat2/genome'
     shell:
-         'hisat2-build {input} hisat2/genome >{log} 2>&1'
+        'hisat2-build {input} {params.genome} >{log} 2>&1'
 
 
 rule run_hisat2:
     threads: 20
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        'hisat2/output.sam'
+        '{sn}/hisat2/output.sam'
     input:
-        'fastq_trimmed/R1_paired.fastq.gz',
-        'fastq_trimmed/R2_paired.fastq.gz',
-        'hisat2/genome.1.ht2'
+        '{sn}/fastq_trimmed/R1_paired.fastq.gz',
+        '{sn}/fastq_trimmed/R2_paired.fastq.gz',
+        '{sn}/hisat2/genome.1.ht2'
     log:
-        'hisat2/hisat2.log'
+        '{sn}/hisat2/hisat2.log'
+    params:
+        genome = '{sn}/hisat2/genome',
+        summary_file = '{sn}/hisat2/summary.txt'
     shell:
         'hisat2 --threads {threads}'
-        ' -x hisat2/genome'
+        ' -x {params.genome}'
 	' -1 {input[0]} -2 {input[1]}'
-	' --summary-file hisat2/summary.txt'
-	' -S hisat2/output.sam'
+	' --summary-file {params.summary_file}'
+	' -S {output}'
 	' 2>{log}'
 
 
@@ -281,9 +298,9 @@ rule hisat2_sam_to_bam:
     threads: 20
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        'hisat2/output.bam'
+        '{sn}/hisat2/output.bam'
     input:
-        'hisat2/output.sam'
+        '{sn}/hisat2/output.sam'
     shell:
         'samtools view --threads {threads} -b {input} > {output}'
 
@@ -295,13 +312,13 @@ rule run_kraken2:
     threads: 20
     conda: 'conda_envs/trim_qc.yaml'
     output:
-        'kraken2/kraken2.out'
+        '{sn}/kraken2/kraken2.out'
     input:
-        expand('fastq_trimmed/R{r}_paired.fastq.gz', r=[1,2])
+        expand('{{sn}}/fastq_trimmed/R{r}_paired.fastq.gz', r=[1,2])
     log:
-        'kraken2/kraken2.log'
+        '{sn}/kraken2/kraken2.log'
     params:
-        outdir = 'kraken2',
+        outdir = '{sn}/kraken2',
 	db = config['kraken2_db']
     shell:
         'cd {params.outdir} '
@@ -311,9 +328,9 @@ rule run_kraken2:
 	' --quick --unclassified-out unclassified-sequences# --classified-out classified-sequences#'
 	' --output kraken2.out'
 	' --paired --gzip-compressed'
-	' ../{input[0]} ../{input[1]}'
+	' ../../{input[0]} ../../{input[1]}'
 	' --report report'
-        ' 2>../{log}'
+        ' 2>../../{log}'
 
 
 ##################################   Based on scripts/lmat.sh   ####################################
@@ -321,9 +338,9 @@ rule run_kraken2:
 
 rule lmat_pretile:
     output:
-        'lmat/assembly.tiled.fasta'
+        '{sn}/lmat/assembly.tiled.fasta'
     input:
-        'assembled/assembly.fasta'
+        '{sn}/assembled/assembly.fasta'
     params:
         fsize = config['lmat_fragment_size']
     shell:
@@ -333,12 +350,12 @@ rule lmat_pretile:
 rule run_lmat:
     threads: 20
     output:
-        'lmat/assembly.tiled.fasta.{db}.lo.rl_output0.out'
+        '{sn}/lmat/assembly.tiled.fasta.{db}.lo.rl_output0.out'
     input:
-        'lmat/assembly.tiled.fasta'
+        '{sn}/lmat/assembly.tiled.fasta'
     params:
-        outdir = 'lmat',
-        logfile = 'lmat/assembly.tiled.fasta.{db}.lo.rl_output.log',
+        outdir = '{sn}/lmat',
+        logfile = '{sn}/lmat/assembly.tiled.fasta.{db}.lo.rl_output.log',
         lmat_basedir = config['lmat_basedir'],
         lmat_db = '{db}'
     script:
@@ -347,11 +364,13 @@ rule run_lmat:
 
 rule lmat_postprocess:
     output:
-        'lmat/parseLMAT_output.txt'
+        '{sn}/lmat/parseLMAT_output.txt'
     input:
-        expand('lmat/assembly.tiled.fasta.{db}.lo.rl_output0.out', db=[config['lmat_db']])
+        expand('{{sn}}/lmat/assembly.tiled.fasta.{db}.lo.rl_output0.out', db=[config['lmat_db']])
+    params:
+        outdir = '{sn}/lmat'
     shell:
-        'cd lmat && parseLMAT > parseLMAT_output.txt'
+        'cd {params.outdir} && parseLMAT > parseLMAT_output.txt'
 
 
 ##################################  Based on scripts/quast.sh   ####################################
@@ -361,13 +380,13 @@ rule run_quast:
     threads: 20
     conda: 'conda_envs/assembly_qc.yaml'
     output:
-         'quast/report.html'
+         '{sn}/quast/report.html'
     input:
-         'assembled/assembly.fasta'
+         '{sn}/assembled/assembly.fasta'
     log:
-         'quast/quast.log'
+         '{sn}/quast/quast.log'
     params:
-         outdir = 'quast',
+         outdir = '{sn}/quast',
          genome = config['quast_reference_genome'],
          fcoords = config['quast_feature_coords']
     shell:
@@ -380,11 +399,11 @@ rule run_consensus:
     threads: 20
     conda: 'conda_envs/ivar.yaml'
     output:
-        'consensus/virus.consensus'
+        '{sn}/consensus/virus.consensus'
     input:
-        'hisat2/output.bam'
+        '{sn}/hisat2/output.bam'
     log:
-        'consensus/ivar.log'
+        '{sn}/consensus/ivar.log'
     params:
         mpileup_depth = config['mpileup_depth'],
         ivar_min_coverage_depth = config['ivar_min_coverage_depth'],
@@ -400,10 +419,10 @@ rule run_ivar_variants:
     threads: 20
     conda: 'conda_envs/ivar.yaml'
     output:
-        'ivar_variants/ivar_variants'
+        '{sn}/ivar_variants/ivar_variants'
     input:
-        reference = 'hisat2/genome.1.ht2',
-        read_bam = 'hisat2/output.bam'
+        reference = '{sn}/hisat2/genome.1.ht2',
+        read_bam = '{sn}/hisat2/output.bam'
     params:
         ivar_min_coverage_depth = config['ivar_min_coverage_depth'],
         ivar_min_freq_threshold = config['ivar_min_freq_threshold'],

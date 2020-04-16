@@ -19,18 +19,16 @@ breseq_reference: '/home/kmsmith/data/MN908947_3.gbk'
 # Used as --db argument to 'kraken2'
 kraken2_db: '/home/kmsmith/data/Kraken2/db'
 
-
 # Consensus and variant calling ivar/samtools params from https://github.com/connor-lab/ncov2019-artic-nf/blob/master/conf/illumina.config
 mpileup_depth: 100000
 # ivar frequency threshold to build consensus
 ivar_freq_threshold: 0.75
-# Minimum coverage depth to call variant 
+# Minimum coverage depth to call variant
 ivar_min_coverage_depth: 10
 # iVar frequency threshold to call variant (ivar variants: -t )
 ivar_min_freq_threshold: 0.25
 # iVar minimum mapQ to call variant (ivar variants: -q)
 ivar_min_variant_quality: 20
-
 # lmat_fragment_size: size of fragments (in bp) analyzed by 'lmat'
 # Absolute pathname of the LMAT DB is {lmat_basedir}/data/{lmat_db}.
 # LMAT's expected "runtime inputs" (e.g. 'ncbi_taxid_to_rank.txt') should be in {lmat_basedir}/runtime_inputs.
@@ -42,10 +40,21 @@ lmat_db: 'kML+Human.v4-14.20.g10.db'
 quast_reference_genome: '/home/kmsmith/data/MN908947_3.fasta'
 quast_feature_coords: '/home/kmsmith/data/MN908947_3.gff3'
 
-input_fastq_files_R1:
-  - fastq_inputs/MT-swab-Iran-Liverpool-pool1_S3_L001_R1_001.fastq.gz
-  - fastq_inputs/MT-swab-Iran-Liverpool-pool2_S7_L001_R1_001.fastq.gz
+# Dictionary is keyed by sample name (=directory name)
+# Input filenames are relative to sample directory
+samples:
+  'Iran1':
+    input_fastq_files_R1:
+      - fastq_inputs/MT-swab-Iran-Liverpool-pool1_S3_L001_R1_001.fastq.gz
+      - fastq_inputs/MT-swab-Iran-Liverpool-pool2_S7_L001_R1_001.fastq.gz
+    input_fastq_files_R2:
+      - fastq_inputs/MT-swab-Iran-Liverpool-pool1_S3_L001_R2_001.fastq.gz
+      - fastq_inputs/MT-swab-Iran-Liverpool-pool2_S7_L001_R2_001.fastq.gz
 
-input_fastq_files_R2:
-  - fastq_inputs/MT-swab-Iran-Liverpool-pool1_S3_L001_R2_001.fastq.gz
-  - fastq_inputs/MT-swab-Iran-Liverpool-pool2_S7_L001_R2_001.fastq.gz
+  'Iran2':
+    input_fastq_files_R1:
+      - fastq_inputs/MT-swab-Iran-Liverpool-pool1_S3_L001_R1_001.fastq.gz
+      - fastq_inputs/MT-swab-Iran-Liverpool-pool2_S7_L001_R1_001.fastq.gz
+    input_fastq_files_R2:
+      - fastq_inputs/MT-swab-Iran-Liverpool-pool1_S3_L001_R2_001.fastq.gz
+      - fastq_inputs/MT-swab-Iran-Liverpool-pool2_S7_L001_R2_001.fastq.gz
