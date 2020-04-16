@@ -6,7 +6,7 @@
 # It is ingested by the Snakefile, and also intended to be human-readable.
 # For an example config file, see pipeline/example_config.yaml in the covid-19-sequencing repo.
 
-configfile: "example_config.yaml"
+configfile: "config.yaml"
 
 
 ######################################   High-level targets   ######################################
