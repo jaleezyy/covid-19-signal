@@ -98,7 +98,7 @@ rule run_cutadapt:
         primer_rc = config['primer_rc']
     shell:
         'cutadapt -j {threads}'
-	' -a file:{params.primer_fw} -A file:{params.primer_rc}'   # primers
+	' -a file:{params.primer_rc} -A file:{params.primer_fw}'   # primers
 	' -o {output[0]} -p {output[1]}'     # output files
 	' {input}'                           # input files
         ' >{log}'                            # log file

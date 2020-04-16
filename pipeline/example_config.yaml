@@ -4,8 +4,8 @@
 # It is ingested by the Snakefile, and also intended to be human-readable.
 
 # Used as -a,-A arguments to 'cutadapt'
-primer_fw: '/home/kmsmith/data/wuhan_primers_28.01.20_trim_RC.fa'
-primer_rc: '/home/kmsmith/data/wuhan_primers_28.01.20_trim_FW.fa'
+primer_rc: '/home/kmsmith/data/wuhan_primers_28.01.20_trim_RC.fa'
+primer_fw: '/home/kmsmith/data/wuhan_primers_28.01.20_trim_FW.fa'
 
 # Last arguments on 'trimmomatic' command line (after input, output files)
 trimmomatic_args: 'ILLUMINACLIP:/home/kmsmith/data/NexteraPE-PE.fa:2:30:10 SLIDINGWINDOW:4:20'
