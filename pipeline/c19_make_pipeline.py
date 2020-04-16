@@ -12,6 +12,8 @@ Usage (on galaxylab):
     # Run pipeline (cacheing conda envs in $HOME/.snakemake)
     cd Iran1/   # directory created by 'c19_make_pipeline.py'
     snakemake -p --cores=16 --use-conda --conda-prefix=$HOME/.snakemake all
+
+TODO: this script only creates single-sample pipelines, but the Snakemake workflow supports multiple samples.
 """
 
 import os
@@ -30,8 +32,9 @@ class Pipeline:
        self.outdir                    pipeline directory to be created
        self.original_fastq_files_R1   list of "out-of-tree" filenames specified on command line
        self.original_fastq_files_R2   list of "out-of-tree" filenames specified on command line
-       self.input_fastq_files_R1      list of "in-tree" filenames after copying into pipeline dir
-       self.input_fastq_files_R2      list of "in-tree" filenames after copying into pipeline dir
+       self.input_fastq_files_R1      list of "in-tree" filenames, relative to sample subdir (not toplevel dir)
+       self.input_fastq_files_R2      list of "in-tree" filenames, relative to sample subdir (not toplevel dir)
+       self.copies                    for debugging: number of redundant copies of sample to be analyzed in parallel
     """
 
     # TODO currently hardcoding some pipeline parameters, in the next few lines.
@@ -78,14 +81,17 @@ class Pipeline:
     def __init__(self):
         parser = argparse.ArgumentParser()
         parser.add_argument('-o', '--outdir', required=True, help='pipeline directory (will be created, must not already exist)')
+        parser.add_argument('--copies', type=int, default=1, help='for debugging: number of redundant copies of sample to be analyzed in parallel')
         parser.add_argument('input_fastq_files', nargs='+', help='list of .fastq.gz input files')
 
         args = parser.parse_args()
+        assert args.copies >= 1
 
         # Currently 'prefix' is deduced from the output directory name.  (This behavior could
         # be overridden with optional command-line argument, if this seems like a useful feature.)
         
         self.outdir = args.outdir
+        self.ncopies = args.copies
         
         # We fail with an error if the pipeline output directory already exists.
         # This behavior is heavy-handed, but ensures that a pipeline user can never
@@ -185,25 +191,17 @@ class Pipeline:
 
     
     def write(self):
-        self.create_directory_layout()
         self.write_config_yaml()
         self.copy_workflow_files()
         self.copy_input_fastq_files()
-
-
-    def create_directory_layout(self):
-        """Creates pipeline output directory and a few subdirectories."""
-        
-        self._mkdir(self.outdir)
-
-        for subdir in ['fastq_inputs', 'fastq_sorted', 'conda_envs']:
-            self._mkdir(os.path.join(self.outdir, subdir))
 
     
     def write_config_yaml(self):
         """Writes {pipeline_output_dir}/config.yaml."""
         
         filename = os.path.join(self.outdir, 'config.yaml')
+        self._mkdir_for_file(filename)
+        
         print(f"Writing {filename}")
 
         with open(filename,'w') as f:
@@ -258,13 +256,26 @@ class Pipeline:
             print(f"# Used as -r,-g arguments to 'quast'", file=f)
             print(f"quast_reference_genome: {repr(self.quast_reference_genome)}", file=f)
             print(f"quast_feature_coords: {repr(self.quast_feature_coords)}", file=f)
+            print(file=f)
+
+            print(f"# List of samples to be analyzed follows.", file=f)
+            print(f"# Dictionary is keyed by sample name (=directory name).", file=f)
+            print(f"# Input filenames are relative to sample directory (or absolute).", file=f)
+
+            if self.ncopies > 1:
+                print(f"# In this artificial example, we analyze the same sample {self.ncopies} times in parallel.", file=f)
             
-            for r in [1, 2]:
-                print(file=f)
-                print(f"input_fastq_files_R{r}:", file=f)
+            print(file=f)            
+            print(f"samples:", file=f)
+
+            for s in range(1, self.ncopies+1):
+                print(f"  'sample{s}':", file=f)
                 
-                for filename in getattr(self, f"input_fastq_files_R{r}"):
-                    print(f"  - {filename}", file=f)
+                for r in [1, 2]:
+                    print(f"    input_fastq_files_R{r}:", file=f)
+                    
+                    for filename in getattr(self, f"input_fastq_files_R{r}"):
+                        print(f"      - {filename}", file=f)
 
             
     def copy_workflow_files(self):
@@ -283,9 +294,8 @@ class Pipeline:
             # but will fail if the script is installed anywhere.
             src_filename = os.path.join(os.path.dirname(__file__), src_relpath)
             dst_filename = os.path.join(self.outdir, dst_relpath)
-        
-            print(f"Copying {src_filename} -> {dst_filename}")
-            shutil.copyfile(src_filename, dst_filename)
+            
+            self._copyfile(src_filename, dst_filename)
 
     
     def copy_input_fastq_files(self):
@@ -298,10 +308,10 @@ class Pipeline:
         src_list = self.original_fastq_files_R1 + self.original_fastq_files_R2
         dst_list = self.input_fastq_files_R1 + self.input_fastq_files_R2
 
-        for (src,dst) in zip(src_list, dst_list):
-            dst = os.path.join(self.outdir, dst)
-            print(f"Copying {src} -> {dst}")
-            shutil.copyfile(src, dst)
+        for (src, dst) in zip(src_list, dst_list):
+            for i in range(1, self.ncopies+1):
+                dst2 = os.path.join(self.outdir, f"sample{i}", dst)
+                self._copyfile(src, dst2)
 
             
     def _die(self, msg):
@@ -311,12 +321,21 @@ class Pipeline:
         sys.exit(1)
 
     
-    def _mkdir(self, dirname):
-        """Like os.makedirs(), but noisier."""
+    def _mkdir_for_file(self, filename):
+        dirname = os.path.dirname(filename)
         
-        print(f"Creating directory {dirname}")
-        os.makedirs(dirname)
+        if not os.path.isdir(dirname):
+            print(f"Creating directory {dirname}")
+            os.makedirs(dirname)
 
+            
+    def _copyfile(self, src_filename, dst_filename):
+        self._mkdir_for_file(dst_filename)
+        
+        print(f"Copying {src_filename} -> {dst_filename}")
+        shutil.copyfile(src_filename, dst_filename)
+        
+        
 
 if __name__ == '__main__':
     p = Pipeline()
