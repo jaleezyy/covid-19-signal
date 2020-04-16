@@ -282,8 +282,12 @@ class Pipeline:
         """Writes {pipeline_output_dir}/Snakefile, and {pipeline_output_dir}/conda_envs/*.yaml."""
 
         # List of (src_relpath, dst_relpath) pairs
+        # Source filenames are relative to the directory containing the c19_make_pipeline.py script
+        # Destination filenames are relative to the toplevel pipeline directory.
         todo = [ ('Snakefile.master', 'Snakefile'),
-                 ('lmat_wrapper.py', 'lmat_wrapper.py') ]
+                 ('lmat_wrapper.py', 'lmat_wrapper.py'),
+                 ('../scripts/fatile', 'fatile'),
+                 ('../scripts/parseLMAT', 'parseLMAT') ]
 
         for conda_envname in [ 'trim_qc', 'assembly', 'assembly_qc', 'snp_mapping', 'ivar' ]:
             filename = f'conda_envs/{conda_envname}.yaml'
