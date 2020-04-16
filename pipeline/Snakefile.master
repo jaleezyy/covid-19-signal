@@ -86,11 +86,11 @@ rule run_cutadapt:
     log:
         'fastq_primers_removed/cutadapt.log'
     params:
-        primer_R1 = config['primer_R1'],
-        primer_R2 = config['primer_R2']
+        primer_fw = config['primer_fw'],
+        primer_rc = config['primer_rc']
     shell:
         'cutadapt -j {threads}'
-	' -a file:{params.primer_R1} -A file:{params.primer_R2}'   # primers
+	' -a file:{params.primer_fw} -A file:{params.primer_rc}'   # primers
 	' -o {output[0]} -p {output[1]}'     # output files
 	' {input}'                           # input files
         ' >{log}'                            # log file
