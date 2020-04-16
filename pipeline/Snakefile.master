@@ -58,7 +58,7 @@ rule all:
         rules.breseq.input,
         rules.hisat2.input,
         rules.consensus.input,
-        rule.ivar_variants.input,
+        rules.ivar_variants.input,
         rules.kraken2.input,
         rules.lmat.input,
         rules.quast.input
