@@ -38,10 +38,10 @@ rule breseq:
     input: expand('{sn}/breseq/output/index.html', sn=sample_names)
     
 rule hisat2:
-    input: expand('{sn}/hisat2/output.bam', sn=sample_names)
+    input: expand('{sn}/hisat2/output_sorted.bam', sn=sample_names)
 
 rule consensus:
-    input: expand('{sn}/consensus/virus.consensus', sn=sample_names)
+    input: expand('{sn}/consensus/virus.consensus.fa', sn=sample_names)
 
 rule ivar_variants:
     input: expand('{sn}/ivar_variants/ivar_variants', sn=sample_names)
@@ -305,6 +305,16 @@ rule hisat2_sam_to_bam:
         'samtools view --threads {threads} -b {input} > {output}'
 
 
+rule hisat2_sort:
+    output:
+        '{sn}/hisat2/output_sorted.bam'
+    input:
+        '{sn}/hisat2/output.bam'
+    shell:
+        'samtools sort -T tmp {input} -o {output}'
+
+
+
 ################################   Based on scripts/kraken2.sh   ###################################
 
 
@@ -399,20 +409,21 @@ rule run_consensus:
     threads: 20
     conda: 'conda_envs/ivar.yaml'
     output:
-        '{sn}/consensus/virus.consensus'
+        '{sn}/consensus/virus.consensus.fa'
     input:
-        '{sn}/hisat2/output.bam'
+        '{sn}/hisat2/output_sorted.bam'
     log:
         '{sn}/consensus/ivar.log'
     params:
         mpileup_depth = config['mpileup_depth'],
         ivar_min_coverage_depth = config['ivar_min_coverage_depth'],
-        ivar_freq_threshold = config['ivar_freq_threshold']
+        ivar_freq_threshold = config['ivar_freq_threshold'],
+        output_prefix = '{sn}/consensus/virus.consensus'
     shell:
         """
         samtools mpileup -A -d {params.mpileup_depth} -Q0 {input} | \
         ivar consensus -t {params.ivar_freq_threshold} -m {params.ivar_min_coverage_depth} \
-                                    -n N -p {output} 2> >> {log}
+                                    -n N -p {params.output_prefix} 2>{log}
         """
 
 rule run_ivar_variants:
