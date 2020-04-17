@@ -7,7 +7,7 @@ The input .fastq.gz filenames must contain substrings such as '_R1_' or '_R2_' i
 Usage (on galaxylab):
 
     # Create pipeline
-    ./c19_make_pipeline.py -o Iran1 /home/kmsmith/data/MT-swab-Iran-Liverpool*.fastq.gz
+    ./c19_make_pipeline.py -o Iran1 $HOME/data/MT-swab-Iran-Liverpool*.fastq.gz
 
     # Run pipeline (cacheing conda envs in $HOME/.snakemake)
     cd Iran1/   # directory created by 'c19_make_pipeline.py'
@@ -37,23 +37,26 @@ class Pipeline:
        self.copies                    for debugging: number of redundant copies of sample to be analyzed in parallel
     """
 
-    # TODO currently hardcoding some pipeline parameters, in the next few lines.
-
+    # TODO datadir currently hardcoded as '$HOME/data', should introduce command-line flag to override default
+    datadir = os.path.join(os.environ['HOME'], 'data')
+    
+    # TODO lots of hardcoded parameters here, is this what we want?
+    
     # Used as -a,-A arguments to 'cutadapt'
-    primer_rc = '/home/kmsmith/data/wuhan_primers_28.01.20_trim_RC.fa'
-    primer_fw = '/home/kmsmith/data/wuhan_primers_28.01.20_trim_FW.fa'
+    primer_rc = os.path.join(datadir, 'wuhan_primers_28.01.20_trim_RC.fa')
+    primer_fw = os.path.join(datadir, 'wuhan_primers_28.01.20_trim_FW.fa')
 
     # Last arguments on 'trimmomatic' command line (after input, output files)
     trimmomatic_args = 'ILLUMINACLIP:/home/kmsmith/data/NexteraPE-PE.fa:2:30:10 SLIDINGWINDOW:4:20'
 
     # Used as hisat2 reference genome when removing host sequences
-    hostremove_reference = '/home/kmsmith/data/MN908947_3.fasta'
+    hostremove_reference = os.path.join(datadir, 'MN908947_3.fasta')
 
     # Used as --reference argument to 'breseq'
-    breseq_reference = '/home/kmsmith/data/MN908947_3.gbk'
+    breseq_reference = os.path.join(datadir, 'MN908947_3.gbk')
 
     # Used as --db argument to 'kraken2'
-    kraken2_db = '/home/kmsmith/data/Kraken2/db'
+    kraken2_db = os.path.join(datadir, 'Kraken2/db')
 
     # Consensus and variant calling ivar/samtools params from https://github.com/connor-lab/ncov2019-artic-nf/blob/master/conf/illumina.config
     mpileup_depth = 100000
@@ -70,12 +73,12 @@ class Pipeline:
     # Absolute pathname of the LMAT DB is {lmat_basedir}/data/{lmat_db}.
     # LMAT's expected "runtime inputs" (e.g. 'ncbi_taxid_to_rank.txt') should be in {lmat_basedir}/runtime_inputs.
     lmat_fragment_size = 250
-    lmat_basedir = '/home/kmsmith/data/LMAT-1.2.6'
+    lmat_basedir = os.path.join(datadir, 'LMAT-1.2.6')
     lmat_db = 'kML+Human.v4-14.20.g10.db'
 
     # Used as -r,-g arguments to 'quast'
-    quast_reference_genome = '/home/kmsmith/data/MN908947_3.fasta'
-    quast_feature_coords = '/home/kmsmith/data/MN908947_3.gff3'
+    quast_reference_genome = os.path.join(datadir, 'MN908947_3.fasta')
+    quast_feature_coords = os.path.join(datadir, 'MN908947_3.gff3')
     
     
     def __init__(self):
