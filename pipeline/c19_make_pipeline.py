@@ -4,7 +4,10 @@
 c19_make_pipeline.py: creates a snakemake-based pipeline directory, given a set of input .fastq.gz files.
 The input .fastq.gz filenames must contain substrings such as '_R1_' or '_R2_' indicating the read direction.
 
-Usage (on galaxylab):
+Usage:
+
+    # First create the directory $HOME/data, which should contain a copy of (or be a symlink to)
+    # galaxylab:/home/kmsmith/data (warning: 31 GB!)
 
     # Create pipeline
     ./c19_make_pipeline.py -o Iran1 $HOME/data/MT-swab-Iran-Liverpool*.fastq.gz
