@@ -57,7 +57,7 @@ class Pipeline:
     hostremove_reference = os.path.join(datadir, 'MN908947_3.fasta')
 
     # Used as --reference argument to 'breseq'
-    breseq_reference = os.path.join(datadir, 'MN908947_3.gbk')
+    breseq_reference = os.path.join(datadir, 'MN908947_primer_annotated_prot_clinical.gb')
 
     # Used as --db argument to 'kraken2'
     kraken2_db = os.path.join(datadir, 'Kraken2/db')

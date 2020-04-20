@@ -1,5 +1,5 @@
 
-## Pipeline steps and running example
+## Pipeline walkthrough
 
 - For convenience in validating the pipeline, we list all shell commands
     executed by the pipeline below (cut-and-pasted from `snakemake -np`).
@@ -142,9 +142,9 @@
   to run hisat2-build on.)  Can someone point me to this?
   
 
-### 8. Mutation list relative to MN908948.3
+### 8-9. Mutation list relative to MN908948.3, and relative to clinical diagnostic primers
 ```
-        breseq --reference /home/kmsmith/data/MN908947_3.gbk \
+        breseq --reference /home/kmsmith/data/MN908947_primer_annotated_prot_clinical.gb \
 	  --num-processors 6 --polymorphism-prediction --brief-html-output \
 	  --output sample1/breseq \
 	  sample1/fastq_trimmed/R1_paired.fastq.gz \
@@ -152,9 +152,8 @@
 	  >sample1/breseq/breseq.log 2>&1
 ```
 
-### 9. Mutation list relative to clinical diagnostic primers
-
-- **Placeholder:** nothing currently implemented here
+- **Note:** for steps 8-9 we do a single breseq run, with genome `MN908947_primer_annotated_prot_clinical.gb`
+  made by Jalees, which contains both the reference (MN908947.3) and clinical diagnostic primers.
 
 ### 10. Variant detection and consensus assembly
 ```
