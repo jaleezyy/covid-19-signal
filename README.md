@@ -38,3 +38,7 @@ A quick test run of the pipeline can be done as follows:
  
 **Note:** We're using the "sourceforge" version of LMAT, even though predates the current github
  version by at least 4 years.  I plan to reinvestigate this too.
+
+## Workflow diagram:
+
+![Workflow Version 5](../Workflow_Version_5.png)
