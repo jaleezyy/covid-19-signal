@@ -21,132 +21,114 @@ def get_input_fastq_files(sample_name, r):
 # In multi-sample runs, these targets apply to all samples.
 
 
-rule all:
-    input: expand('{sn}/targets/all', sn=sample_names)
-
 rule sort:
-    input: expand('{sn}/targets/sort', sn=sample_names)
+    input: expand('{sn}/fastq_sorted/R{r}_fastqc.html', sn=sample_names, r=[1,2])
     
 rule remove_primers:
-    input: expand('{sn}/targets/remove_primers', sn=sample_names)
+    input: expand('{sn}/fastq_primers_removed/R{r}.fastq.gz', sn=sample_names, r=[1,2])
 
 rule trim:
-    input: expand('{sn}/targets/trim', sn=sample_names)
+    input: expand('{sn}/fastq_trimmed/R{r}_{s}_fastqc.html', sn=sample_names, r=[1,2], s=['paired','unpaired'])
 
 rule hostremove:
-    input: expand('{sn}/targets/hostremove', sn=sample_names)
+    input: expand('{sn}/fastq_host_removed/R{r}.fastq.gz', sn=sample_names, r=[1,2])
     
 rule assemble:
-    input: expand('{sn}/targets/assemble', sn=sample_names)
+    input: expand('{sn}/assembled/assembly.fasta', sn=sample_names)
 
 rule breseq:
-    input: expand('{sn}/targets/breseq', sn=sample_names)
+    input: expand('{sn}/breseq/output/index.html', sn=sample_names)
     
 rule hisat2:
-    input: expand('{sn}/targets/hisat2', sn=sample_names)
+    input: expand('{sn}/hisat2/output_sorted.bam', sn=sample_names)
 
 rule consensus:
-    input: expand('{sn}/targets/consensus', sn=sample_names)
+    input: expand('{sn}/consensus/virus.consensus.fa', sn=sample_names)
 
 rule ivar_variants:
-    input: expand('{sn}/targets/ivar_variants', sn=sample_names)
+    input: expand('{sn}/ivar_variants/ivar_variants', sn=sample_names)
 
 rule kraken2:
-    input: expand('{sn}/targets/kraken2', sn=sample_names)
+    input: expand('{sn}/kraken2/kraken2.out', sn=sample_names)
 
 rule lmat:
-    input: expand('{sn}/targets/lmat', sn=sample_names)
+    input: expand('{sn}/lmat/parseLMAT_output.txt', sn=sample_names)
 
 rule quast:
-    input: expand('{sn}/targets/quast', sn=sample_names)
+    input: expand('{sn}/quast/report.html', sn=sample_names)
+
+rule all:
+    input:
+        rules.sort.input,
+        rules.remove_primers.input,
+        rules.trim.input,
+        rules.hostremove.input,
+        rules.assemble.input,
+        rules.breseq.input,
+        rules.hisat2.input,
+        rules.consensus.input,
+        rules.ivar_variants.input,
+        rules.kraken2.input,
+        rules.lmat.input,
+        rules.quast.input
 
 
 ################################  Single-sample high-level targets  ################################
 
 # In multi-sample runs, it is sometimes useful to have high-level targets which apply to only
-# one sample, for debugging or testing.  These can be invoked with the slightly awkward syntax:
-#
-#   snakemake [flags] sample1/targets/all
-#
-# and similarly with 'all' replaced by 'sort', 'remove_primers', ...
+# sample 1, for debugging or testing.
 
 
-rule sort_touchfile:
-    output: '{sn}/targets/sort'
-    input: expand('{{sn}}/fastq_sorted/R{r}_fastqc.html', r=[1,2])
-    shell: 'touch {output}'
+rule sort_sample1:
+    input: expand('sample1/fastq_sorted/R{r}_fastqc.html', r=[1,2])
     
-rule remove_primers_touchfile:
-    output: '{sn}/targets/remove_primers'
-    input: expand('{{sn}}/fastq_primers_removed/R{r}.fastq.gz', r=[1,2])
-    shell: 'touch {output}'
+rule remove_primers_sample1:
+    input: expand('sample1/fastq_primers_removed/R{r}.fastq.gz', r=[1,2])
 
-rule trim_touchfile:
-    output: '{sn}/targets/trim'
-    input: expand('{{sn}}/fastq_trimmed/R{r}_{s}_fastqc.html', r=[1,2], s=['paired','unpaired'])
-    shell: 'touch {output}'
+rule trim_sample1:
+    input: expand('sample1/fastq_trimmed/R{r}_{s}_fastqc.html', r=[1,2], s=['paired','unpaired'])
 
-rule hostremove_touchfile:
-    output: '{sn}/targets/hostremove'
-    input: expand('{{sn}}/fastq_host_removed/R{r}.fastq.gz', r=[1,2])
-    shell: 'touch {output}'
+rule hostremove_sample1:
+    input: expand('sample1/fastq_host_removed/R{r}.fastq.gz', r=[1,2])
     
-rule assemble_touchfile:
-    output: '{sn}/targets/assemble'
-    input: '{sn}/assembled/assembly.fasta'
-    shell: 'touch {output}'
+rule assemble_sample1:
+    input: 'sample1/assembled/assembly.fasta'
 
-rule breseq_touchfile:
-    output: '{sn}/targets/breseq'
-    input: '{sn}/breseq/output/index.html'
-    shell: 'touch {output}'
+rule breseq_sample1:
+    input: 'sample1/breseq/output/index.html'
     
-rule hisat2_touchfile:
-    output: '{sn}/targets/hisat2'
-    input: '{sn}/hisat2/output_sorted.bam'
-    shell: 'touch {output}'
+rule hisat2_sample1:
+    input: 'sample1/hisat2/output_sorted.bam'
 
-rule consensus_touchfile:
-    output: '{sn}/targets/consensus'
-    input: '{sn}/consensus/virus.consensus.fa'
-    shell: 'touch {output}'
+rule consensus_sample1:
+    input: 'sample1/consensus/virus.consensus.fa'
 
-rule ivar_variants_touchfile:
-    output: '{sn}/targets/ivar_variants'
-    input: '{sn}/ivar_variants/ivar_variants'
-    shell: 'touch {output}'
+rule ivar_variants_sample1:
+    input: 'sample1/ivar_variants/ivar_variants'
 
-rule kraken2_touchfile:
-    output: '{sn}/targets/kraken2'
-    input: '{sn}/kraken2/kraken2.out'
-    shell: 'touch {output}'
+rule kraken2_sample1:
+    input: 'sample1/kraken2/kraken2.out'
 
-rule lmat_touchfile:
-    output: '{sn}/targets/lmat'
-    input: '{sn}/lmat/parseLMAT_output.txt'
-    shell: 'touch {output}'
+rule lmat_sample1:
+    input: 'sample1/lmat/parseLMAT_output.txt'
 
-rule quast_touchfile:
-    output: '{sn}/targets/quast'
-    input: '{sn}/quast/report.html'
-    shell: 'touch {output}'
+rule quast_sample1:
+    input: 'sample1/quast/report.html'
 
-rule all_touchfile:
-    output: '{sn}/targets/all'
+rule all_sample1:
     input:
-        '{sn}/targets/sort',
-        '{sn}/targets/remove_primers',
-        '{sn}/targets/trim',
-        '{sn}/targets/hostremove',
-        '{sn}/targets/assemble',
-        '{sn}/targets/breseq',
-        '{sn}/targets/hisat2',
-        '{sn}/targets/consensus',
-        '{sn}/targets/ivar_variants',
-        '{sn}/targets/kraken2',
-        '{sn}/targets/lmat',
-        '{sn}/targets/quast'
-    shell: 'touch {output}'
+        rules.sort_sample1.input,
+        rules.remove_primers_sample1.input,
+        rules.trim_sample1.input,
+        rules.hostremove_sample1.input,
+        rules.assemble_sample1.input,
+        rules.breseq_sample1.input,
+        rules.hisat2_sample1.input,
+        rules.consensus_sample1.input,
+        rules.ivar_variants_sample1.input,
+        rules.kraken2_sample1.input,
+        rules.lmat_sample1.input,
+        rules.quast_sample1.input
 
 
 #################################   Based on scripts/assemble.sh   #################################
