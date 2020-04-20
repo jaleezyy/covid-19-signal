@@ -10,7 +10,8 @@ primer_fw: '/home/kmsmith/data/wuhan_primers_28.01.20_trim_FW.fa'
 # Last arguments on 'trimmomatic' command line (after input, output files)
 trimmomatic_args: 'ILLUMINACLIP:/home/kmsmith/data/NexteraPE-PE.fa:2:30:10 SLIDINGWINDOW:4:20'
 
-# Used as hisat2 reference genome when removing host sequences
+# Used as hisat2 reference genome when removing host sequences.
+# Also used as 'ivar' reference genome in variant detection + consensus.
 hostremove_reference: '/home/kmsmith/data/MN908947_3.fasta'
 
 # Used as --reference argument to 'breseq'
@@ -29,6 +30,7 @@ ivar_min_coverage_depth: 10
 ivar_min_freq_threshold: 0.25
 # iVar minimum mapQ to call variant (ivar variants: -q)
 ivar_min_variant_quality: 20
+
 # lmat_fragment_size: size of fragments (in bp) analyzed by 'lmat'
 # Absolute pathname of the LMAT DB is {lmat_basedir}/data/{lmat_db}.
 # LMAT's expected "runtime inputs" (e.g. 'ncbi_taxid_to_rank.txt') should be in {lmat_basedir}/runtime_inputs.
@@ -40,18 +42,20 @@ lmat_db: 'kML+Human.v4-14.20.g10.db'
 quast_reference_genome: '/home/kmsmith/data/MN908947_3.fasta'
 quast_feature_coords: '/home/kmsmith/data/MN908947_3.gff3'
 
-# Dictionary is keyed by sample name (=directory name)
-# Input filenames are relative to sample directory
+# List of samples to be analyzed follows.
+# Dictionary is keyed by sample name (=directory name).
+# Input filenames are relative to sample directory (or absolute).
+# In this artificial example, we analyze the same sample 2 times in parallel.
+
 samples:
-  'Iran1':
+  'sample1':
     input_fastq_files_R1:
       - fastq_inputs/MT-swab-Iran-Liverpool-pool1_S3_L001_R1_001.fastq.gz
       - fastq_inputs/MT-swab-Iran-Liverpool-pool2_S7_L001_R1_001.fastq.gz
     input_fastq_files_R2:
       - fastq_inputs/MT-swab-Iran-Liverpool-pool1_S3_L001_R2_001.fastq.gz
       - fastq_inputs/MT-swab-Iran-Liverpool-pool2_S7_L001_R2_001.fastq.gz
-
-  'Iran2':
+  'sample2':
     input_fastq_files_R1:
       - fastq_inputs/MT-swab-Iran-Liverpool-pool1_S3_L001_R1_001.fastq.gz
       - fastq_inputs/MT-swab-Iran-Liverpool-pool2_S7_L001_R1_001.fastq.gz

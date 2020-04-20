@@ -31,22 +31,19 @@ rule trim:
     input: expand('{sn}/fastq_trimmed/R{r}_{s}_fastqc.html', sn=sample_names, r=[1,2], s=['paired','unpaired'])
 
 rule hostremove:
-    input: expand('{sn}/fastq_host_removed/R{r}.fastq.gz', sn=sample_names, r=[1,2])
-    
-rule assemble:
-    input: expand('{sn}/assembled/assembly.fasta', sn=sample_names)
-
-rule breseq:
-    input: expand('{sn}/breseq/output/index.html', sn=sample_names)
-    
-rule hisat2:
-    input: expand('{sn}/hisat2/output_sorted.bam', sn=sample_names)
+    input: expand('{sn}/host_removed/both_ends_mapped_sorted.bam', sn=sample_names)
 
 rule consensus:
     input: expand('{sn}/consensus/virus.consensus.fa', sn=sample_names)
 
 rule ivar_variants:
-    input: expand('{sn}/ivar_variants/ivar_variants', sn=sample_names)
+    input: expand('{sn}/ivar_variants/ivar_variants.tsv', sn=sample_names)
+
+rule breseq:
+    input: expand('{sn}/breseq/output/index.html', sn=sample_names)
+    
+rule hisat2:
+    input: expand('{sn}/hisat2/output.bam', sn=sample_names)
 
 rule kraken2:
     input: expand('{sn}/kraken2/kraken2.out', sn=sample_names)
@@ -63,11 +60,10 @@ rule all:
         rules.remove_primers.input,
         rules.trim.input,
         rules.hostremove.input,
-        rules.assemble.input,
-        rules.breseq.input,
-        rules.hisat2.input,
         rules.consensus.input,
         rules.ivar_variants.input,
+        rules.breseq.input,
+        rules.hisat2.input,
         rules.kraken2.input,
         rules.lmat.input,
         rules.quast.input
@@ -89,22 +85,19 @@ rule trim_sample1:
     input: expand('sample1/fastq_trimmed/R{r}_{s}_fastqc.html', r=[1,2], s=['paired','unpaired'])
 
 rule hostremove_sample1:
-    input: expand('sample1/fastq_host_removed/R{r}.fastq.gz', r=[1,2])
-    
-rule assemble_sample1:
-    input: 'sample1/assembled/assembly.fasta'
-
-rule breseq_sample1:
-    input: 'sample1/breseq/output/index.html'
-    
-rule hisat2_sample1:
-    input: 'sample1/hisat2/output_sorted.bam'
+    input: 'sample1/host_removed/both_ends_mapped_sorted.bam'
 
 rule consensus_sample1:
     input: 'sample1/consensus/virus.consensus.fa'
 
 rule ivar_variants_sample1:
-    input: 'sample1/ivar_variants/ivar_variants'
+    input: 'sample1/ivar_variants/ivar_variants.tsv'
+
+rule breseq_sample1:
+    input: 'sample1/breseq/output/index.html'
+    
+rule hisat2_sample1:
+    input: 'sample1/hisat2/output.bam'
 
 rule kraken2_sample1:
     input: 'sample1/kraken2/kraken2.out'
@@ -121,7 +114,6 @@ rule all_sample1:
         rules.remove_primers_sample1.input,
         rules.trim_sample1.input,
         rules.hostremove_sample1.input,
-        rules.assemble_sample1.input,
         rules.breseq_sample1.input,
         rules.hisat2_sample1.input,
         rules.consensus_sample1.input,
@@ -194,12 +186,12 @@ rule run_trimmomatic:
 rule hostremove_hisat2_build:
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        '{sn}/fastq_host_removed/sars-cov-2.1.ht2'
+        '{sn}/host_removed/sars-cov-2.1.ht2'
     log:
-        '{sn}/fastq_host_removed/hisat2-build.log'
+        '{sn}/host_removed/hisat2-build.log'
     params:
         reference = config['hostremove_reference'],
-	genome = '{sn}/fastq_host_removed/sars-cov-2'
+	genome = '{sn}/host_removed/sars-cov-2'
     shell:
         'hisat2-build {params.reference} {params.genome} >{log} 2>&1'
 
@@ -208,15 +200,15 @@ rule hostremove_hisat2:
     threads: 20
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        '{sn}/fastq_host_removed/mapped_and_unmapped.sam'
+        '{sn}/host_removed/mapped_and_unmapped.sam'
     input:
         '{sn}/fastq_trimmed/R1_paired.fastq.gz',
         '{sn}/fastq_trimmed/R2_paired.fastq.gz',
-        '{sn}/fastq_host_removed/sars-cov-2.1.ht2'
+        '{sn}/host_removed/sars-cov-2.1.ht2'
     log:
-        '{sn}/fastq_host_removed/hisat2.log'
+        '{sn}/host_removed/hisat2.log'
     params:
-        genome = '{sn}/fastq_host_removed/sars-cov-2',
+        genome = '{sn}/host_removed/sars-cov-2',
 	summary_file = '{sn}/fastq_hist_removed/hisat2_summary.txt'
     shell:
         'hisat2 --threads {threads}'
@@ -230,9 +222,9 @@ rule hostremove_hisat2:
 rule hostremove_sam_to_bam:
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        '{sn}/fastq_host_removed/mapped_and_unmapped.bam'
+        '{sn}/host_removed/mapped_and_unmapped.bam'
     input:
-        '{sn}/fastq_host_removed/mapped_and_unmapped.sam'
+        '{sn}/host_removed/mapped_and_unmapped.sam'
     shell:
         'samtools view -bS {input} > {output}'
 
@@ -240,9 +232,9 @@ rule hostremove_sam_to_bam:
 rule hostremove_map_pairs:
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        '{sn}/fastq_host_removed/both_ends_mapped.bam'
+        '{sn}/host_removed/both_ends_mapped.bam'
     input:
-        '{sn}/fastq_host_removed/mapped_and_unmapped.bam'
+        '{sn}/host_removed/mapped_and_unmapped.bam'
     shell:
         'samtools view -b -f 3 -F 4 {input} > {output}'
 
@@ -250,49 +242,56 @@ rule hostremove_map_pairs:
 rule hostremove_sort:
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        '{sn}/fastq_host_removed/both_ends_mapped_sorted.bam'
+        '{sn}/host_removed/both_ends_mapped_sorted.bam'
     input:
-        '{sn}/fastq_host_removed/both_ends_mapped.bam'
+        '{sn}/host_removed/both_ends_mapped.bam'
     shell:
-        'samtools sort -T tmp -n {input} -o {output}'
+        'samtools sort -T tmp {input} -o {output}'
 
 
-rule hostremove_bam_to_fastq:
-    conda: 'conda_envs/snp_mapping.yaml'
-    output:
-        '{sn}/fastq_host_removed/R1.fastq',
-        '{sn}/fastq_host_removed/R2.fastq'
-    input:
-        '{sn}/fastq_host_removed/both_ends_mapped_sorted.bam'
-    shell:
-        'bedtools bamtofastq -i {input} -fq {output[0]} -fq2 {output[1]}'
+###### Based on github.com/connor-lab/ncov2019-artic-nf/blob/master/modules/illumina.nf#L124 ######
 
 
-rule hostremove_gzip:
-    output:
-        '{sn}/fastq_host_removed/R{r}.fastq.gz'
-    input:
-        '{sn}/fastq_host_removed/R{r}.fastq'
-    shell:
-         'gzip {input}'
-
-
-#########################  placeholder: assembling with unicycler for now  #########################
-
-
-rule run_unicycler:
+rule run_consensus:
     threads: 20
-    conda: 'conda_envs/assembly.yaml'
+    conda: 'conda_envs/ivar.yaml'
     output:
-        '{sn}/assembled/assembly.fasta'
+        '{sn}/consensus/virus.consensus.fa'
     input:
-        expand('{{sn}}/fastq_host_removed/R{r}.fastq.gz', r=[1,2])
+        '{sn}/host_removed/both_ends_mapped_sorted.bam'
     log:
-        '{sn}/assembled/assembly.log'
+        '{sn}/consensus/ivar.log'
     params:
-        outdir = '{sn}/assembled'
+        mpileup_depth = config['mpileup_depth'],
+        ivar_min_coverage_depth = config['ivar_min_coverage_depth'],
+        ivar_freq_threshold = config['ivar_freq_threshold'],
+        output_prefix = '{sn}/consensus/virus.consensus'
     shell:
-        'unicycler -1 {input[0]} -2 {input[1]} --threads {threads} --mode conservative --verbosity 2 -o {params.outdir} >{log}'
+        """
+        samtools mpileup -A -d {params.mpileup_depth} -Q0 {input} | \
+        ivar consensus -t {params.ivar_freq_threshold} -m {params.ivar_min_coverage_depth} \
+                                    -n N -p {params.output_prefix} 2>{log}
+        """
+
+
+rule run_ivar_variants:
+    threads: 20
+    conda: 'conda_envs/ivar.yaml'
+    output:
+        '{sn}/ivar_variants/ivar_variants.tsv'
+    input:
+        reference = config['hostremove_reference'],
+        read_bam = '{sn}/host_removed/both_ends_mapped_sorted.bam'
+    params:
+        output_prefix = '{sn}/ivar_variants/ivar_variants',
+        ivar_min_coverage_depth = config['ivar_min_coverage_depth'],
+        ivar_min_freq_threshold = config['ivar_min_freq_threshold'],
+        ivar_min_variant_quality = config['ivar_min_variant_quality']
+    shell:
+        """
+        samtools mpileup -A -d 0 --reference {input.reference} -B -Q 0 {input.read_bam} |\
+        ivar variants -r {input.reference} -m {params.ivar_min_coverage_depth} -p {params.output_prefix} -q {params.ivar_min_variant_quality} -t {params.ivar_min_freq_threshold}
+        """
 
 
 ################################   Based on scripts/breseq.sh   ####################################
@@ -322,7 +321,7 @@ rule run_hisat2_build:
     output:
         '{sn}/hisat2/genome.1.ht2'
     input:
-        '{sn}/assembled/assembly.fasta'
+        '{sn}/consensus/virus.consensus.fa'
     log:
         '{sn}/hisat2/hisat2-build.log'
     params:
@@ -365,16 +364,6 @@ rule hisat2_sam_to_bam:
         'samtools view --threads {threads} -b {input} > {output}'
 
 
-rule hisat2_sort:
-    output:
-        '{sn}/hisat2/output_sorted.bam'
-    input:
-        '{sn}/hisat2/output.bam'
-    shell:
-        'samtools sort -T tmp {input} -o {output}'
-
-
-
 ################################   Based on scripts/kraken2.sh   ###################################
 
 
@@ -410,7 +399,7 @@ rule lmat_pretile:
     output:
         '{sn}/lmat/assembly.tiled.fasta'
     input:
-        '{sn}/assembled/assembly.fasta'
+        '{sn}/consensus/virus.consensus.fa'
     params:
         fsize = config['lmat_fragment_size']
     shell:
@@ -452,7 +441,7 @@ rule run_quast:
     output:
          '{sn}/quast/report.html'
     input:
-         '{sn}/assembled/assembly.fasta'
+         '{sn}/consensus/virus.consensus.fa'
     log:
          '{sn}/quast/quast.log'
     params:
@@ -461,45 +450,3 @@ rule run_quast:
          fcoords = config['quast_feature_coords']
     shell:
          'quast {input} -r {params.genome} -g {params.fcoords} --output-dir {params.outdir} --threads {threads} >{log}'
-
-
-###### Based on github.com/connor-lab/ncov2019-artic-nf/blob/master/modules/illumina.nf#L124 ######
-
-rule run_consensus:
-    threads: 20
-    conda: 'conda_envs/ivar.yaml'
-    output:
-        '{sn}/consensus/virus.consensus.fa'
-    input:
-        '{sn}/hisat2/output_sorted.bam'
-    log:
-        '{sn}/consensus/ivar.log'
-    params:
-        mpileup_depth = config['mpileup_depth'],
-        ivar_min_coverage_depth = config['ivar_min_coverage_depth'],
-        ivar_freq_threshold = config['ivar_freq_threshold'],
-        output_prefix = '{sn}/consensus/virus.consensus'
-    shell:
-        """
-        samtools mpileup -A -d {params.mpileup_depth} -Q0 {input} | \
-        ivar consensus -t {params.ivar_freq_threshold} -m {params.ivar_min_coverage_depth} \
-                                    -n N -p {params.output_prefix} 2>{log}
-        """
-
-rule run_ivar_variants:
-    threads: 20
-    conda: 'conda_envs/ivar.yaml'
-    output:
-        '{sn}/ivar_variants/ivar_variants'
-    input:
-        reference = '{sn}/hisat2/genome.1.ht2',
-        read_bam = '{sn}/hisat2/output.bam'
-    params:
-        ivar_min_coverage_depth = config['ivar_min_coverage_depth'],
-        ivar_min_freq_threshold = config['ivar_min_freq_threshold'],
-        ivar_min_variant_quality = config['ivar_min_variant_quality']
-    shell:
-        """
-        samtools mpileup -A -d 0 --reference {input.reference} -B -Q 0 ${input.read_bam} |\
-        ivar variants -r {input.reference} -m {params.ivar_min_coverage_depth} -p {output} -q {params.ivar_min_variant_quality} -t ${params.ivar_min_freq_threshold}
-        """
