@@ -39,6 +39,10 @@ A quick test run of the pipeline can be done as follows:
 **Note:** We're using the "sourceforge" version of LMAT, even though predates the current github
  version by at least 4 years.  I plan to reinvestigate this too.
 
-## Workflow diagram:
+## Pipeline details:
 
-![Workflow Version 5](../Workflow_Version_5.png)
+For a step-by-step walkthrough of the pipeline, see [pipeline/README.md](pipeline/README.md).
+
+A diagram of the workflow is shown below.
+
+![Workflow Version 5](Workflow_Version_5.png)

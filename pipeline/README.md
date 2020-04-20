@@ -12,7 +12,7 @@
         fastq_inputs/MT-swab-Iran-Liverpool-pool2_S7_L001_R2_001.fastq.gz
 ```
 
-- Numbering of steps follows the following diagram.
+- Numbering of pipeline stages follows the following diagram.
 
 ![Workflow Version 5](../Workflow_Version_5.png)
 
@@ -113,7 +113,9 @@
         samtools sort -T tmp sample1/host_removed/both_ends_mapped.bam \
 	  -o sample1/host_removed/both_ends_mapped_sorted.bam
 ```
+
 - **Note:** using MN908947.3 reference genome here.
+
 - **Note (minor):** should combine hisat2 and "sam to bam" into pipeline
 
 ### 6. Kraken2 analysis of trimmed reads (before removing host DNA), to derive percentage of reads derived from SARS-Cov-2 RNA
@@ -152,7 +154,7 @@
 
 ### 9. Mutation list relative to clinical diagnostic primers
 
- **Placeholder:** nothing currently implemented here
+- **Placeholder:** nothing currently implemented here
 
 ### 10. Variant detection and consensus assembly
 ```
@@ -170,7 +172,9 @@
             -p sample1/consensus/virus.consensus \
             2>sample1/consensus/ivar.log
 ```
+
 - **Note:** using MN908947.3 reference genome here.
+
 - **Question:** In the 'consensus' rule, the command-line help for `ivar consensus` recommends
  passing the `-aa` flag to `samtools mpileup`, but the ncov2019-artic workflow doesn't use this
  flag ([source](https://github.com/connor-lab/ncov2019-artic-nf/blob/master/modules/illumina.nf#L136)).
@@ -190,12 +194,12 @@
         perl ./fatile sample1/consensus/virus.consensus.fa 250 \
 	    > sample1/lmat/assembly.tiled.fasta
 
-        docker run --rm \
+        docker run --rm \         # Docker boilerplate starts here
 	    -v /home/kmsmith/data/LMAT-1.2.6/data:/data \
 	    -v /home/kmsmith/data/LMAT-1.2.6/runtime_inputs:/runtime_inputs \
 	    -v /home/kmsmith/git/covid-19-sequencing/pipeline/Iran2/sample1/lmat:/pipeline \
 	    finlaymaguire/lmat:1.2.6 \
-	bash /bin/run_rl.sh \
+	bash /bin/run_rl.sh \     # "Real" LMAT command line starts here
 	    --db_file=/data/kML+Human.v4-14.20.g10.db \
 	    --query_file=/pipeline/assembly.tiled.fasta \
 	    --odir=/pipeline --overwrite --verbose --threads=12
@@ -203,7 +207,10 @@
        cd sample1/lmat \
        perl ../../parseLMAT > parseLMAT_output.txt
 ```
+
 - **Note:** Using LMAT DB `kML+Human.v4-14.20.g10.db`.
+
+- **Note:** Currently using "dockerized LMAT", plan to switch to "conda-ized LMAT" soon.
 
 ### 13. Average depth of coverage against assembly (hisat2/ngsCAT)
 ```
