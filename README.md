@@ -2,8 +2,6 @@
 
 A quick test run of the pipeline can be done as follows:
 
-  - Get Fin's LMAT 1.2.6 docker container (`docker pull finlaymaguire/lmat:1.2.6`)
-
   - Create the directory `$HOME/data`, which should contain a copy of (or be a symlink to)
     `galaxylab:/home/kmsmith/data` (warning: 31 GB!)
     

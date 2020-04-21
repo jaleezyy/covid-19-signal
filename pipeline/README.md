@@ -193,15 +193,12 @@
         perl ./fatile sample1/consensus/virus.consensus.fa 250 \
 	    > sample1/lmat/assembly.tiled.fasta
 
-        docker run --rm \         # Docker boilerplate starts here
-	    -v /home/kmsmith/data/LMAT-1.2.6/data:/data \
-	    -v /home/kmsmith/data/LMAT-1.2.6/runtime_inputs:/runtime_inputs \
-	    -v /home/kmsmith/git/covid-19-sequencing/pipeline/Iran2/sample1/lmat:/pipeline \
-	    finlaymaguire/lmat:1.2.6 \
-	bash /bin/run_rl.sh \     # "Real" LMAT command line starts here
-	    --db_file=/data/kML+Human.v4-14.20.g10.db \
-	    --query_file=/pipeline/assembly.tiled.fasta \
-	    --odir=/pipeline --overwrite --verbose --threads=12
+        LMAT_DIR=/home/kmsmith/data/LMAT-1.2.6/runtime_inputs \   # LMAT needs this env variable
+	bash $(which run_rl.sh)  \                  # LMAT needs to be manually run through bash
+	    --db_file=/home/kmsmith/data/LMAT-1.2.6/data/kML+Human.v4-14.20.g10.db \
+	    --query_file=sample1/lmat/assembly.tiled.fasta \
+	    --odir=sample1/lmat \
+	    --overwrite --verbose --threads=12
 
        cd sample1/lmat \
        perl ../../parseLMAT > parseLMAT_output.txt
@@ -209,7 +206,7 @@
 
 - **Note:** Using LMAT DB `kML+Human.v4-14.20.g10.db`.
 
-- **Note:** Currently using "dockerized LMAT", plan to switch to "conda-ized LMAT" soon.
+- **Note:** Now running LMAT via Fin's LMAT conda recipe, rather than a docker container.
 
 ### 13. Average depth of coverage against assembly (hisat2/ngsCAT)
 ```

@@ -1,5 +1,8 @@
-# This script is invoked by Snakemake, in the 'run_lmat' rule.
-# It runs LMAT-1.2.6 from Fin's Docker container.
+# This script is no longer used!
+
+# It runs LMAT-1.2.6 from Fin's Docker container, and was previously invoked
+# by Snakemake, in the 'run_lmat' rule.  However, we've now switched to running
+# LMAT via Fin's conda recipe, which is cleaner than using Docker.
 
 # TODO: write comment explaining why this klunky script is necessary,
 # instead of just doing 'docker run...' in the Snakefile!
