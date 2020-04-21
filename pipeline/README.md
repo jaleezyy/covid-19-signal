@@ -37,7 +37,7 @@
 
 ### 2. Cutadapt primers + Trimmomatic
 ```
-        cutadapt -j 12 \
+        cutadapt -j 16 \
           -a file:/home/kmsmith/data/wuhan_primers_28.01.20_trim_RC.fa
 	  -A file:/home/kmsmith/data/wuhan_primers_28.01.20_trim_FW.fa \
 	  -o sample1/fastq_primers_removed/R1.fastq.gz \   # R1 output file
@@ -46,7 +46,7 @@
 	  sample1/fastq_sorted/R2.fastq.gz \               # R2 input file
 	  >sample1/fastq_primers_removed/cutadapt.log
 
- 	trimmomatic PE -threads 12 \
+ 	trimmomatic PE -threads 2 \
 	  sample1/fastq_primers_removed/R1.fastq.gz \
 	  sample1/fastq_primers_removed/R2.fastq.gz \
 	  sample1/fastq_trimmed/R1_paired.fastq.gz \
@@ -92,7 +92,7 @@
 	  sample1/host_removed/sars-cov-2 \                   # output .ht2 prefix
 	  >sample1/host_removed/hisat2-build.log 2>&1
 
-        hisat2 --threads 12 \
+        hisat2 --threads 2 \
 	  -x sample1/host_removed/sars-cov-2 \                # input .ht2 prefix (from hisat-build)
 	  -1 sample1/fastq_trimmed/R1_paired.fastq.gz \       # file with #1 mates (output from trimming, step 2)
 	  -2 sample1/fastq_trimmed/R2_paired.fastq.gz \       # file with #2 mates (output from trimming, step 2)
@@ -123,7 +123,7 @@
         cd sample1/kraken2
 	
 	kraken2 --db /home/kmsmith/data/Kraken2/db \
-	  --threads 12 --quick --unclassified-out unclassified-sequences# --classified-out classified-sequences# \
+	  --threads 1 --quick --unclassified-out unclassified-sequences# --classified-out classified-sequences# \
 	  --output kraken2.out \
 	  --paired --gzip-compressed \
 	  ../../sample1/fastq_trimmed/R1_paired.fastq.gz \
@@ -145,7 +145,7 @@
 ### 8-9. Mutation list relative to MN908948.3, and relative to clinical diagnostic primers
 ```
         breseq --reference /home/kmsmith/data/MN908947_primer_annotated_prot_clinical.gb \
-	  --num-processors 6 --polymorphism-prediction --brief-html-output \
+	  --num-processors 1 --polymorphism-prediction --brief-html-output \
 	  --output sample1/breseq \
 	  sample1/fastq_trimmed/R1_paired.fastq.gz \
 	  sample1/fastq_trimmed/R2_paired.fastq.gz \
@@ -185,7 +185,7 @@
 	    -r /home/kmsmith/data/MN908947_3.fasta \
 	    -g /home/kmsmith/data/MN908947_3.gff3 \
 	    --output-dir sample1/quast \
-	    --threads 12 \
+	    --threads 1 \
 	>sample1/quast/quast.log
 ```
 ### 12. 250bp tiled LMAT
@@ -198,7 +198,7 @@
 	    --db_file=/home/kmsmith/data/LMAT-1.2.6/data/kML+Human.v4-14.20.g10.db \
 	    --query_file=sample1/lmat/assembly.tiled.fasta \
 	    --odir=sample1/lmat \
-	    --overwrite --verbose --threads=12
+	    --overwrite --verbose --threads=1
 
        cd sample1/lmat \
        perl ../../parseLMAT > parseLMAT_output.txt
@@ -214,7 +214,7 @@
            sample1/coverage/genome \                        # output .ht2 prefix
        >sample1/coverage/hisat2-build.log 2>&1
 
-       hisat2 --threads 12 \
+       hisat2 --threads 2 \
            -x sample1/coverage/genome \           # .ht2 prefix (from hisat-build in previous command)
 	   -1 sample1/fastq_trimmed/R1_paired.fastq.gz \  # file with #1 mates (from trimming, step 2)
 	   -2 sample1/fastq_trimmed/R2_paired.fastq.gz \  # file with #2 mates (from trimming, step 2)
