@@ -418,17 +418,23 @@ rule lmat_pretile:
 
 rule run_lmat:
     threads: 20
+    conda: 'conda_envs/lmat.yaml'
     output:
         '{sn}/lmat/assembly.tiled.fasta.{db}.lo.rl_output0.out'
     input:
         '{sn}/lmat/assembly.tiled.fasta'
     params:
         outdir = '{sn}/lmat',
-        logfile = '{sn}/lmat/assembly.tiled.fasta.{db}.lo.rl_output.log',
         lmat_basedir = config['lmat_basedir'],
         lmat_db = '{db}'
-    script:
-        'lmat_wrapper.py'
+    shell:
+        'LMAT_DIR={params.lmat_basedir}/runtime_inputs '
+	'bash $(which run_rl.sh)'
+	' --db_file={params.lmat_basedir}/data/{params.lmat_db}'
+	' --query_file={input}'
+	' --odir={params.outdir}'
+	' --overwrite --verbose'
+	' --threads={threads}'
 
 
 rule lmat_postprocess:
