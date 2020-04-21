@@ -31,7 +31,9 @@ rule trim:
     input: expand('{sn}/fastq_trimmed/R{r}_{s}_fastqc.html', sn=sample_names, r=[1,2], s=['paired','unpaired'])
 
 rule hostremove:
-    input: expand('{sn}/host_removed/both_ends_mapped_sorted.bam', sn=sample_names)
+    input:
+       expand('{sn}/host_removed/both_ends_mapped_lsorted.bam', sn=sample_names),
+       expand('{sn}/host_removed/R{r}.fastq.gz', sn=sample_names, r=[1,2])
 
 rule consensus:
     input: expand('{sn}/consensus/virus.consensus.fa', sn=sample_names)
@@ -85,7 +87,9 @@ rule trim_sample1:
     input: expand('sample1/fastq_trimmed/R{r}_{s}_fastqc.html', r=[1,2], s=['paired','unpaired'])
 
 rule hostremove_sample1:
-    input: 'sample1/host_removed/both_ends_mapped_sorted.bam'
+    input:
+       'sample1/host_removed/both_ends_mapped_lsorted.bam',
+       expand('{sn}/host_removed/R{r}.fastq.gz', sn=sample_names, r=[1,2])
 
 rule consensus_sample1:
     input: 'sample1/consensus/virus.consensus.fa'
@@ -239,14 +243,44 @@ rule hostremove_map_pairs:
         'samtools view -b -f 3 -F 4 {input} > {output}'
 
 
-rule hostremove_sort:
+rule hostremove_lsort:
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        '{sn}/host_removed/both_ends_mapped_sorted.bam'
+        '{sn}/host_removed/both_ends_mapped_lsorted.bam'
     input:
         '{sn}/host_removed/both_ends_mapped.bam'
     shell:
         'samtools sort -T tmp {input} -o {output}'
+
+
+rule hostremove_nsort:
+    conda: 'conda_envs/snp_mapping.yaml'
+    output:
+        '{sn}/host_removed/both_ends_mapped_nsorted.bam'
+    input:
+        '{sn}/host_removed/both_ends_mapped.bam'
+    shell:
+        'samtools sort -T tmp -n {input} -o {output}'
+
+
+rule hostremove_fastq:
+    conda: 'conda_envs/snp_mapping.yaml'
+    output:
+        '{sn}/host_removed/R1.fastq',
+        '{sn}/host_removed/R2.fastq'
+    input:
+        '{sn}/host_removed/both_ends_mapped_nsorted.bam'
+    shell:
+        'bedtools bamtofastq -i {input} -fq {output[0]} -fq2 {output[1]}'
+
+
+rule hostremove_fastq_gzip:
+    output:
+        '{sn}/host_removed/R{r}.fastq.gz'
+    input:
+        '{sn}/host_removed/R{r}.fastq'
+    shell:
+        'gzip {input}'
 
 
 ###### Based on github.com/connor-lab/ncov2019-artic-nf/blob/master/modules/illumina.nf#L124 ######
@@ -257,7 +291,7 @@ rule run_consensus:
     output:
         '{sn}/consensus/virus.consensus.fa'
     input:
-        '{sn}/host_removed/both_ends_mapped_sorted.bam'
+        '{sn}/host_removed/both_ends_mapped_lsorted.bam'
     log:
         '{sn}/consensus/ivar.log'
     params:
@@ -279,7 +313,7 @@ rule run_ivar_variants:
         '{sn}/ivar_variants/ivar_variants.tsv'
     input:
         reference = config['hostremove_reference'],
-        read_bam = '{sn}/host_removed/both_ends_mapped_sorted.bam'
+        read_bam = '{sn}/host_removed/both_ends_mapped_lsorted.bam'
     params:
         output_prefix = '{sn}/ivar_variants/ivar_variants',
         ivar_min_coverage_depth = config['ivar_min_coverage_depth'],
@@ -302,7 +336,7 @@ rule run_breseq:
     output:
         '{sn}/breseq/output/index.html'
     input:
-        expand('{{sn}}/fastq_trimmed/R{r}_paired.fastq.gz', r=[1,2])
+        expand('{{sn}}/host_removed/R{r}.fastq.gz', r=[1,2])
     log:
         '{sn}/breseq/breseq.log',
     params:
@@ -335,8 +369,8 @@ rule coverage_hisat2:
     output:
         '{sn}/coverage/output.sam'
     input:
-        '{sn}/fastq_trimmed/R1_paired.fastq.gz',
-        '{sn}/fastq_trimmed/R2_paired.fastq.gz',
+        '{sn}/host_removed/R1.fastq.gz',
+        '{sn}/host_removed/R2.fastq.gz',
         '{sn}/coverage/genome.1.ht2'
     log:
         '{sn}/coverage/hisat2.log'

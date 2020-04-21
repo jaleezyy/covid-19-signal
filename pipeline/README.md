@@ -108,10 +108,22 @@
         samtools view -b -f 3 -F 4 sample1/host_removed/mapped_and_unmapped.bam \
 	  > sample1/host_removed/both_ends_mapped.bam
 
-        # Sort mapped reads by position in reference genome
+        # Sort mapped reads by location in reference genome
 	# (Needed for 'samtools mpileup' in step 10.)
         samtools sort -T tmp sample1/host_removed/both_ends_mapped.bam \
-	  -o sample1/host_removed/both_ends_mapped_sorted.bam
+	  -o sample1/host_removed/both_ends_mapped_lsorted.bam
+
+        # Sort mapped reads by name (needed for fastq conversion in next few lines)
+	samtools sort -T tmp -n sample1/host_removed/both_ends_mapped.bam \
+	  -o sample1/host_removed/both_ends_mapped_nsorted.bam
+
+        # Convert to fastq
+        bedtools bamtofastq -i sample1/host_removed/both_ends_mapped_nsorted.bam \
+	  -fq sample1/host_removed/R1.fastq \
+	  -fq2 sample1/host_removed/R2.fastq
+
+        gzip sample1/host_removed/R1.fastq
+        gzip sample1/host_removed/R2.fastq
 ```
 
 - **Note:** using MN908947.3 reference genome here.
@@ -147,8 +159,8 @@
         breseq --reference /home/kmsmith/data/MN908947_primer_annotated_prot_clinical.gb \
 	  --num-processors 1 --polymorphism-prediction --brief-html-output \
 	  --output sample1/breseq \
-	  sample1/fastq_trimmed/R1_paired.fastq.gz \
-	  sample1/fastq_trimmed/R2_paired.fastq.gz \
+	  sample1/host_removed/R1.fastq.gz \
+	  sample1/host_removed/R2.fastq.gz \
 	  >sample1/breseq/breseq.log 2>&1
 ```
 
@@ -160,13 +172,13 @@
         samtools mpileup -A -d 0 \
             --reference /home/kmsmith/data/MN908947_3.fasta \
             -B -Q 0 \
-            sample1/host_removed/both_ends_mapped_sorted.bam \
+            sample1/host_removed/both_ends_mapped_lsorted.bam \
         | ivar variants \
             -r /home/kmsmith/data/MN908947_3.fasta \
             -m 10 -p sample1/ivar_variants/ivar_variants -q 20 -t 0.25
 
         samtools mpileup -A -d 100000 -Q0 \
-            sample1/host_removed/both_ends_mapped_sorted.bam \
+            sample1/host_removed/both_ends_mapped_lsorted.bam \
         | ivar consensus -t 0.75 -m 10 -n N \
             -p sample1/consensus/virus.consensus \
             2>sample1/consensus/ivar.log
@@ -216,10 +228,10 @@
 
        hisat2 --threads 2 \
            -x sample1/coverage/genome \           # .ht2 prefix (from hisat-build in previous command)
-	   -1 sample1/fastq_trimmed/R1_paired.fastq.gz \  # file with #1 mates (from trimming, step 2)
-	   -2 sample1/fastq_trimmed/R2_paired.fastq.gz \  # file with #2 mates (from trimming, step 2)
+	   -1 sample1/host_removed/R1.fastq.gz \  # file with #1 mates (from host removal, step 5)
+	   -2 sample1/host_removed/R2.fastq.gz \  # file with #2 mates (from host removal, step 5)
 	   --summary-file sample1/coverage/hisat2_summary.txt \
-	   -S sample1/coverage/output.sam \               # SAM output file
+	   -S sample1/coverage/output.sam \       # SAM output file
 	   2>sample1/coverage/hisat2.log
 
        # Convert SAM to BAM, with sort
@@ -232,9 +244,6 @@
           sample1/coverage/output.bam \
        >sample1/coverage/depth.txt
 ```
-- **Note:** I'm currently using the reads after trimming (step 2), not the reads after host DNA removal (step 5).
-    This isn't intentional, and it would probably make more sense to use the latter!
-    
 - **Note:** Add postprocessing of depth file (eg compute min/max/median)?
 
 - **Note:** On test data, I find that the first ~200 base pairs have zero coverage. Is that normal?
