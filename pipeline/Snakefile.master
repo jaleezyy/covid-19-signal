@@ -42,8 +42,8 @@ rule ivar_variants:
 rule breseq:
     input: expand('{sn}/breseq/output/index.html', sn=sample_names)
     
-rule hisat2:
-    input: expand('{sn}/hisat2/output.bam', sn=sample_names)
+rule coverage:
+    input: expand('{sn}/coverage/depth.txt', sn=sample_names)
 
 rule kraken2:
     input: expand('{sn}/kraken2/kraken2.out', sn=sample_names)
@@ -63,7 +63,7 @@ rule all:
         rules.consensus.input,
         rules.ivar_variants.input,
         rules.breseq.input,
-        rules.hisat2.input,
+        rules.coverage.input,
         rules.kraken2.input,
         rules.lmat.input,
         rules.quast.input
@@ -96,8 +96,8 @@ rule ivar_variants_sample1:
 rule breseq_sample1:
     input: 'sample1/breseq/output/index.html'
     
-rule hisat2_sample1:
-    input: 'sample1/hisat2/output.bam'
+rule coverage_sample1:
+    input: 'sample1/coverage/depth.txt'
 
 rule kraken2_sample1:
     input: 'sample1/kraken2/kraken2.out'
@@ -115,7 +115,7 @@ rule all_sample1:
         rules.trim_sample1.input,
         rules.hostremove_sample1.input,
         rules.breseq_sample1.input,
-        rules.hisat2_sample1.input,
+        rules.coverage_sample1.input,
         rules.consensus_sample1.input,
         rules.ivar_variants_sample1.input,
         rules.kraken2_sample1.input,
@@ -313,37 +313,37 @@ rule run_breseq:
         'breseq --reference {params.ref} --num-processors {threads} --polymorphism-prediction --brief-html-output --output {params.outdir} {input} >{log} 2>&1'
 
 
-################################   Based on scripts/hisat2.sh   ####################################
+##################  Based on scripts/hisat2.sh and scripts/coverage_stats_avg.sh  ##################
 
 
-rule run_hisat2_build:
+rule coverage_hisat2_build:
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        '{sn}/hisat2/genome.1.ht2'
+        '{sn}/coverage/genome.1.ht2'
     input:
         '{sn}/consensus/virus.consensus.fa'
     log:
-        '{sn}/hisat2/hisat2-build.log'
+        '{sn}/coverage/hisat2-build.log'
     params:
-        genome = '{sn}/hisat2/genome'
+        genome = '{sn}/coverage/genome'
     shell:
         'hisat2-build {input} {params.genome} >{log} 2>&1'
 
 
-rule run_hisat2:
+rule coverage_hisat2:
     threads: 20
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        '{sn}/hisat2/output.sam'
+        '{sn}/coverage/output.sam'
     input:
         '{sn}/fastq_trimmed/R1_paired.fastq.gz',
         '{sn}/fastq_trimmed/R2_paired.fastq.gz',
-        '{sn}/hisat2/genome.1.ht2'
+        '{sn}/coverage/genome.1.ht2'
     log:
-        '{sn}/hisat2/hisat2.log'
+        '{sn}/coverage/hisat2.log'
     params:
-        genome = '{sn}/hisat2/genome',
-        summary_file = '{sn}/hisat2/summary.txt'
+        genome = '{sn}/coverage/genome',
+        summary_file = '{sn}/coverage/hisat2_summary.txt'
     shell:
         'hisat2 --threads {threads}'
         ' -x {params.genome}'
@@ -353,15 +353,25 @@ rule run_hisat2:
 	' 2>{log}'
 
 
-rule hisat2_sam_to_bam:
+rule coverage_sam_to_bam:
     threads: 20
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        '{sn}/hisat2/output.bam'
+        '{sn}/coverage/output.bam'
     input:
-        '{sn}/hisat2/output.sam'
+        '{sn}/coverage/output.sam'
     shell:
-        'samtools view --threads {threads} -b {input} > {output}'
+        'samtools view --threads {threads} -b {input} | samtools sort > {output}'
+
+
+rule coverage_depth:
+    conda: 'conda_envs/snp_mapping.yaml'
+    output:
+        '{sn}/coverage/depth.txt'
+    input:
+        '{sn}/coverage/output.bam'
+    shell:
+        'bedtools genomecov -d -ibam {input} >{output}'
 
 
 ################################   Based on scripts/kraken2.sh   ###################################

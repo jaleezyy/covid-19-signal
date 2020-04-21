@@ -213,25 +213,35 @@
 
 ### 13. Average depth of coverage against assembly (hisat2/ngsCAT)
 ```
-       hisat2-build sample1/consensus/virus.consensus.fa \   # input reference genome (use output from step 10)
-          sample1/hisat2/genome \                            # output .ht2 prefix
- 	  >sample1/hisat2/hisat2-build.log 2>&1
+       hisat2-build sample1/consensus/virus.consensus.fa \  # input reference genome (from 'ivar consensus', step 10)
+           sample1/coverage/genome \                        # output .ht2 prefix
+       >sample1/coverage/hisat2-build.log 2>&1
 
        hisat2 --threads 12 \
-          -x sample1/hisat2/genome \                         # input .ht2 prefix (from hisat-build)
-	  -1 sample1/fastq_trimmed/R1_paired.fastq.gz \      # file with #1 mates (output from trimming, step 2)
-	  -2 sample1/fastq_trimmed/R2_paired.fastq.gz \      # file with #2 mates (output from trimming, step 2)
-	  --summary-file sample1/hisat2/summary.txt \
-	  -S sample1/hisat2/output.sam \                     # SAM output file
-	  2>sample1/hisat2/hisat2.log
+           -x sample1/coverage/genome \           # .ht2 prefix (from hisat-build in previous command)
+	   -1 sample1/fastq_trimmed/R1_paired.fastq.gz \  # file with #1 mates (from trimming, step 2)
+	   -2 sample1/fastq_trimmed/R2_paired.fastq.gz \  # file with #2 mates (from trimming, step 2)
+	   --summary-file sample1/coverage/hisat2_summary.txt \
+	   -S sample1/coverage/output.sam \               # SAM output file
+	   2>sample1/coverage/hisat2.log
 
-       samtools view --threads 12 -b sample1/hisat2/output.sam \
-          > sample1/hisat2/output.bam
+       # Convert SAM to BAM, with sort
+       samtools view --threads 12 -b \
+          sample1/coverage/output.sam \
+       | samtools sort \
+       > sample1/coverage/output.bam
+
+       bedtools genomecov -d -ibam \
+          sample1/coverage/output.bam \
+       >sample1/coverage/depth.txt
 ```
 - **Note:** I'm currently using the reads after trimming (step 2), not the reads after host DNA removal (step 5).
     This isn't intentional, and it would probably make more sense to use the latter!
     
-- **Note:** Not using ngsCAT in this step yet.
+- **Note:** Add postprocessing of depth file (eg compute min/max/median)?
+
+- **Note:** On test data, I find that the first ~200 base pairs have zero coverage. Is that normal?
+    Should we trim initial zeros?
 
 ### 14. QC control, submit to GSIAID / Nextstrain
 
