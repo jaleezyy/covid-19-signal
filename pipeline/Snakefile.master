@@ -144,7 +144,7 @@ rule run_fastqc:
 
 
 rule run_cutadapt:
-    threads: 25
+    threads: 16
     conda: 'conda_envs/trim_qc.yaml'
     output:
         expand('{{sn}}/fastq_primers_removed/R{r}.fastq.gz', r=[1,2])
@@ -166,7 +166,7 @@ rule run_cutadapt:
 # of their outputs is consistent with the ordering of trimmomatic's command-line arguments.
 
 rule run_trimmomatic:
-    threads: 20
+    threads: 2
     conda: 'conda_envs/trim_qc.yaml'
     output:
         expand('{{sn}}/fastq_trimmed/R{r}_{s}.fastq.gz', r=[1,2], s=['paired','unpaired'])
@@ -197,7 +197,7 @@ rule hostremove_hisat2_build:
 
 
 rule hostremove_hisat2:
-    threads: 20
+    threads: 2
     conda: 'conda_envs/snp_mapping.yaml'
     output:
         '{sn}/host_removed/mapped_and_unmapped.sam'
@@ -253,7 +253,6 @@ rule hostremove_sort:
 
 
 rule run_consensus:
-    threads: 20
     conda: 'conda_envs/ivar.yaml'
     output:
         '{sn}/consensus/virus.consensus.fa'
@@ -275,7 +274,6 @@ rule run_consensus:
 
 
 rule run_ivar_variants:
-    threads: 20
     conda: 'conda_envs/ivar.yaml'
     output:
         '{sn}/ivar_variants/ivar_variants.tsv'
@@ -298,7 +296,8 @@ rule run_ivar_variants:
 
 
 rule run_breseq:
-    threads: 6
+    threads: 1
+    priority: 1
     conda: 'conda_envs/snp_mapping.yaml'
     output:
         '{sn}/breseq/output/index.html'
@@ -331,7 +330,7 @@ rule coverage_hisat2_build:
 
 
 rule coverage_hisat2:
-    threads: 20
+    threads: 2
     conda: 'conda_envs/snp_mapping.yaml'
     output:
         '{sn}/coverage/output.sam'
@@ -354,14 +353,13 @@ rule coverage_hisat2:
 
 
 rule coverage_sam_to_bam:
-    threads: 20
     conda: 'conda_envs/snp_mapping.yaml'
     output:
         '{sn}/coverage/output.bam'
     input:
         '{sn}/coverage/output.sam'
     shell:
-        'samtools view --threads {threads} -b {input} | samtools sort > {output}'
+        'samtools view -b {input} | samtools sort > {output}'
 
 
 rule coverage_depth:
@@ -378,7 +376,7 @@ rule coverage_depth:
 
 
 rule run_kraken2:
-    threads: 20
+    threads: 1
     conda: 'conda_envs/trim_qc.yaml'
     output:
         '{sn}/kraken2/kraken2.out'
@@ -417,7 +415,7 @@ rule lmat_pretile:
 
 
 rule run_lmat:
-    threads: 20
+    threads: 1
     conda: 'conda_envs/lmat.yaml'
     output:
         '{sn}/lmat/assembly.tiled.fasta.{db}.lo.rl_output0.out'
@@ -452,7 +450,7 @@ rule lmat_postprocess:
 
 
 rule run_quast:
-    threads: 20
+    threads: 1
     conda: 'conda_envs/assembly_qc.yaml'
     output:
          '{sn}/quast/report.html'
