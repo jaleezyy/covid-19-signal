@@ -250,7 +250,7 @@ rule hostremove_lsort:
     input:
         '{sn}/host_removed/both_ends_mapped.bam'
     shell:
-        'samtools sort -T tmp {input} -o {output}'
+        'samtools sort {input} -o {output}'
 
 
 rule hostremove_nsort:
@@ -260,7 +260,7 @@ rule hostremove_nsort:
     input:
         '{sn}/host_removed/both_ends_mapped.bam'
     shell:
-        'samtools sort -T tmp -n {input} -o {output}'
+        'samtools sort -n {input} -o {output}'
 
 
 rule hostremove_fastq:
