@@ -220,7 +220,7 @@
 
 - **Note:** Now running LMAT via Fin's LMAT conda recipe, rather than a docker container.
 
-### 13. Average depth of coverage against assembly (hisat2/ngsCAT)
+### 13. Average depth of coverage against assembly (hisat2/bedtools)
 ```
        hisat2-build sample1/consensus/virus.consensus.fa \  # input reference genome (from 'ivar consensus', step 10)
            sample1/coverage/genome \                        # output .ht2 prefix
