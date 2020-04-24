@@ -244,7 +244,7 @@
           sample1/coverage/output.bam \
        >sample1/coverage/depth.txt
 ```
-- **Note:** Add postprocessing of depth file (eg compute min/max/median)?
+- **Note:** Add postprocessing of depth file (eg compute min/max/median)? Replaced ngsCAT with bedtools to generate per-base coverage. 
 
 - **Note:** On test data, I find that the first ~200 base pairs have zero coverage. Is that normal?
     Should we trim initial zeros?
