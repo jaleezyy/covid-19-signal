@@ -455,7 +455,7 @@ rule lmat_pretile:
     params:
         fsize = config['lmat_fragment_size']
     shell:
-        'perl ./fatile {input} {params.fsize} > {output}'
+        'perl scripts/fatile {input} {params.fsize} > {output}'
 
 
 rule run_lmat:
@@ -487,7 +487,7 @@ rule lmat_postprocess:
     params:
         outdir = '{sn}/lmat'
     shell:
-        'cd {params.outdir} && perl ../../parseLMAT > parseLMAT_output.txt'
+        'cd {params.outdir} && perl ../../scripts/parseLMAT > parseLMAT_output.txt'
 
 
 ##################################  Based on scripts/quast.sh   ####################################
