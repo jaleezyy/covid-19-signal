@@ -1,0 +1,17 @@
+rule assembly_qc:
+    conda: conda_envs/assembly_qc.yaml
+
+rule assembly:
+    conda: conda_envs/assembly.yaml
+
+rule ivar:
+    conda: conda_envs/ivar.yaml
+
+rule lmat:
+    conda: conda_envs/lmat.yaml
+
+rule snp_mapping:
+    conda: conda_envs/snp_mapping.yaml
+
+rule trim_qc:
+    conda: conda_envs/trim_qc.yaml
