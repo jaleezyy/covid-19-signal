@@ -131,6 +131,7 @@ rule all_sample1:
 
 
 rule concat_and_sort:
+    priority: 4
     output:
         '{sn}/fastq_sorted/R{r}.fastq.gz'
     input:
@@ -149,6 +150,7 @@ rule run_fastqc:
 
 rule run_cutadapt:
     threads: 16
+    priority: 3
     conda: 'conda_envs/trim_qc.yaml'
     output:
         expand('{{sn}}/fastq_primers_removed/R{r}.fastq.gz', r=[1,2])
@@ -171,6 +173,7 @@ rule run_cutadapt:
 
 rule run_trimmomatic:
     threads: 2
+    priority: 2
     conda: 'conda_envs/trim_qc.yaml'
     output:
         expand('{{sn}}/fastq_trimmed/R{r}_{s}.fastq.gz', r=[1,2], s=['paired','unpaired'])
@@ -188,6 +191,7 @@ rule run_trimmomatic:
 
 
 rule hostremove_hisat2_build:
+    priority: 2
     conda: 'conda_envs/snp_mapping.yaml'
     output:
         '{sn}/host_removed/sars-cov-2.1.ht2'
@@ -202,6 +206,7 @@ rule hostremove_hisat2_build:
 
 rule hostremove_hisat2:
     threads: 2
+    priority: 2
     conda: 'conda_envs/snp_mapping.yaml'
     output:
         '{sn}/host_removed/mapped_and_unmapped.sam'
@@ -224,6 +229,7 @@ rule hostremove_hisat2:
 
 
 rule hostremove_sam_to_bam:
+    priority: 2
     conda: 'conda_envs/snp_mapping.yaml'
     output:
         '{sn}/host_removed/mapped_and_unmapped.bam'
@@ -234,6 +240,7 @@ rule hostremove_sam_to_bam:
 
 
 rule hostremove_map_pairs:
+    priority: 2
     conda: 'conda_envs/snp_mapping.yaml'
     output:
         '{sn}/host_removed/both_ends_mapped.bam'
@@ -254,6 +261,7 @@ rule hostremove_lsort:
 
 
 rule hostremove_nsort:
+    priority: 2
     conda: 'conda_envs/snp_mapping.yaml'
     output:
         '{sn}/host_removed/both_ends_mapped_nsorted.bam'
@@ -264,6 +272,7 @@ rule hostremove_nsort:
 
 
 rule hostremove_fastq:
+    priority: 2
     conda: 'conda_envs/snp_mapping.yaml'
     output:
         '{sn}/host_removed/R1.fastq',
@@ -275,6 +284,7 @@ rule hostremove_fastq:
 
 
 rule hostremove_fastq_gzip:
+    priority: 2
     output:
         '{sn}/host_removed/R{r}.fastq.gz'
     input:
