@@ -7,7 +7,7 @@ The input .fastq.gz filenames must contain substrings such as '_R1_' or '_R2_' i
 Usage:
 
     # First create the directory $HOME/data, which should contain a copy of (or be a symlink to)
-    # galaxylab:/home/kmsmith/data (warning: 31 GB!)
+    # galaxylab:/home/kmsmith/data (warning: 61 GB!)
 
     # Create pipeline
     ./c19_make_pipeline.py -o Iran1 $HOME/data/MT-swab-Iran-Liverpool*.fastq.gz
