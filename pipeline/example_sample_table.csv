@@ -1,0 +1,5 @@
+sample,r1_path,r2_path
+sample1,data/MT-swab-Iran-Liverpool-pool1_S3_L001_R1_001.fastq.gz,data/MT-swab-Iran-Liverpool-pool1_S3_L001_R2_001.fastq.gz
+sample1,data/MT-swab-Iran-Liverpool-pool1_S3_L001_R1_001.fastq.gz,data/MT-swab-Iran-Liverpool-pool1_S3_L001_R2_001.fastq.gz
+sample2,data/MT-swab-Iran-Liverpool-pool1_S3_L001_R1_001.fastq.gz,data/MT-swab-Iran-Liverpool-pool1_S3_L001_R2_001.fastq.gz
+sample2,data/MT-swab-Iran-Liverpool-pool1_S3_L001_R1_001.fastq.gz,data/MT-swab-Iran-Liverpool-pool1_S3_L001_R2_001.fastq.gz

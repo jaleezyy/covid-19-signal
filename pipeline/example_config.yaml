@@ -40,24 +40,4 @@ lmat_fragment_size: 250
 lmat_basedir: '/home/kmsmith/data/LMAT-1.2.6'
 lmat_db: 'kML+Human.v4-14.20.g10.db'
 
-
-# List of samples to be analyzed follows.
-# Dictionary is keyed by sample name (=directory name).
-# Input filenames are relative to sample directory (or absolute).
-# In this artificial example, we analyze the same sample 2 times in parallel.
-
-samples:
-  'sample1':
-    input_fastq_files_R1:
-      - fastq_inputs/MT-swab-Iran-Liverpool-pool1_S3_L001_R1_001.fastq.gz
-      - fastq_inputs/MT-swab-Iran-Liverpool-pool2_S7_L001_R1_001.fastq.gz
-    input_fastq_files_R2:
-      - fastq_inputs/MT-swab-Iran-Liverpool-pool1_S3_L001_R2_001.fastq.gz
-      - fastq_inputs/MT-swab-Iran-Liverpool-pool2_S7_L001_R2_001.fastq.gz
-  'sample2':
-    input_fastq_files_R1:
-      - fastq_inputs/MT-swab-Iran-Liverpool-pool1_S3_L001_R1_001.fastq.gz
-      - fastq_inputs/MT-swab-Iran-Liverpool-pool2_S7_L001_R1_001.fastq.gz
-    input_fastq_files_R2:
-      - fastq_inputs/MT-swab-Iran-Liverpool-pool1_S3_L001_R2_001.fastq.gz
-      - fastq_inputs/MT-swab-Iran-Liverpool-pool2_S7_L001_R2_001.fastq.gz
+samples: "sample_table.csv"
