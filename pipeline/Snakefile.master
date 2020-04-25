@@ -1,3 +1,5 @@
+from snakemake.utils import validate
+
 # Note: this workflow uses specialized conda envs, run with 'snakemake --use-conda'.
 
 # TODO: needs final debug iteration, after the dust settles
@@ -7,6 +9,7 @@
 # For an example config file, see pipeline/example_config.yaml in the covid-19-sequencing repo.
 
 configfile: "config.yaml"
+validate(config, 'config.schema.yaml')
 
 sample_names = sorted(config['samples'].keys())
 
