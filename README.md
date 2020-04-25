@@ -15,11 +15,11 @@ Future enhancements are intended to aid/automate metadata management in accordan
 
 1. Install `conda` and `snakemake` (version >5) e.g.
 
-```wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash Miniconda3-latest-Linux-x86_64.sh # follow instructions
-source $(conda info --base)/etc/profile.d/conda.sh
-conda create -n snakemake snakemake=5.11.2
-conda activate snakemake```
+        wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+        bash Miniconda3-latest-Linux-x86_64.sh # follow instructions
+        source $(conda info --base)/etc/profile.d/conda.sh
+        conda create -n snakemake snakemake=5.11.2
+        conda activate snakemake
 
 Additional software dependencies are managed directly by `snakemake` using conda environment files:
 
@@ -49,7 +49,7 @@ The pipeline requires:
 
 All dependencies except the amplicon primers (\*) can be automatically fetched using the follow accessory script:
 
-`bash scripts/get_data_dependencies.sh -d data -a MN908947.3`
+        bash scripts/get_data_dependencies.sh -d data -a MN908947.3
 
 3. Configure your `config.yaml` file
 
@@ -62,27 +62,27 @@ See the example table `example_sample_table.csv` for an idea of how to organise 
 
 5. Execute pipeline (optionally explicitly specify `--cores`):
 
-`snakemake --use-conda -s Snakefile.master --cores $(nproc) all`
+        snakemake --use-conda -s Snakefile.master --cores $(nproc) all
 
 ### Docker (pending)
 
 Alternatively, the pipeline can be deployed using Docker (see `resources/Dockerfile_pipeline` for specification).
 To pull from dockerhub:
 
-`docker pull finlaymaguire/pipeline`
+        docker pull finlaymaguire/pipeline
 
 Download data dependencies:
 
-`mkdir -p data && docker run -v $PWD/data:/data finlaymaguire/sars-cov2-pipeline:1.0.0 bash scripts/get_data_dependencies.sh -d /data`
+        mkdir -p data && docker run -v $PWD/data:/data finlaymaguire/sars-cov2-pipeline:1.0.0 bash scripts/get_data_dependencies.sh -d /data
 
 Add remaining files (e.g. primers) to your config and sample table in the data directory:
 
-`cp config.yaml sample_table.csv $PWD/data && \ 
-    docker run -v $PWD/data:/data finlaymaguire/sars-cov2-pipeline:1.0.0 mv data/config.yaml data/sample_table.csv .`
+        cp config.yaml sample_table.csv $PWD/data && \ 
+            docker run -v $PWD/data:/data finlaymaguire/sars-cov2-pipeline:1.0.0 mv data/config.yaml data/sample_table.csv .
 
 Then execute the pipeline:
 
-`docker run -v $PWD/data:/data finlaymaguire/sars-cov2-pipeline:1.0.0 conda run -n snakemake snakemake --use-conda --conda-prefix $HOME/.snakemake --cores 8 -s Snakefile.master all`
+        docker run -v $PWD/data:/data finlaymaguire/sars-cov2-pipeline:1.0.0 conda run -n snakemake snakemake --use-conda --conda-prefix $HOME/.snakemake --cores 8 -s Snakefile.master all
 
 ## Pipeline details:
 
