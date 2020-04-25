@@ -1,21 +1,27 @@
-## Quick start:
+# Overview
 
-A quick test run of the pipeline can be done as follows:
+This snakemake pipeline is compatible with the [illumina artic nf pipeline](https://github.com/connor-lab/ncov2019-artic-nf).
+It performs the same consensus and variant calling procedure using `ivar`.
+In addition it adds screening with Kraken2/LMAT, enhanced contamination removal, and additional breseq mutation detection.
+See below for full details.
 
-  - Create the directory `$HOME/data`, which should contain a copy of (or be a symlink to)
-    `galaxylab:/home/kmsmith/data` (warning: 31 GB!)
+Future enhancements are intended to aid/automate metadata management in accordance with PHA4GE guidelines, and manage upload to GISAID and INDSC compatible BioSamples.
+
+## Setup/Execution
+
+0. Clone the git repository
     
-  - From the `pipeline` subdirectory of this git repository, do:
-    ```
-    # Create pipeline
-    ./c19_make_pipeline.py -o Iran1 $HOME/data/MT-swab-Iran-Liverpool*.fastq.gz
+    git clone https://github.com/jaleezyy/covid-19-sequencing
 
-    # Run pipeline (cacheing conda envs in $HOME/.snakemake)
-    cd Iran1/   # directory created by 'c19_make_pipeline.py'
-    snakemake -p --cores=16 --use-conda --conda-prefix=$HOME/.snakemake all
-    ```
+1. Install `conda` and `snakemake` (version >5) e.g.
 
-## Software components:
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash Miniconda3-latest-Linux-x86_64.sh # follow instructions
+    source $(conda info --base)/etc/profile.d/conda.sh
+    conda create -n snakemake snakemake=5.11.2
+    conda activate snakemake
+
+Additional software dependencies are managed directly by `snakemake` using conda environment files:
 
   - fastqc 0.11.8 ([docs](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
   - cutadapt 1.18 ([docs](https://cutadapt.readthedocs.io/en/stable/)
@@ -27,15 +33,39 @@ A quick test run of the pipeline can be done as follows:
   - lmat, "sourceforge" version ([sourceforge](https://sourceforge.net/projects/lmat/))
   - samtools 1.7 ([docs](http://www.htslib.org/))
   - bedtools 2.26.0 ([docs](https://bedtools.readthedocs.io/en/latest/))
+  - ivar 1.2 ([docs](https://github.com/andersen-lab/ivar))
 
-**Question:** These are the versions installed on galaxylab (with the exception of kraken2, see below).
- Are these the versions we want to use in all cases?
+2. Download necessary database files
 
-**Note:** I wanted to use kraken2 version 2.0.8-beta, but got segfaults with the bioconda version,
- so I used 2.0.7-beta instead.  I'll reinvestigate this later.
+The pipeline requires:
  
-**Note:** We're using the "sourceforge" version of LMAT, even though predates the current github
- version by at least 4 years.  I plan to reinvestigate this too.
+ - Amplicon primer scheme sequences (\*)
+ - Nextera sequencing primer sequence files from trimmomatic 
+ - SARS-CoV2 reference fasta
+ - SARS-CoV2 reference gbk 
+ - SARS-CoV2 reference gff3
+ - kraken2 viral database
+ - LMAT `kML+Human.v4-14.20.g10.db` database
+
+All dependencies except the amplicon primers (\*) can be automatically fetched using the follow accessory script:
+
+    bash scripts/get_data_dependencies.sh -d data -a MN908947.3
+
+3. Configure your `config.yaml` file
+
+Either using the convenience python script (pending) or 
+through modifying the `example_config.yaml` to suit your system
+
+4. Execute pipeline (optionally explicitly specify `--cores`):
+
+    snakemake --use-conda -s Snakefile.master --cores $(nproc) all
+
+### Docker (pending)
+
+Alternatively, the pipeline can be deployed using Docker (see `resources/Dockerfile_pipeline` for specification).
+To pull from dockerhub:
+
+    docker pull finlaymaguire/pipeline
 
 ## Pipeline details:
 

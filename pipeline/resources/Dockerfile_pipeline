@@ -1,0 +1,33 @@
+# base image 
+FROM continuumio/miniconda3
+
+# metadata
+LABEL base.image="miniconda3"
+LABEL version="1"
+LABEL software=""
+LABEL software.version="1.0.0"
+LABEL description="SARS-CoV2 Genome Analysis Workflow"
+LABEL website="https://github.com/jaleezyy/covid-19-sequencing"
+LABEL documentation="https://github.com/jaleezyy/covid-19-sequencing/README.md"
+LABEL license="https://github.com/jaleezyy/covid-19-sequencing/LICENSE"
+LABEL tags="Genomics"
+
+# maintainer
+MAINTAINER Finlay Maguire <finlaymaguire@gmail.com>
+
+# get some system essentials
+RUN apt-get update && apt-get install -y wget git build-essential && conda init bash
+
+# install snakemake and system dependencies
+RUN conda create --name snakemake --channel conda-forge --channel bioconda snakemake=5.11.2
+
+# clone the workflow repo (tag later to specific release to match software version)
+RUN git clone https://github.com/jaleezyy/covid-19-sequencing
+
+# set workdir to pipeline folder in repo
+WORKDIR covid-19-sequencing/pipeline
+
+# install all snakemake rule conda envs using dummy snakemake file
+RUN conda run -n snakemake snakemake --verbose --use-conda --conda-prefix=$HOME/.snakemake -s resources/dependencies --cores 1
+
+# 
