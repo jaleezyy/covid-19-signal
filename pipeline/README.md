@@ -220,7 +220,7 @@
 
 - **Note:** Now running LMAT via Fin's LMAT conda recipe, rather than a docker container.
 
-### 13. Average depth of coverage against assembly (hisat2/ngsCAT)
+### 13. Average depth of coverage against assembly (hisat2/bedtools)
 ```
        hisat2-build sample1/consensus/virus.consensus.fa \  # input reference genome (from 'ivar consensus', step 10)
            sample1/coverage/genome \                        # output .ht2 prefix
@@ -244,7 +244,7 @@
           sample1/coverage/output.bam \
        >sample1/coverage/depth.txt
 ```
-- **Note:** Add postprocessing of depth file (eg compute min/max/median)?
+- **Note:** Add postprocessing of depth file (eg compute min/max/median)? **Replaced ngsCAT with bedtools to generate per-base coverage.** 
 
 - **Note:** On test data, I find that the first ~200 base pairs have zero coverage. Is that normal?
     Should we trim initial zeros?
