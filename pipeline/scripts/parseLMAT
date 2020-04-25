@@ -1,0 +1,66 @@
+#!/usr/bin/perl -w
+
+# parseLMAT, a script to parse all *.fastsummary files, summarizing LMAT results
+
+chomp(@files=<*.fastsummary>);
+
+print "File\tMost Abundant Taxon\tMost Abundant Taxon Rank\tMost Abundant Taxon Fraction\t# Taxa in top 90% of reads\tTaxa in top 90% of reads\tPlasmids or Phage\n";
+foreach $file (@files) {
+	open (INPUT,"< $file");
+	print "$file";
+	$readcount = 0;
+	$maxcount = 0;
+	undef %taxonrank;
+	undef %taxoncount;
+	undef $taxonbest;
+	undef $taxonratio;
+	undef $taxonfractions;
+	undef $taxonfractioncount;
+	undef %taxonmobile;
+	while (defined($line = <INPUT>)) {
+		chomp($line);
+		@temp = split(/\t/,$line);
+		($temp1,$temp2) = $temp[3] =~ /^(.*),(.*)/;
+		$taxonrank{$temp2} = $temp1;
+		$taxoncount{$temp2} = $temp[1];
+		$readcount = $readcount + $temp[1];
+		if ($temp[1] > $maxcount) {
+			$maxcount = $temp[1];
+			$taxonbest = $temp2;
+		}
+		if ($temp2 =~ /plasmid/i) {		# track phage and plasmid
+			$taxonmobile{$temp2}++;
+		} elsif ($temp2 =~ /phage/i) {
+			$taxonmobile{$temp2}++;
+		}
+	}
+	close (INPUT);
+	foreach $taxon (keys %taxonrank) {
+		$taxonratio{$taxon} = $taxoncount{$taxon} / $readcount;
+		$taxonratio{$taxon} = (int(($taxonratio{$taxon} * 1000) + 0.5)/10);		# e.g. end result is 93.2
+	}
+	print "\t$taxonbest\t$taxonrank{$taxonbest}\t$taxonratio{$taxonbest}\%";
+	$ratiosum = 0;
+	foreach $taxon (sort {$taxoncount{$b} <=> $taxoncount{$a}} keys %taxonrank) {
+		if ($ratiosum < 90) {
+			$ratiosum = $ratiosum + $taxonratio{$taxon};
+			$taxonfractions .= "$taxon ($taxonrank{$taxon}, $taxonratio{$taxon}\%) ";
+			$taxonfractioncount++;
+		}
+	}
+	print "\t$taxonfractioncount\t$taxonfractions";
+	undef $taxonfractioncount;
+	undef $taxonfractions;
+	foreach $taxon (sort {$taxoncount{$b} <=> $taxoncount{$a}} keys %taxonmobile) {
+		if ($taxonratio{$taxon} < 1) {
+			$taxonfractions .= "$taxon (<0\%) ";
+		} else {
+			$taxonfractions .= "$taxon ($taxonratio{$taxon}\%) ";
+		}
+	}
+	if ($taxonfractions) {
+		print "\t$taxonfractions\n";
+	} else {
+		print "\t\n";
+	}
+}

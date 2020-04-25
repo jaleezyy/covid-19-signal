@@ -1,0 +1,48 @@
+#!/usr/bin/perl -w
+
+#
+# This program chops up a multi-sequence fasta file into tiles of fixed bp.  The length is defined by the arguments
+#
+
+$binsize = 0;
+
+if (@ARGV) {
+	foreach $flag (@ARGV) {
+		if (-e "$flag") {
+			$file = $flag;
+		} else {
+			$binsize = $flag;		
+		}	
+	}
+} else {
+	print "\tArguments should be fasta files and size of new files.\n";
+	exit;
+}
+
+open (INPUT,"< $file");
+while (defined($line=<INPUT>)) {
+	chomp($line);
+	unless ($line =~ /^>/) {
+		$sequence .= uc($line);
+	}
+}
+close (INPUT);
+
+@data = split(//,$sequence);
+
+while (@data) {
+	$str .= shift(@data);
+	if (length($str) == $binsize) {
+		$count++;
+		print ">${file}_tile_${count}\n";
+		print "$str\n";
+		undef $str;
+	}
+}
+if ($str) {
+	$count++;
+	print ">${file}_tile_${count}\n";
+	print "$str\n";
+}
+
+
