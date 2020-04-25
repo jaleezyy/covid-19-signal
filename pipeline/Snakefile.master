@@ -198,7 +198,7 @@ rule hostremove_hisat2_build:
     log:
         '{sn}/host_removed/hisat2-build.log'
     params:
-        reference = config['hostremove_reference'],
+        reference = config['viral_reference_genome'],
 	genome = '{sn}/host_removed/sars-cov-2'
     shell:
         'hisat2-build {params.reference} {params.genome} >{log} 2>&1'
@@ -322,7 +322,7 @@ rule run_ivar_variants:
     output:
         '{sn}/ivar_variants/ivar_variants.tsv'
     input:
-        reference = config['hostremove_reference'],
+        reference = config['viral_reference_genome'],
         read_bam = '{sn}/host_removed/both_ends_mapped_lsorted.bam'
     params:
         output_prefix = '{sn}/ivar_variants/ivar_variants',
@@ -504,7 +504,7 @@ rule run_quast:
          '{sn}/quast/quast.log'
     params:
          outdir = '{sn}/quast',
-         genome = config['quast_reference_genome'],
-         fcoords = config['quast_feature_coords']
+         genome = config['viral_reference_genome'],
+         fcoords = config['viral_reference_feature_coords']
     shell:
          'quast {input} -r {params.genome} -g {params.fcoords} --output-dir {params.outdir} --threads {threads} >{log}'
