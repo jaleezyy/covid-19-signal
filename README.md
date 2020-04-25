@@ -11,15 +11,15 @@ Future enhancements are intended to aid/automate metadata management in accordan
 
 0. Clone the git repository
     
-    git clone https://github.com/jaleezyy/covid-19-sequencing
+        git clone https://github.com/jaleezyy/covid-19-sequencing
 
 1. Install `conda` and `snakemake` (version >5) e.g.
 
-    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-    bash Miniconda3-latest-Linux-x86_64.sh # follow instructions
-    source $(conda info --base)/etc/profile.d/conda.sh
-    conda create -n snakemake snakemake=5.11.2
-    conda activate snakemake
+        wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+        bash Miniconda3-latest-Linux-x86_64.sh # follow instructions
+        source $(conda info --base)/etc/profile.d/conda.sh
+        conda create -n snakemake snakemake=5.11.2
+        conda activate snakemake
 
 Additional software dependencies are managed directly by `snakemake` using conda environment files:
 
@@ -58,7 +58,7 @@ through modifying the `example_config.yaml` to suit your system
 
 4. Execute pipeline (optionally explicitly specify `--cores`):
 
-    snakemake --use-conda -s Snakefile.master --cores $(nproc) all
+        snakemake --use-conda -s Snakefile.master --cores $(nproc) all
 
 ### Docker (pending)
 
