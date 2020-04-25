@@ -1,0 +1,66 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+primer_rc: 
+    type: string
+    description: "path to sequencing primer (reverse complement)"
+primer_fw: 
+    type: string
+    description: "path to sequencing primer (forward)"
+trimmomatic_args:
+    type: string
+    description: "args for trimmomatic e.g. 'ILLUMINACLIP:data/NexteraPE-PE.fa:2:30:10 SLIDINGWINDOW:4:20'"
+viral_reference_genome:
+    type: string
+    description: "path to reference fasta for QC, removing non SARS-CoV2 sequences and generating consensus/variants"
+viral_reference_feature_coords: 
+    type: string
+    description: "path to feature coords on reference viral genome for QC"
+breseq_reference:
+    type: string
+    description: "path to enhanced reference gbk with clinical sequences"
+kraken2_db:
+    type: string
+    description: "path to kraken2 database files"
+mpileup_depth:
+    type: int
+    default: 10000
+    description: "mpileup depth to use for ivar/samtools consensus and variant calling"
+ivar_freq_threshold:
+    type: float
+    default: 0.75
+    description: "ivar frequency threshold to build consensus"
+ivar_min_coverage_depth:
+    type: int
+    default: 10
+    description: "minimum coverage depth to call variant"
+ivar_min_freq_threshold:
+    type: float
+    default: 0.25
+    description: "ivar frequency threshold to call variant (ivar variants: -t )"
+ivar_min_variant_quality:
+    type: int
+    default: 20
+    description: "iVar minimum mapQ to call variant (ivar variants: -q)"
+lmat_fragment_size:
+    type: int
+    default: 250
+    description: "size of fragments (in bp) analyzed by 'lmat'"
+lmat_basedir:
+    type: string
+    description: "absolute pathname of the LMAT DB is {lmat_basedir}/data/{lmat_db}."
+lmat_db:
+    type: string
+    default: 'kML+Human.v4-14.20.g10.db'
+    description: "LMAT database to use"
+samples:
+    type: string
+    description: "Sample filepaths/table"
+required:
+    - primer_rc
+    - primer_fw
+    - trimmomatic_args
+    - viral_reference_genome
+    - viral_reference_feature_coords
+    - breseq_reference
+    - kraken2_db
+    - lmat_basedir
+    - samples
