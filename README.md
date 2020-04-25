@@ -11,7 +11,7 @@ Future enhancements are intended to aid/automate metadata management in accordan
 
 0. Clone the git repository
     
-    git clone https://github.com/jaleezyy/covid-19-sequencing
+        git clone https://github.com/jaleezyy/covid-19-sequencing
 
 1. Install `conda` and `snakemake` (version >5) e.g.
 
