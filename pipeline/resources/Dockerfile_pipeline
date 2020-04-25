@@ -16,7 +16,7 @@ LABEL tags="Genomics"
 MAINTAINER Finlay Maguire <finlaymaguire@gmail.com>
 
 # get some system essentials
-RUN apt-get update && apt-get install -y wget git build-essential && conda init bash
+RUN apt-get update && apt-get install -y curl wget git build-essential && conda init bash
 
 # install snakemake and system dependencies
 RUN conda create --name snakemake --channel conda-forge --channel bioconda snakemake=5.11.2
