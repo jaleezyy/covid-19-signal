@@ -22,7 +22,7 @@ kraken2_db:
     description: "path to kraken2 database files"
 mpileup_depth:
     type: int
-    default: 10000
+    default: 100000
     description: "mpileup depth to use for ivar/samtools consensus and variant calling"
 ivar_freq_threshold:
     type: float

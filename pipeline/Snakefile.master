@@ -1,4 +1,5 @@
 from snakemake.utils import validate
+import pandas as pd
 
 # Note: this workflow uses specialized conda envs, run with 'snakemake --use-conda'.
 
@@ -8,15 +9,25 @@ from snakemake.utils import validate
 # It is ingested by the Snakefile, and also intended to be human-readable.
 # For an example config file, see pipeline/example_config.yaml in the covid-19-sequencing repo.
 
+# read and validate config.yaml
 configfile: "config.yaml"
 validate(config, 'config.schema.yaml')
 
-sample_names = sorted(config['samples'].keys())
+# read and validate sample table specified in config.schema.yaml
+samples = pd.read_table(config['samples'], sep=',')
+validate(samples, 'sample.schema.yaml')
 
+# get sample names 
+sample_names = sorted(samples['sample'].drop_duplicates().values)
 
 def get_input_fastq_files(sample_name, r):
-    relpaths = config['samples'][sample_name][f'input_fastq_files_R{r}']
-    return [ os.path.join(sample_name,r) for r in relpaths ]
+    sample_fastqs = samples[samples['sample'] == sample_name]
+    if r == '1':
+        relpaths = sample_fastqs['r1_path'].values
+    elif r == '2':
+        relpaths = sample_fastqs['r2_path'].values
+
+    return [ os.path.join(sample_name, r) for r in relpaths ]
 
 
 ######################################   High-level targets   ######################################
