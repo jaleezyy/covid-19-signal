@@ -51,4 +51,4 @@ kraken2-build --clean --threads 10 --db $database_dir/Kraken2/db
 export LMAT_ROOTDIR="$database_dir/LMAT-1.2.6"
 mkdir -p $LMAT_ROOTDIR
 bash $(which get_db.sh) --dtype=db --name=kML+Human.v4-14.20.g10.db --outdir=$database_dir/LMAT-1.2.6/data
-bash $(which get_db.sh) --dtype=inputs --name=04072014 --outdir=$database_dir/LMAT-1.2.6/runtime_inputs
+bash $(which get_db.sh) --dtype=inputs --name=04072014 --outdir=$database_dir/LMAT-1.2.6
