@@ -11,11 +11,11 @@ import pandas as pd
 
 # read and validate config.yaml
 configfile: "config.yaml"
-validate(config, 'config.schema.yaml')
+validate(config, 'resources/config.schema.yaml')
 
 # read and validate sample table specified in config.schema.yaml
 samples = pd.read_table(config['samples'], sep=',')
-validate(samples, 'sample.schema.yaml')
+validate(samples, 'resources/sample.schema.yaml')
 
 # get sample names 
 sample_names = sorted(samples['sample'].drop_duplicates().values)
