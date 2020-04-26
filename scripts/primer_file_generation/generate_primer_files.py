@@ -2,7 +2,7 @@
 
 ### Generate primer FASTA files (all, forward only and reverse only) given a .tsv
 ### .tsv assumed to have structure based on ARTIC primer schemes (example: https://github.com/artic-network/artic-ncov2019/blob/master/primer_schemes/nCoV-2019/V3/nCoV-2019.tsv)
-### At minimum, .tsv is expected to be 3 columns: name, (any information, i.e. pool), sequence)
+### At minimum, .tsv is expected to be 3 columns: name | (any information, i.e. pool) | sequence
 
 ### TODO: tweak names based on ARTIC 'alt' appends to certain primer names
 
