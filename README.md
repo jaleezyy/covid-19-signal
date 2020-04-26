@@ -49,7 +49,7 @@ The pipeline requires:
 
 All dependencies except the amplicon primers (\*) can be automatically fetched using the follow accessory script:
 
-        bash scripts/get_data_dependencies.sh -d data -a MN908947.3
+        bash pipeline/scripts/get_data_dependencies.sh -d data -a MN908947.3
 
 3. Configure your `config.yaml` file
 
