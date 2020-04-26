@@ -32,7 +32,7 @@ fi
 
 if [ $existing = 0 ] ; then
 	echo "Creating new sample table called ${name}"
- 	echo "sample1,r1_path,r2_path" > .${name} && echo "sample1,r1_path,r2_path"
+ 	echo "sample,r1_path,r2_path" > .${name} && echo "sample1,r1_path,r2_path"
 else
 	echo "Using existing sample table called ${name}"
 	name=$existing
