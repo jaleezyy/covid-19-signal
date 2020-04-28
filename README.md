@@ -84,6 +84,10 @@ Then execute the pipeline:
 
         docker run -v $PWD/data:/data finlaymaguire/sars-cov2-pipeline:1.0.0 conda run -n snakemake snakemake --use-conda --conda-prefix $HOME/.snakemake --cores 8 -s Snakefile.master all
 
+## Summaries:
+
+  - Generate summaries of BreSeq among many samples, [see] (scripts/summaries/README.md)
+
 ## Pipeline details:
 
 For a step-by-step walkthrough of the pipeline, see [pipeline/README.md](pipeline/README.md).
