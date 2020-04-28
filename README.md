@@ -54,11 +54,11 @@ All dependencies except the amplicon primers (\*) can be automatically fetched u
 3. Configure your `config.yaml` file
 
 Either using the convenience python script (pending) or 
-through modifying the `example_config.yaml` to suit your system
+through modifying the `pipeline/example_config.yaml` to suit your system
 
 4. Specify your samples in CSV format (e.g. `sample_table.csv`)
 
-See the example table `example_sample_table.csv` for an idea of how to organise this table.
+See the example table `pipeline/example_sample_table.csv` for an idea of how to organise this table.
 
 5. Execute pipeline (optionally explicitly specify `--cores`):
 
