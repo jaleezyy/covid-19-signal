@@ -86,7 +86,7 @@ Then execute the pipeline:
 
 ## Summaries:
 
-  - Generate summaries of BreSeq among many samples, [see] (scripts/summaries/README.md)
+  - Generate summaries of BreSeq among many samples, [see](scripts/summaries/README.md)
 
 ## Pipeline details:
 
