@@ -31,7 +31,7 @@ jobs:
             docker-compose --file docker-compose.test.yml build
             docker-compose --file docker-compose.test.yml run sut
           else
-            docker build . --file pipeline/resources/Dockerfile_pipeline
+            docker build . --file resources/Dockerfile_pipeline
           fi
 
   # Push image to GitHub Packages.
@@ -47,7 +47,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Build image
-        run: docker build . --file pipeline/resources/Dockerfile_pipeline --tag $IMAGE_NAME
+        run: docker build . --file resources/Dockerfile_pipeline --tag $IMAGE_NAME
 
       - name: Log into registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
