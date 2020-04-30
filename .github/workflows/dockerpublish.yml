@@ -17,22 +17,30 @@ env:
   IMAGE_NAME: covid-19-sequencing
 
 jobs:
-  # Run tests.
-  # See also https://docs.docker.com/docker-hub/builds/automated-testing/
-  test:
-    runs-on: ubuntu-latest
+    ## Run tests.
+    ## See also https://docs.docker.com/docker-hub/builds/automated-testing/
+    #test:
+    #  runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v2
+    #  steps:
+    #    - uses: actions/checkout@v2
 
-      - name: Run tests
-        run: |
-          if [ -f docker-compose.test.yml ]; then
-            docker-compose --file docker-compose.test.yml build
-            docker-compose --file docker-compose.test.yml run sut
-          else
-            docker build . --file resources/Dockerfile_pipeline
-          fi
+    #    - name: Free disk space
+    #      run: |
+    #          sudo swapoff -a
+    #          sudo rm -f /swapfile
+    #          sudo apt clean
+    #          docker rmi $(docker image ls -aq)
+    #          df -h
+
+    #    - name: Run tests
+    #      run: |
+    #        if [ -f docker-compose.test.yml ]; then
+    #          docker-compose --file docker-compose.test.yml build
+    #          docker-compose --file docker-compose.test.yml run sut
+    #        else
+    #          docker build . --file resources/Dockerfile_pipeline
+    #        fi
 
   # Push image to GitHub Packages.
   # See also https://docs.docker.com/docker-hub/builds/
@@ -45,6 +53,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+
+      - name: Free disk space
+        run: |
+            sudo swapoff -a
+            sudo rm -f /swapfile
+            sudo apt clean
+            docker rmi $(docker image ls -aq)
+            df -h
 
       - name: Build image
         run: docker build . --file resources/Dockerfile_pipeline --tag $IMAGE_NAME
