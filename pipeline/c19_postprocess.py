@@ -73,14 +73,6 @@ def comma_separated_int(s):
     return int(s)
 
 
-def sum_na(x, y):
-    """sum_nz = 'sum with None treated as zero'"""
-
-    if (x is None) and (y is None):
-        return None
-    return (0 if (x is None) else x) + (0 if (y is None) else y)
-
-
 ####################################################################################################
 
 
@@ -153,6 +145,24 @@ def show_html_tables(html_tables):
 ####################################################################################################
 
 
+def binop(x, y, op):
+    """Returns op(x,y), with None treated as zero."""
+
+    if (x is None) and (y is None):
+        return None
+
+    x = x if (x is not None) else 0
+    y = y if (y is not None) else 0
+    return op(x,y)
+
+
+def xround(x, ndigits):
+    return round(x,ndigits) if (x is not None) else None
+
+
+####################################################################################################
+
+
 def parse_cutadapt_log(filename, allow_missing=True):
     t = TextFileParser()
     t.add_column('read_pairs_processed', r'Total read pairs processed:\s+([0-9,]+)', dtype=comma_separated_int)
@@ -190,8 +200,9 @@ def parse_fastqc_pair(zip_filename1, zip_filename2, allow_missing=True):
     fastqc_r1 = parse_fastqc_output(zip_filename1)
     fastqc_r2 = parse_fastqc_output(zip_filename2)
 
-    seq_tot = sum_na(fastqc_r1['total_sequences'], fastqc_r2['total_sequences'])
-    flagged_tot = sum_na(fastqc_r1['flagged_sequences'], fastqc_r2['flagged_sequences'])
+    seq_tot = binop(fastqc_r1['total_sequences'], fastqc_r2['total_sequences'], lambda x,y:x+y)
+    flagged_tot = binop(fastqc_r1['flagged_sequences'], fastqc_r2['flagged_sequences'], lambda x,y:x+y)
+    read_pairs = binop(fastqc_r1['total_sequences'], fastqc_r2['total_sequences'], min)
 
     summary = { }
     for text in list(fastqc_r1['summary'].keys()) + list(fastqc_r2['summary'].keys()):
@@ -207,10 +218,10 @@ def parse_fastqc_pair(zip_filename1, zip_filename2, allow_missing=True):
     if fastqc_r1['total_sequences'] != fastqc_r2['total_sequences']:
         summary['R1/R2 read count mismatch'] = 'FAIL'
 
-    if flagged_tot > 0:
+    if (flagged_tot is not None) and (flagged_tot > 0):
         summary[f'{flagged_tot} sequences flagged as poor quality'] = 'WARN'
         
-    return { 'total_sequences': seq_tot, 'flagged_sequences': flagged_tot, 'summary': summary }
+    return { 'total_sequences': seq_tot, 'flagged_sequences': flagged_tot, 'read_pairs': read_pairs, 'summary': summary }
 
 
 def parse_kraken2_report(report_filename, allow_missing=True):
@@ -235,7 +246,10 @@ def parse_quast_report(report_filename, allow_missing=True):
     t.add_column("indels_per_100_kbp", r"# indels per 100 kbp\s+(\S+)", dtype=float)
     
     ret = t.parse_file(report_filename, allow_missing=True)
-    ret['qc_gfrac'] = "PASS" if (ret.get('genome_fraction',0) >= 90) else "FAIL"
+    
+    gfrac = ret['genome_fraction']
+    ret['qc_gfrac'] = "PASS" if ((gfrac is not None) and (gfrac >= 90)) else "FAIL"
+    
     return ret
 
 
@@ -295,8 +309,8 @@ def parse_coverage(depth_filename, allow_missing=True):
     bin_fractions = np.bincount(bin_assignments, minlength=nbins) / float(len(coverage))
     assert bin_fractions.shape == (nbins,)
     
-    ret['bin_fractions'] = bin_fractions
-    ret['mean_coverage'] = np.mean(coverage)
+    ret['bin_fractions'] = [ xround(f,3) for f in bin_fractions ]
+    ret['mean_coverage'] = xround(np.mean(coverage), 1)
     ret['qc_meancov'] = "PASS" if (np.mean(coverage) >= 2000) else "FAIL"
     ret['qc_cov100'] = "PASS" if (np.mean(coverage >= 100) >= 0.9) else "FAIL"
     ret['qc_cov1000'] = "PASS" if (np.mean(coverage >= 1000) >= 0.9) else "WARN"
@@ -397,6 +411,7 @@ def parse_breseq_output(html_filename, allow_missing=True):
 
 class Sample:
     def __init__(self, dirname):
+        self.dirname = dirname
         self.cutadapt = parse_cutadapt_log(f"{dirname}/fastq_primers_removed/cutadapt.log")
         self.post_trim_qc = parse_fastqc_pair(f"{dirname}/fastq_trimmed/R1_paired_fastqc.zip", f"{dirname}/fastq_trimmed/R2_paired_fastqc.zip")
         self.kraken2 = parse_kraken2_report(f"{dirname}/kraken2/report")
@@ -413,19 +428,22 @@ class Sample:
         print(f"SARS-CoV-2 Genome Sequencing Consensus & Variants")
         print(f"https://github.com/jaleezyy/covid-19-sequencing")
         print(f"")
-        
-        print(f"Raw Data: {self.cutadapt['read_pairs_processed']} read pairs, {self.cutadapt['base_pairs_processed']} bp")
-        print(f"Post Primer Removal: {self.cutadapt['read_pairs_written']} read pairs, {self.cutadapt['base_pairs_written']} bp")
-        print(f"Post Trimmomatic: {self.post_trim_qc['total_sequences']//2} read pairs")
-        print(f"Fraction retained by host removal: {self.hostremove['alignment_rate']}%")
+
+        print(f"Data Volume:")
+        print(f"    Raw Data (read pairs): {self.cutadapt['read_pairs_processed']}")
+        print(f"    Raw Data (base pairs): {self.cutadapt['base_pairs_processed']}")
+        print(f"    Post Primer Removal (read pairs): {self.cutadapt['read_pairs_written']}")
+        print(f"    Post Primer Removal (base pairs): {self.cutadapt['base_pairs_written']}")
+        print(f"    Post Trimmomatic (read pairs): {self.post_trim_qc['read_pairs']}")
+        print(f"    Fraction retained by host removal (%): {self.hostremove['alignment_rate']}")
         print(f"")
 
         print(f"Quality Control Flags:")
         print(f"    {self.quast['qc_gfrac']}    Genome Fraction greater than 90%")
         print(f"    {self.coverage['qc_meancov']}    Depth of coverage >= 2000x")
         print(f"    {self.breseq['qc_varfreq']}    All variants with at least 90% frequency among reads")
-        print(f"    {self.post_trim_qc['summary']['Per base sequence quality']}    Reads per base sequence quality")
-        print(f"    {self.post_trim_qc['summary']['Adapter Content']}    Sequencing adapter removed")
+        print(f"    {self.post_trim_qc['summary'].get('Per base sequence quality','FAIL')}    Reads per base sequence quality")
+        print(f"    {self.post_trim_qc['summary'].get('Adapter Content','FAIL')}    Sequencing adapter removed")
         print(f"    {self.coverage['qc_cov100']}    At least 90% of positions have coverage >= 100x")
         print(f"    {self.coverage['qc_cov1000']}    At least 90% of positions have coverage >= 1000x")
         print(f"")
@@ -444,16 +462,16 @@ class Sample:
         print(f"")
 
         print(f"Genome Statistics (QUAST)")
-        print(f"    Genome Length: {self.quast['genome_length']} bp")
-        print(f"    Genome Fraction: {self.quast['genome_fraction']}%")
+        print(f"    Genome Length (bp): {self.quast['genome_length']}")
+        print(f"    Genome Fraction (%): {self.quast['genome_fraction']}")
         print(f"    Genomic Features: {self.quast['genomic_features']}")
         print(f"    N's per 100 kbp: {self.quast['Ns_per_100_kbp']}")
         print(f"    Mismatches per 100 kbp: {self.quast['mismatches_per_100_kbp']}")
         print(f"    Indels per 100 kbp: {self.quast['indels_per_100_kbp']}")
-        print(f"    Average Depth of Coverage: {self.coverage['mean_coverage']:.1f}")
+        print(f"    Average Depth of Coverage: {self.coverage['mean_coverage']}")
 
         for (l,f) in zip(self.coverage['bin_labels'], self.coverage['bin_fractions']):
-            print(f"       {l}: {f:.3f}")
+            print(f"       {l}: {f}")
 
         print(f"    5' Ns: {self.consensus['N5prime']}")
         print(f"    3' Ns: {self.consensus['N3prime']}")
@@ -479,8 +497,5 @@ class Sample:
 
 
 if __name__ == '__main__':
-    s = Sample('.')
+    s = Sample('Iran1-RA')
     s.print_report()
-
-    import pickle
-    pickle.dump(s.breseq['variants'], open('file.pkl','wb'))
