@@ -7,7 +7,6 @@ import zipfile
 import html.parser
 
 import numpy as np
-import pandas as pd
 
 
 ####################################################################################################
@@ -238,12 +237,15 @@ def parse_hostremove_hisat2_log(log_filename, allow_missing=True):
 
 def parse_quast_report(report_filename, allow_missing=True):
     t = TextFileParser()
+
+    # Note that some fields are "required=False" here.
+    # Sometimes, QUAST doesn't write every field, but I didn't investigate why.
     t.add_column("genome_length", r'Total length \(>= 0 bp\)\s+(\S+)', dtype=int)
-    t.add_column("genome_fraction", r'Genome fraction \(%\)\s+(\S+)', dtype=float)   # Note: genome "fraction" is really a percentage
-    t.add_column("genomic_features", r'# genomic features\s+(\S+)')
+    t.add_column("genome_fraction", r'Genome fraction \(%\)\s+(\S+)', dtype=float, required=False)   # Note: genome "fraction" is really a percentage
+    t.add_column("genomic_features", r'# genomic features\s+(\S+)', required=False)
     t.add_column("Ns_per_100_kbp", r"# N's per 100 kbp\s+(\S+)", dtype=float)
-    t.add_column("mismatches_per_100_kbp", r"# mismatches per 100 kbp\s+(\S+)", dtype=float)
-    t.add_column("indels_per_100_kbp", r"# indels per 100 kbp\s+(\S+)", dtype=float)
+    t.add_column("mismatches_per_100_kbp", r"# mismatches per 100 kbp\s+(\S+)", dtype=float, required=False)
+    t.add_column("indels_per_100_kbp", r"# indels per 100 kbp\s+(\S+)", dtype=float, required=False)
     
     ret = t.parse_file(report_filename, allow_missing=True)
     
@@ -382,10 +384,12 @@ def parse_breseq_output(html_filename, allow_missing=True):
     
     tables = parse_html_tables(html_filename)
     
-    assert len(tables) == 3
-    assert tables[1][0] == [ 'Predicted mutations' ]
-    assert tables[2][0] == [ 'Unassigned missing coverage evidence' ]
+    assert len(tables) >= 2
+    assert tables[1][0] in [ ['Predicted mutation'], ['Predicted mutations'] ]
     assert tables[1][1] == [ 'evidence', 'position', 'mutation', 'freq', 'annotation', 'gene', 'description']
+
+    for t in tables[2:]:
+        assert t[0] in [ ['Unassigned missing coverage evidence'], ['Unassigned new junction evidence'] ]
     
     variants = [ ]
     qc_varfreq = 'PASS'
@@ -409,9 +413,195 @@ def parse_breseq_output(html_filename, allow_missing=True):
 ####################################################################################################
 
 
+class WriterBase:
+    def __init__(self, filename):
+        self.filename = filename
+        self.f = open(filename, 'w')
+
+    def start_sample(self, sample_name, link_to=None):
+        raise RuntimeError('To be overridden by subclass')
+
+    def start_group(self, text):
+        raise RuntimeError('To be overridden by subclass')
+    
+    def write(self, key, val=None, indent=0, optional=False, abbrev=None, qc=False):
+        raise RuntimeError('To be overridden by subclass')
+
+    def end_group(self):
+        raise RuntimeError('To be overridden by subclass')        
+    
+    def end_sample(self):
+        raise RuntimeError('To be overridden by subclass')
+    
+    def close(self):
+        if self.f is not None:
+            self.f.close()
+            self.f = None
+            print(f"Wrote {self.filename}")
+
+
+class HTMLWriterBase(WriterBase):
+    def __init__(self, filename):
+        WriterBase.__init__(self, filename)
+        
+        print("<!DOCTYPE html>", file=self.f)
+        print("<html>", file=self.f)
+        print("<head></head>", file=self.f)
+        print("<body>", file=self.f)
+        
+        url = "https://github.com/jaleezyy/covid-19-sequencing"
+        print(f'<h3>SARS-CoV-2 Genome Sequencing Consensus & Variants</h3>', file=self.f)
+        print(f'<a href="{url}">{url}</a>', file=self.f)
+
+    def close(self):
+        if self.f is not None:
+            print("</body>", file=self.f)
+            print("</html>", file=self.f)
+        WriterBase.close(self)
+
+
+class SampleTextWriter(WriterBase):
+    def __init__(self, filename):
+        WriterBase.__init__(self, filename)
+        
+        print("SARS-CoV-2 Genome Sequencing Consensus & Variants", file=self.f)
+        print("https://github.com/jaleezyy/covid-19-sequencing", file=self.f)
+        print("", file=self.f)
+        
+    def start_sample(self, sample_name, link_to=None):
+        pass
+
+    def start_group(self, text):
+        print(text, file=self.f)
+
+    def write(self, key, val=None, indent=0, optional=False, abbrev=None, qc=False):
+        s = ' ' * indent
+        v = val if (val is not None) else ''
+        t = f'{v}  {key}' if qc else f'{key}: {v}'
+        print(f"{s}{t}", file=self.f)
+
+    def end_group(self):
+        print(file=self.f)
+
+    def end_sample(self):
+        self.close()
+
+
+class SampleHTMLWriter(HTMLWriterBase):
+    def __init__(self, filename):
+        HTMLWriterBase.__init__(self, filename)
+
+    def start_sample(self, sample_name, link_to=None):
+        print("<p><table>", file=self.f)
+        
+    def start_group(self, text):
+        print(f'<tr><th colspan="2" style="text-align: left">{text}</th>', file=self.f)
+
+    def write(self, key, val=None, indent=0, optional=False, abbrev=None, qc=False):
+        v = val if (val is not None) else ''
+        td1 = f'<td style="padding-left: {5*indent}px">{key}</td>'
+        td2 = f'<td>{v}</td>'
+        print(f"<tr>{td1}{td2}</tr>", file=self.f)
+
+    def end_group(self):
+        pass
+    
+    def end_sample(self):
+        print("</table>", file=self.f)
+        self.close()
+
+
+class SummaryHTMLWriter(HTMLWriterBase):
+    def __init__(self, filename):
+        HTMLWriterBase.__init__(self, filename)
+
+        self.first_row = ''
+        self.second_row = ''
+        self.current_row = ''
+        self.first_rows_written = False
+
+        self.current_group_text = None
+        self.current_group_colspan = 0
+        
+        self.css_lborder = 'border-left: 1px solid black;'
+        self.css_bborder = 'border-bottom: 1px solid black;'
+        
+        self.css_qc = {
+            'PASS': 'background-color:darkseagreen;',
+            'WARN': 'background-color: gold;',
+            'FAIL': 'background-color: #ff3030;'
+        }
+        
+        print('<p><table style="border-collapse: collapse; border: 1px solid black;">', file=self.f)
+
+        
+    def start_sample(self, sample_name, link_to):
+        assert isinstance(link_to, SampleHTMLWriter)
+        assert self.current_group_text is None
+
+        url = os.path.relpath(link_to.filename, os.path.basename(self.filename))
+        
+        self.first_row += f'<th>Sample</th>\n'
+        self.second_row += f'<th style="{self.css_bborder}"></th>\n'
+        self.current_row += f'<td><a href="{url}">{sample_name}</a></td>'
+        
+        
+    def start_group(self, text):
+        assert self.current_group_text is None
+        self.current_group_text = text
+        self.current_group_colspan = 0
+
+        
+    def write(self, key, val=None, indent=0, optional=False, abbrev=None, qc=False):
+        assert self.current_group_text is not None
+
+        if optional:
+            return
+        if abbrev is not None:
+            key = abbrev
+
+        s1 = self.css_lborder if (self.current_group_colspan == 0) else ''
+        s2 = self.css_qc[val] if qc else ''
+        v = val if (val is not None) else ''
+        
+        self.second_row += f'<td style="{self.css_bborder} {s1}">{key}</td>\n'
+        self.current_row += f'<td style="{s1} {s2}">{val}</td>\n'
+        self.current_group_colspan += 1
+
+        
+    def end_group(self):
+        assert self.current_group_text is not None
+        self.first_row += f'<th colspan="{self.current_group_colspan}" style="{self.css_lborder}">{self.current_group_text}</th>\n'
+        self.current_group_text = None
+        self.current_group_colspan = 0
+
+        
+    def end_sample(self):
+        assert self.current_group_text is None
+
+        if not self.first_rows_written:
+            print(f'<tr>{self.first_row}</tr>', file=self.f)
+            print(f'<tr>{self.second_row}</tr>', file=self.f)
+            self.first_rows_written = True
+
+        print(f'<tr>{self.current_row}</tr>', file=self.f)
+        self.first_row = ''
+        self.second_row = ''
+        self.current_row = ''
+
+    def close(self):
+        print('</table>', file=self.f)
+        HTMLWriterBase.close(self)
+
+
+####################################################################################################
+
+
 class Sample:
-    def __init__(self, dirname):
+    def __init__(self, dirname, sample_name):
         self.dirname = dirname
+        self.sample_name = sample_name
+        
         self.cutadapt = parse_cutadapt_log(f"{dirname}/fastq_primers_removed/cutadapt.log")
         self.post_trim_qc = parse_fastqc_pair(f"{dirname}/fastq_trimmed/R1_paired_fastqc.zip", f"{dirname}/fastq_trimmed/R2_paired_fastqc.zip")
         self.kraken2 = parse_kraken2_report(f"{dirname}/kraken2/report")
@@ -424,78 +614,109 @@ class Sample:
         self.breseq = parse_breseq_output(f"{dirname}/breseq/output/index.html")
 
 
-    def print_report(self):
-        print(f"SARS-CoV-2 Genome Sequencing Consensus & Variants")
-        print(f"https://github.com/jaleezyy/covid-19-sequencing")
-        print(f"")
+    def write(self, w, link_to=None):
+        w.start_sample(self.sample_name, link_to)
+            
+        w.start_group("Data Volume")
+        w.write("Raw Data (read pairs)", self.cutadapt['read_pairs_processed'], indent=4)
+        w.write("Raw Data (base pairs)", self.cutadapt['base_pairs_processed'], indent=4, optional=True)
+        w.write("Post Primer Removal (read pairs)", self.cutadapt['read_pairs_written'], indent=4, optional=True)
+        w.write("Post Primer Removal (base pairs)", self.cutadapt['base_pairs_written'], indent=4, optional=True)
+        w.write("Post Trim (read pairs)", self.post_trim_qc['read_pairs'], indent=4)
+        w.write("Post human purge (%)", self.hostremove['alignment_rate'], indent=4)
+        w.end_group()
+    
+        w.start_group("Quality Control Flags")
+        w.write("Genome Fraction greater than 90%", self.quast['qc_gfrac'], indent=4, abbrev='gfrac >90%', qc=True)
+        w.write("Depth of coverage >= 2000x", self.coverage['qc_meancov'], indent=4, abbrev='depth >2000', qc=True)
+        w.write("All variants with at least 90% frequency among reads", self.breseq['qc_varfreq'], indent=4, abbrev='vars >90%', qc=True)
+        w.write("Reads per base sequence quality", self.post_trim_qc['summary'].get('Per base sequence quality','FAIL'), indent=4, abbrev='fastqc quality', qc=True)
+        w.write("Sequencing adapter removed", self.post_trim_qc['summary'].get('Adapter Content','FAIL'), indent=4, abbrev='fastqc adapter', qc=True)
+        w.write("At least 90% of positions have coverage >= 100x", self.coverage['qc_cov100'], indent=4, abbrev='cov >100 >90%', qc=True)
+        w.write("At least 90% of positions have coverage >= 1000x", self.coverage['qc_cov1000'], indent=4, abbrev='cov >1000 >90%', qc=True)
+        w.end_group()
 
-        print(f"Data Volume:")
-        print(f"    Raw Data (read pairs): {self.cutadapt['read_pairs_processed']}")
-        print(f"    Raw Data (base pairs): {self.cutadapt['base_pairs_processed']}")
-        print(f"    Post Primer Removal (read pairs): {self.cutadapt['read_pairs_written']}")
-        print(f"    Post Primer Removal (base pairs): {self.cutadapt['base_pairs_written']}")
-        print(f"    Post Trimmomatic (read pairs): {self.post_trim_qc['read_pairs']}")
-        print(f"    Fraction retained by host removal (%): {self.hostremove['alignment_rate']}")
-        print(f"")
-
-        print(f"Quality Control Flags:")
-        print(f"    {self.quast['qc_gfrac']}    Genome Fraction greater than 90%")
-        print(f"    {self.coverage['qc_meancov']}    Depth of coverage >= 2000x")
-        print(f"    {self.breseq['qc_varfreq']}    All variants with at least 90% frequency among reads")
-        print(f"    {self.post_trim_qc['summary'].get('Per base sequence quality','FAIL')}    Reads per base sequence quality")
-        print(f"    {self.post_trim_qc['summary'].get('Adapter Content','FAIL')}    Sequencing adapter removed")
-        print(f"    {self.coverage['qc_cov100']}    At least 90% of positions have coverage >= 100x")
-        print(f"    {self.coverage['qc_cov1000']}    At least 90% of positions have coverage >= 1000x")
-        print(f"")
-
+        w.end_sample()
+        return
+        
         for flavor in [ 'FAIL', 'WARN' ]:
             messages = [ k for (k,v) in self.post_trim_qc['summary'].items() if v==flavor ]
             if len(messages) == 0:
                 continue
             
-            print(f"FASTQC {flavor}:")
+            w.write("FASTQC {flavor}:")
             for k in messages:
-                print(f"    {k}")
-            print(f"")
+                w.write("    {k}")
+            w.write("")
 
-        print(f"Reads SARS-CoV-2 (Kraken2): {self.kraken2['sars_cov2_percentage']}")
-        print(f"")
+        w.write("Reads SARS-CoV-2 (Kraken2)", self.kraken2['sars_cov2_percentage'], indent=4)
+        w.write("")
 
-        print(f"Genome Statistics (QUAST)")
-        print(f"    Genome Length (bp): {self.quast['genome_length']}")
-        print(f"    Genome Fraction (%): {self.quast['genome_fraction']}")
-        print(f"    Genomic Features: {self.quast['genomic_features']}")
-        print(f"    N's per 100 kbp: {self.quast['Ns_per_100_kbp']}")
-        print(f"    Mismatches per 100 kbp: {self.quast['mismatches_per_100_kbp']}")
-        print(f"    Indels per 100 kbp: {self.quast['indels_per_100_kbp']}")
-        print(f"    Average Depth of Coverage: {self.coverage['mean_coverage']}")
+        w.write("Genome Statistics (QUAST)")
+        w.write("    Genome Length (bp)", self.quast['genome_length'], indent=4)
+        w.write("    Genome Fraction (%)", self.quast['genome_fraction'], indent=4)
+        w.write("    Genomic Features", self.quast['genomic_features'], indent=4)
+        w.write("    N's per 100 kbp", self.quast['Ns_per_100_kbp'], indent=4)
+        w.write("    Mismatches per 100 kbp", self.quast['mismatches_per_100_kbp'], indent=4)
+        w.write("    Indels per 100 kbp", self.quast['indels_per_100_kbp'], indent=4)
+        w.write("    Average Depth of Coverage", self.coverage['mean_coverage'], indent=4)
 
         for (l,f) in zip(self.coverage['bin_labels'], self.coverage['bin_fractions']):
-            print(f"       {l}: {f}")
+            w.write(l, f, indent=8)
 
-        print(f"    5' Ns: {self.consensus['N5prime']}")
-        print(f"    3' Ns: {self.consensus['N3prime']}")
-        print(f"")
+        w.write("5' Ns", self.consensus['N5prime'], indent=4)
+        w.write("3' Ns", self.consensus['N3prime'], indent=4)
+        w.write("")
 
-        print(f"Taxonomic Composition of Assembly (LMAT):")
-        for s in self.lmat['taxonomic_composition']:
-            print(f"    {s}")
-        print(f"")
+        w.write("Taxonomic Composition of Assembly (LMAT)", self.lmat['taxonomic_composition'])
+        w.write("")
         
-        print(f"Variants in Consensus Genome (iVar):")
-        if len(self.ivar['variants']) > 0:
-            print(f"    {' '.join(self.ivar['variants'])}")
-        print(f"")
+        w.write("Variants in Consensus Genome (iVar)", self.ivar['variants'])
+        w.write("")
         
-        print(f"Variants in Read Alignment (BreSeq):")
-        for v in self.breseq['variants']:
-            print(f"    {v}")
-        print(f"")
+        w.write("Variants in Read Alignment (BreSeq)", self.breseq['variants'])
 
+
+class Pipeline:
+    def __init__(self, dirname, sample_names):
+        self.dirname = dirname
+        self.sample_names = sample_names
+        self.samples = [ Sample(os.path.join(dirname,s), s) for s in sample_names ]
+
+    
+    def write(self):
+        w1 = SummaryHTMLWriter(os.path.join(self.dirname, 'summary.html'))
+
+        for s in self.samples:
+            w2 = SampleTextWriter(os.path.join(s.dirname, 'sample.txt'))
+            w3 = SampleHTMLWriter(os.path.join(s.dirname, 'sample.html'))
+        
+            s.write(w1, link_to=w3)
+            s.write(w2)
+            s.write(w3)
+            
+            w2.close()
+            w3.close()
+
+        w1.close()
+        
 
 ####################################################################################################
 
 
 if __name__ == '__main__':
-    s = Sample('Iran1-RA')
-    s.print_report()
+    p = Pipeline('Paper', [
+        'ARTIC-NEG',
+        'Iran1-ARTIC',
+        'Iran1-LA',
+        'Iran1-LN',
+        'Iran1-RA',
+        'Iran1-RN',
+        'Wuhan1-ARTIC',
+        'Wuhan1-LA',
+        'Wuhan1-LN',
+        'Wuhan1-RA',
+        'Wuhan1-RN'
+    ])
+
+    p.write()
