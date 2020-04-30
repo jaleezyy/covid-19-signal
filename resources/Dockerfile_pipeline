@@ -4,7 +4,7 @@ FROM continuumio/miniconda3
 # metadata
 LABEL base.image="miniconda3"
 LABEL version="1"
-LABEL software=""
+LABEL software="SARS-CoV2-pipeline"
 LABEL software.version="1.0.0"
 LABEL description="SARS-CoV2 Genome Analysis Workflow"
 LABEL website="https://github.com/jaleezyy/covid-19-sequencing"
@@ -25,9 +25,7 @@ RUN conda create --name snakemake --channel conda-forge --channel bioconda snake
 RUN git clone https://github.com/jaleezyy/covid-19-sequencing
 
 # set workdir to pipeline folder in repo
-WORKDIR covid-19-sequencing/pipeline
+WORKDIR covid-19-sequencing
 
 # install all snakemake rule conda envs using dummy snakemake file
 RUN conda run -n snakemake snakemake --verbose --use-conda --conda-prefix=$HOME/.snakemake -s resources/dependencies --cores 1
-
-# 

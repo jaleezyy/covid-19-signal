@@ -14,7 +14,7 @@ on:
   pull_request:
 
 env:
-  IMAGE_NAME: sars-cov2-pipeline
+  IMAGE_NAME: covid-19-sequencing
 
 jobs:
   # Run tests.
