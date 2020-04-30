@@ -86,11 +86,11 @@ Then execute the pipeline:
 
 ## Summaries:
 
-  - Generate summaries of BreSeq among many samples, [see](scripts/summaries/README.md)
+  - Generate summaries of BreSeq among many samples, [see](resources/dev_scripts/summaries/README.md)
 
 ## Pipeline details:
 
-For a step-by-step walkthrough of the pipeline, see [pipeline/README.md](pipeline/README.md).
+For a step-by-step walkthrough of the pipeline, see [pipeline/README.md](PIPELINE.md).
 
 A diagram of the workflow is shown below.
 
