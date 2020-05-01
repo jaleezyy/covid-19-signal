@@ -62,7 +62,7 @@ See the example table `pipeline/example_sample_table.csv` for an idea of how to 
 
 5. Execute pipeline (optionally explicitly specify `--cores`):
 
-        snakemake --use-conda -s Snakefile.master --cores $(nproc) all
+        snakemake --use-conda -s Snakefile --cores $(nproc) all
 
 ### Docker (pending)
 
@@ -82,7 +82,7 @@ Add remaining files (e.g. primers) to your config and sample table in the data d
 
 Then execute the pipeline:
 
-        docker run -v $PWD/data:/data finlaymaguire/sars-cov2-pipeline:1.0.0 conda run -n snakemake snakemake --use-conda --conda-prefix $HOME/.snakemake --cores 8 -s Snakefile.master all
+        docker run -v $PWD/data:/data finlaymaguire/sars-cov2-pipeline:1.0.0 conda run -n snakemake snakemake --use-conda --conda-prefix $HOME/.snakemake --cores 8 -s Snakefile all
 
 ## Summaries:
 
