@@ -407,11 +407,16 @@ def parse_breseq_output(html_filename, allow_missing=True):
 
         assert freq.endswith('%')
         freq = freq[:-1]
+
+        # TODO: improve breseq html parsing
+        # Currently, the "annotation" is unreadable.
+        # The "description" is sometimes readable and sometimes not (e.g. it can contain embedded javascript!)
         
-        variant = f"{evi} {pos} {mut} {desc} ({freq}% of reads) {ann}"
+        # variant = f"{evi} {pos} {mut} {desc} ({freq}% of reads) {ann}"
+        variant = f"{evi} {pos} {mut} ({freq}%)"
         variants.append(variant)
         
-        if float(freq) < 90:
+        if float(freq[:-1]) < 90:
             qc_varfreq = 'WARN'
     
     return { 'variants': variants, 'qc_varfreq': qc_varfreq }
