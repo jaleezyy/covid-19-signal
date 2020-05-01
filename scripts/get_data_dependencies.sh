@@ -8,7 +8,7 @@ accession="MN908947.3"
 
 HELP="""
 Flags:
-    -d  :  Directory to configure database within
+    -d  :  Directory to configure database within (~50-60GB)
     -a  :  Accession to use as viral reference (default=MN908947.3)
 """
 
@@ -25,6 +25,8 @@ if [ $database_dir = 0 ] ; then
     exit 1
 fi
 
+echo "Warning: databases require 50-60GB for final databases and can use up to 100GB during building"
+
 # make database dir and get abspath to it
 mkdir -p $database_dir
 database_dir=$(realpath $database_dir)
@@ -36,7 +38,7 @@ curl -s "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nucleotide
 curl -s "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nucleotide&id=${accession}&rettype=fasta&retmode=txt" > $database_dir/$accession.fasta
 
 # install and activate env for lmat/kraken to build their databases
-conda create -n data_dependencies -c conda-forge -c bioconda -c fmaguire -y lmat kraken2
+conda create -n data_dependencies -c conda-forge -c bioconda -c fmaguire -y lmat=1.2.6 kraken2=2.0.8
 CONDA_BASE=$(conda info --base)
 source $CONDA_BASE/etc/profile.d/conda.sh
 conda activate data_dependencies
