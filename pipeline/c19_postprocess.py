@@ -220,7 +220,10 @@ def parse_fastqc_pair(zip_filename1, zip_filename2, allow_missing=True):
     if (flagged_tot is not None) and (flagged_tot > 0):
         summary[f'{flagged_tot} sequences flagged as poor quality'] = 'WARN'
         
-    return { 'total_sequences': seq_tot, 'flagged_sequences': flagged_tot, 'read_pairs': read_pairs, 'summary': summary }
+    return { 'total_sequences': seq_tot,
+             'flagged_sequences': flagged_tot,
+             'read_pairs': read_pairs,
+             'summary': summary }
 
 
 def parse_kraken2_report(report_filename, allow_missing=True):
@@ -427,6 +430,9 @@ class WriterBase:
     def write(self, key, val=None, indent=0, optional=False, abbrev=None, qc=False):
         raise RuntimeError('To be overridden by subclass')
 
+    def write_multi(self, key, lines, abbrev_key=None, abbrev_lines=None):
+        raise RuntimeError('To be overridden by subclass')
+    
     def end_group(self):
         raise RuntimeError('To be overridden by subclass')        
     
@@ -437,7 +443,7 @@ class WriterBase:
         if self.f is not None:
             self.f.close()
             self.f = None
-            print(f"Wrote {self.filename}")
+            print(f"Wrote {self.filename}")        
 
 
 class HTMLWriterBase(WriterBase):
@@ -480,6 +486,11 @@ class SampleTextWriter(WriterBase):
         t = f'{v}  {key}' if qc else f'{key}: {v}'
         print(f"{s}{t}", file=self.f)
 
+    def write_multi(self, key, lines, abbrev_key=None, abbrev_lines=None):
+        print(f"{key}:", file=self.f)
+        for line in lines:
+            print(f"    {line}", file=self.f)
+
     def end_group(self):
         print(file=self.f)
 
@@ -503,6 +514,11 @@ class SampleHTMLWriter(HTMLWriterBase):
         td2 = f'<td>{v}</td>'
         print(f"<tr>{td1}{td2}</tr>", file=self.f)
 
+    def write_multi(self, key, lines, abbrev_key=None, abbrev_lines=None):
+        self.start_group(key)
+        for line in lines:
+            self.write(line, indent=4)
+        
     def end_group(self):
         pass
     
@@ -565,13 +581,27 @@ class SummaryHTMLWriter(HTMLWriterBase):
         v = val if (val is not None) else ''
         
         self.second_row += f'<td style="{self.css_bborder} {s1}">{key}</td>\n'
-        self.current_row += f'<td style="{s1} {s2}">{val}</td>\n'
+        self.current_row += f'<td style="{s1} {s2}">{v}</td>\n'
         self.current_group_colspan += 1
 
+
+    def write_multi(self, key, lines, abbrev_key=None, abbrev_lines=None):
+        if abbrev_key is not None:
+            key = abbrev_key
+        if abbrev_lines is not None:
+            lines = abbrev_lines
         
+        self.start_group(key)
+        self.write('', '<br>'.join(lines))
+        self.end_group()
+
+    
     def end_group(self):
         assert self.current_group_text is not None
-        self.first_row += f'<th colspan="{self.current_group_colspan}" style="{self.css_lborder}">{self.current_group_text}</th>\n'
+        
+        if self.current_group_colspan > 0:
+            self.first_row += f'<th colspan="{self.current_group_colspan}" style="{self.css_lborder}">{self.current_group_text}</th>\n'
+        
         self.current_group_text = None
         self.current_group_colspan = 0
 
@@ -627,54 +657,51 @@ class Sample:
         w.end_group()
     
         w.start_group("Quality Control Flags")
-        w.write("Genome Fraction greater than 90%", self.quast['qc_gfrac'], indent=4, abbrev='gfrac >90%', qc=True)
+        w.write("Genome Fraction greater than 90%", self.quast['qc_gfrac'], indent=4, abbrev='genome fraction >90%', qc=True)
         w.write("Depth of coverage >= 2000x", self.coverage['qc_meancov'], indent=4, abbrev='depth >2000', qc=True)
-        w.write("All variants with at least 90% frequency among reads", self.breseq['qc_varfreq'], indent=4, abbrev='vars >90%', qc=True)
+        w.write("All variants with at least 90% frequency among reads", self.breseq['qc_varfreq'], indent=4, abbrev='variants >90%', qc=True)
         w.write("Reads per base sequence quality", self.post_trim_qc['summary'].get('Per base sequence quality','FAIL'), indent=4, abbrev='fastqc quality', qc=True)
         w.write("Sequencing adapter removed", self.post_trim_qc['summary'].get('Adapter Content','FAIL'), indent=4, abbrev='fastqc adapter', qc=True)
-        w.write("At least 90% of positions have coverage >= 100x", self.coverage['qc_cov100'], indent=4, abbrev='cov >100 >90%', qc=True)
-        w.write("At least 90% of positions have coverage >= 1000x", self.coverage['qc_cov1000'], indent=4, abbrev='cov >1000 >90%', qc=True)
+        w.write("At least 90% of positions have coverage >= 100x", self.coverage['qc_cov100'], indent=4, abbrev='90% cov >100', qc=True)
+        w.write("At least 90% of positions have coverage >= 1000x", self.coverage['qc_cov1000'], indent=4, abbrev='90% cov >1000', qc=True)
         w.end_group()
 
-        w.end_sample()
-        return
-        
+        w.start_group("FASTQC Flags")
         for flavor in [ 'FAIL', 'WARN' ]:
-            messages = [ k for (k,v) in self.post_trim_qc['summary'].items() if v==flavor ]
-            if len(messages) == 0:
-                continue
-            
-            w.write("FASTQC {flavor}:")
-            for k in messages:
-                w.write("    {k}")
-            w.write("")
+            for (msg,f) in self.post_trim_qc['summary'].items():
+                if f == flavor:
+                    w.write(msg, f, indent=4, optional=True, qc=True)
+        w.end_group()
 
-        w.write("Reads SARS-CoV-2 (Kraken2)", self.kraken2['sars_cov2_percentage'], indent=4)
-        w.write("")
+        w.start_group("Kraken2")
+        w.write("Reads SARS-CoV-2 (%)", self.kraken2['sars_cov2_percentage'], indent=4)
+        w.end_group()
 
-        w.write("Genome Statistics (QUAST)")
-        w.write("    Genome Length (bp)", self.quast['genome_length'], indent=4)
-        w.write("    Genome Fraction (%)", self.quast['genome_fraction'], indent=4)
-        w.write("    Genomic Features", self.quast['genomic_features'], indent=4)
-        w.write("    N's per 100 kbp", self.quast['Ns_per_100_kbp'], indent=4)
-        w.write("    Mismatches per 100 kbp", self.quast['mismatches_per_100_kbp'], indent=4)
-        w.write("    Indels per 100 kbp", self.quast['indels_per_100_kbp'], indent=4)
-        w.write("    Average Depth of Coverage", self.coverage['mean_coverage'], indent=4)
+        w.start_group("QUAST")
+        w.write("Genome Length (bp)", self.quast['genome_length'], indent=4)
+        w.write("Genome Fraction (%)", self.quast['genome_fraction'], indent=4, optional=True)
+        w.write("Genomic Features", self.quast['genomic_features'], indent=4, optional=True)
+        w.write("N's per 100 kbp", self.quast['Ns_per_100_kbp'], indent=4, optional=True)
+        w.write("Mismatches per 100 kbp", self.quast['mismatches_per_100_kbp'], indent=4, optional=True)
+        w.write("Indels per 100 kbp", self.quast['indels_per_100_kbp'], indent=4, optional=True)
+        w.write("Average Depth of Coverage", self.coverage['mean_coverage'], indent=4)
 
         for (l,f) in zip(self.coverage['bin_labels'], self.coverage['bin_fractions']):
-            w.write(l, f, indent=8)
+            w.write(l, f, indent=8, optional=True)
 
-        w.write("5' Ns", self.consensus['N5prime'], indent=4)
-        w.write("3' Ns", self.consensus['N3prime'], indent=4)
-        w.write("")
+        w.write("5' Ns", self.consensus['N5prime'], indent=4, optional=True)
+        w.write("3' Ns", self.consensus['N3prime'], indent=4, optional=True)
+        w.end_group()
 
-        w.write("Taxonomic Composition of Assembly (LMAT)", self.lmat['taxonomic_composition'])
-        w.write("")
+        w.write_multi("Taxonomic Composition of Assembly (LMAT)", self.lmat['taxonomic_composition'], abbrev_key="Composition (LMAT)")
         
-        w.write("Variants in Consensus Genome (iVar)", self.ivar['variants'])
-        w.write("")
+        w.write_multi("Variants in Consensus Genome (iVar)", self.ivar['variants'], abbrev_key='Variants (iVar)')
+
+        w.write_multi('Variants in Read Alignment (BreSeq)', self.breseq['variants'], abbrev_key='Variants (BreSeq)')
         
-        w.write("Variants in Read Alignment (BreSeq)", self.breseq['variants'])
+        w.end_sample()
+        return        
+
 
 
 class Pipeline:
