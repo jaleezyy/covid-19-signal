@@ -350,6 +350,7 @@ def parse_lmat_output(lmat_dirname, allow_missing=True):
         raise RuntimeError(f"couldn't find fastsummary files in lmat dir '{lmat_dirname}'")
         
     top_taxa = [ ]
+    top_taxa_ann = [ ]
     nreads_cumul = 0
 
     for (nreads, score, rank, name) in reversed(sorted(taxa)):
@@ -358,10 +359,13 @@ def parse_lmat_output(lmat_dirname, allow_missing=True):
             break
 
         percentage = 100.*nreads/nreads_tot
-        top_taxa.append(f"{name} ({rank}, {percentage:.1f}%)")
+        
+        top_taxa.append(name)
+        top_taxa_ann.append(f"{name} ({rank}, {percentage:.1f}%)")
         nreads_cumul += nreads
 
-    return { 'taxonomic_composition': top_taxa }
+    # 'top_taxa_ann' = "top taxa with annotations"
+    return { 'top_taxa': top_taxa, 'top_taxa_ann': top_taxa_ann }
 
 
 def parse_ivar_variants(tsv_filename, allow_missing=True):
@@ -421,16 +425,16 @@ class WriterBase:
         self.filename = filename
         self.f = open(filename, 'w')
 
-    def start_sample(self, sample_name, link_to=None):
+    def start_sample(self, sample):
         raise RuntimeError('To be overridden by subclass')
 
-    def start_group(self, text):
+    def start_group(self, text, links=[]):
         raise RuntimeError('To be overridden by subclass')
     
     def write(self, key, val=None, indent=0, optional=False, abbrev=None, qc=False):
         raise RuntimeError('To be overridden by subclass')
 
-    def write_multi(self, key, lines, abbrev_key=None, abbrev_lines=None):
+    def write_multi(self, key, lines, abbrev_key=None, abbrev_lines=None, links=[]):
         raise RuntimeError('To be overridden by subclass')
     
     def end_group(self):
@@ -474,10 +478,10 @@ class SampleTextWriter(WriterBase):
         print("https://github.com/jaleezyy/covid-19-sequencing", file=self.f)
         print("", file=self.f)
         
-    def start_sample(self, sample_name, link_to=None):
+    def start_sample(self, sample):
         pass
 
-    def start_group(self, text):
+    def start_group(self, text, links=[]):
         print(text, file=self.f)
 
     def write(self, key, val=None, indent=0, optional=False, abbrev=None, qc=False):
@@ -486,10 +490,11 @@ class SampleTextWriter(WriterBase):
         t = f'{v}  {key}' if qc else f'{key}: {v}'
         print(f"{s}{t}", file=self.f)
 
-    def write_multi(self, key, lines, abbrev_key=None, abbrev_lines=None):
-        print(f"{key}:", file=self.f)
+    def write_multi(self, key, lines, abbrev_key=None, abbrev_lines=None, links=[]):
+        self.start_group(key)
         for line in lines:
             print(f"    {line}", file=self.f)
+        self.end_group()
 
     def end_group(self):
         print(file=self.f)
@@ -502,10 +507,22 @@ class SampleHTMLWriter(HTMLWriterBase):
     def __init__(self, filename):
         HTMLWriterBase.__init__(self, filename)
 
-    def start_sample(self, sample_name, link_to=None):
+    def start_sample(self, sample):
+        self.sample_dirname = sample.dirname
         print("<p><table>", file=self.f)
         
-    def start_group(self, text):
+    def start_group(self, text, links=[]):
+        t = [ ]
+        for l in links:
+            if os.path.exists(f'{self.sample_dirname}/{l}'):
+                t.append(f'<a href="{l}">{os.path.basename(l)}</a>')
+            else:
+                t.append(f'{l} not found')
+
+        if len(t) > 0:
+            t = ' | '.join(t)
+            text = f'{text} [ {t} ]'
+        
         print(f'<tr><th colspan="2" style="text-align: left">{text}</th>', file=self.f)
 
     def write(self, key, val=None, indent=0, optional=False, abbrev=None, qc=False):
@@ -514,10 +531,10 @@ class SampleHTMLWriter(HTMLWriterBase):
         td2 = f'<td>{v}</td>'
         print(f"<tr>{td1}{td2}</tr>", file=self.f)
 
-    def write_multi(self, key, lines, abbrev_key=None, abbrev_lines=None):
-        self.start_group(key)
+    def write_multi(self, key, lines, abbrev_key=None, abbrev_lines=None, links=[]):
+        self.start_group(key, links)
         for line in lines:
-            self.write(line, indent=4)
+            print(f'<tr><td colspan="2" style="padding-left: 20px">{line}</td></tr>', file=self.f)
         
     def end_group(self):
         pass
@@ -534,7 +551,7 @@ class SummaryHTMLWriter(HTMLWriterBase):
         self.first_row = ''
         self.second_row = ''
         self.current_row = ''
-        self.first_rows_written = False
+        self.num_rows_written = 0
 
         self.current_group_text = None
         self.current_group_colspan = 0
@@ -542,27 +559,32 @@ class SummaryHTMLWriter(HTMLWriterBase):
         self.css_lborder = 'border-left: 1px solid black;'
         self.css_bborder = 'border-bottom: 1px solid black;'
         
-        self.css_qc = {
-            'PASS': 'background-color:darkseagreen;',
-            'WARN': 'background-color: gold;',
-            'FAIL': 'background-color: #ff3030;'
-        }
-        
         print('<p><table style="border-collapse: collapse; border: 1px solid black;">', file=self.f)
 
         
-    def start_sample(self, sample_name, link_to):
-        assert isinstance(link_to, SampleHTMLWriter)
+    def css_color(self, val=None, qc=False):
+        qc_false = ('#dddddd', '#ffffff')
+        qc_true = { 'PASS': ('#7ca37c', '#8fbc8f'),
+                    'WARN': ('#ddba00', '#ffd700'),
+                    'FAIL': ('#dd2a2a', '#ff3030') }
+        
+        odd = (self.num_rows_written % 2)
+        color = qc_true[val][odd] if qc else qc_false[odd]
+        return f"background-color: {color};"
+
+    
+    def start_sample(self, sample, links=[]):
         assert self.current_group_text is None
 
-        url = os.path.relpath(link_to.filename, os.path.basename(self.filename))
+        url = f"{os.path.basename(sample.dirname)}/sample.html"
+        link_text = sample.sample_name
         
         self.first_row += f'<th>Sample</th>\n'
         self.second_row += f'<th style="{self.css_bborder}"></th>\n'
-        self.current_row += f'<td><a href="{url}">{sample_name}</a></td>'
+        self.current_row += f'<td style="{self.css_color()}"><a href="{url}">{link_text}</a></td>'
         
         
-    def start_group(self, text):
+    def start_group(self, text, links=[]):
         assert self.current_group_text is None
         self.current_group_text = text
         self.current_group_colspan = 0
@@ -576,23 +598,28 @@ class SummaryHTMLWriter(HTMLWriterBase):
         if abbrev is not None:
             key = abbrev
 
-        s1 = self.css_lborder if (self.current_group_colspan == 0) else ''
-        s2 = self.css_qc[val] if qc else ''
+        css_c = self.css_color(val, qc)
+        css_lb = self.css_lborder if (self.current_group_colspan == 0) else ''
         v = val if (val is not None) else ''
         
-        self.second_row += f'<td style="{self.css_bborder} {s1}">{key}</td>\n'
-        self.current_row += f'<td style="{s1} {s2}">{v}</td>\n'
+        self.second_row += f'<td style="{self.css_bborder} {css_lb}">{key}</td>\n'
+        self.current_row += f'<td style="{css_c} {css_lb}">{v}</td>\n'
         self.current_group_colspan += 1
 
 
-    def write_multi(self, key, lines, abbrev_key=None, abbrev_lines=None):
+    def write_multi(self, key, lines, abbrev_key=None, abbrev_lines=None, links=[]):
         if abbrev_key is not None:
             key = abbrev_key
         if abbrev_lines is not None:
             lines = abbrev_lines
+
+        # val = '<br>'.join(lines)
+        
+        val = '\n<p style="margin-bottom:0px; margin-top:8px">'.join(lines)
+        val = f'<p style="margin-bottom:0px; margin-top:0px"> {val}'
         
         self.start_group(key)
-        self.write('', '<br>'.join(lines))
+        self.write('', val)
         self.end_group()
 
     
@@ -609,16 +636,17 @@ class SummaryHTMLWriter(HTMLWriterBase):
     def end_sample(self):
         assert self.current_group_text is None
 
-        if not self.first_rows_written:
+        if self.num_rows_written == 0:
             print(f'<tr>{self.first_row}</tr>', file=self.f)
             print(f'<tr>{self.second_row}</tr>', file=self.f)
-            self.first_rows_written = True
 
         print(f'<tr>{self.current_row}</tr>', file=self.f)
         self.first_row = ''
         self.second_row = ''
         self.current_row = ''
+        self.num_rows_written += 1
 
+        
     def close(self):
         print('</table>', file=self.f)
         HTMLWriterBase.close(self)
@@ -645,9 +673,9 @@ class Sample:
 
 
     def write(self, w, link_to=None):
-        w.start_sample(self.sample_name, link_to)
+        w.start_sample(self)
             
-        w.start_group("Data Volume")
+        w.start_group("Data Volume", links=['fastq_primers_removed/cutadapt.log'])
         w.write("Raw Data (read pairs)", self.cutadapt['read_pairs_processed'], indent=4)
         w.write("Raw Data (base pairs)", self.cutadapt['base_pairs_processed'], indent=4, optional=True)
         w.write("Post Primer Removal (read pairs)", self.cutadapt['read_pairs_written'], indent=4, optional=True)
@@ -655,7 +683,7 @@ class Sample:
         w.write("Post Trim (read pairs)", self.post_trim_qc['read_pairs'], indent=4)
         w.write("Post human purge (%)", self.hostremove['alignment_rate'], indent=4)
         w.end_group()
-    
+
         w.start_group("Quality Control Flags")
         w.write("Genome Fraction greater than 90%", self.quast['qc_gfrac'], indent=4, abbrev='genome fraction >90%', qc=True)
         w.write("Depth of coverage >= 2000x", self.coverage['qc_meancov'], indent=4, abbrev='depth >2000', qc=True)
@@ -666,18 +694,18 @@ class Sample:
         w.write("At least 90% of positions have coverage >= 1000x", self.coverage['qc_cov1000'], indent=4, abbrev='90% cov >1000', qc=True)
         w.end_group()
 
-        w.start_group("FASTQC Flags")
+        w.start_group("FASTQC Flags", links=[f'fastq_trimmed/R{r}_paired_fastqc.html' for r in [1,2]])
         for flavor in [ 'FAIL', 'WARN' ]:
             for (msg,f) in self.post_trim_qc['summary'].items():
                 if f == flavor:
                     w.write(msg, f, indent=4, optional=True, qc=True)
         w.end_group()
 
-        w.start_group("Kraken2")
+        w.start_group("Kraken2", links=['kraken2/report'])
         w.write("Reads SARS-CoV-2 (%)", self.kraken2['sars_cov2_percentage'], indent=4)
         w.end_group()
 
-        w.start_group("QUAST")
+        w.start_group("QUAST", links=['quast/report.html'])
         w.write("Genome Length (bp)", self.quast['genome_length'], indent=4)
         w.write("Genome Fraction (%)", self.quast['genome_fraction'], indent=4, optional=True)
         w.write("Genomic Features", self.quast['genomic_features'], indent=4, optional=True)
@@ -693,11 +721,14 @@ class Sample:
         w.write("3' Ns", self.consensus['N3prime'], indent=4, optional=True)
         w.end_group()
 
-        w.write_multi("Taxonomic Composition of Assembly (LMAT)", self.lmat['taxonomic_composition'], abbrev_key="Composition (LMAT)")
+        w.write_multi("Taxonomic Composition of Assembly (LMAT)", self.lmat['top_taxa_ann'],
+                      abbrev_key="Composition (LMAT)", abbrev_lines=self.lmat['top_taxa'])
         
-        w.write_multi("Variants in Consensus Genome (iVar)", self.ivar['variants'], abbrev_key='Variants (iVar)')
+        w.write_multi("Variants in Consensus Genome (iVar)", self.ivar['variants'],
+                      abbrev_key='Variants (iVar)')
 
-        w.write_multi('Variants in Read Alignment (BreSeq)', self.breseq['variants'], abbrev_key='Variants (BreSeq)')
+        w.write_multi('Variants in Read Alignment (BreSeq)', self.breseq['variants'],
+                      abbrev_key='Variants (BreSeq)', links=['breseq/output/index.html'])
         
         w.end_sample()
         return        
