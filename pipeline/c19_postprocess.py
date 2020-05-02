@@ -431,6 +431,7 @@ class WriterBase:
         self.unabridged = unabridged
         self.f = open(filename, 'w')
 
+    
     def start_sample(self, s):
         raise RuntimeError('To be overridden by subclass')
 
@@ -443,7 +444,7 @@ class WriterBase:
     def end_kv_pairs(self):
         raise RuntimeError('To be overridden by subclass')        
 
-    def write_lines(self, title, lines):
+    def write_lines(self, title, lines, coalesce=False):
         raise RuntimeError('To be overridden by subclass')
     
     def end_sample(self):
@@ -458,42 +459,42 @@ class WriterBase:
             
     def write_data_volume(self, s):
         self.start_kv_pairs("Data Volume", links=['fastq_primers_removed/cutadapt.log'])
-        self.write_kv_pair("Raw Data (read pairs)", s.cutadapt['read_pairs_processed'], indent=1)
+        self.write_kv_pair("Raw\nData\n(read\npairs)", s.cutadapt['read_pairs_processed'], indent=1)
 
         if self.unabridged:
             self.write_kv_pair("Raw Data (base pairs)", s.cutadapt['base_pairs_processed'], indent=1)
             self.write_kv_pair("Post Primer Removal (read pairs)", s.cutadapt['read_pairs_written'], indent=1)
             self.write_kv_pair("Post Primer Removal (base pairs)", s.cutadapt['base_pairs_written'], indent=1)
         
-        self.write_kv_pair("Post Trim (read pairs)", s.post_trim_qc['read_pairs'], indent=1)
-        self.write_kv_pair("Post human purge (%)", s.hostremove['alignment_rate'], indent=1)
+        self.write_kv_pair("Post\nTrim\n(read\npairs)", s.post_trim_qc['read_pairs'], indent=1)
+        self.write_kv_pair("Post\nhuman\npurge\n(%)", s.hostremove['alignment_rate'], indent=1)
         self.end_kv_pairs()
 
         
     def write_qc(self, s):
         self.start_kv_pairs("Quality Control Flags")
 
-        key = "Genome Fraction greater than 90%" if self.unabridged else "genome fraction >90%"
+        key = "Genome Fraction greater than 90%" if self.unabridged else "Genome\nfraction\n>90%"
         self.write_kv_pair(key, s.quast['qc_gfrac'], indent=1, qc=True)
 
-        key = "Depth of coverage >= 2000x" if self.unabridged else "depth >2000"
+        key = "Depth of coverage >= 2000x" if self.unabridged else "Depth\n>2000"
         self.write_kv_pair(key, s.coverage['qc_meancov'], indent=1, qc=True)
 
-        key = "All variants with at least 90% frequency among reads" if self.unabridged else "variants >90%"
+        key = "All variants with at least 90% frequency among reads" if self.unabridged else "Variants\n>90%"
         self.write_kv_pair(key, s.breseq['qc_varfreq'], indent=1, qc=True)
 
-        key = "Reads per base sequence quality" if self.unabridged else "fastqc quality"
+        key = "Reads per base sequence quality" if self.unabridged else "Fastqc\nquality"
         val = s.post_trim_qc['summary'].get('Per base sequence quality', 'FAIL')
         self.write_kv_pair(key, val, indent=1, qc=True)
 
-        key = "Sequencing adapter removed" if self.unabridged else "fastqc adapter"
+        key = "Sequencing adapter removed" if self.unabridged else "Fastqc\nadapter"
         val = s.post_trim_qc['summary'].get('Adapter Content', 'FAIL')
         self.write_kv_pair(key, val, indent=1, qc=True)
 
-        key = "At least 90% of positions have coverage >= 100x" if self.unabridged else "90% cov >100"
+        key = "At least 90% of positions have coverage >= 100x" if self.unabridged else "90%\ncov\n>100"
         self.write_kv_pair(key, s.coverage['qc_cov100'], indent=1, qc=True)
         
-        key = "At least 90% of positions have coverage >= 1000x" if self.unabridged else "90% cov >1000"
+        key = "At least 90% of positions have coverage >= 1000x" if self.unabridged else "90%\ncov\n>1000"
         self.write_kv_pair(key, s.coverage['qc_cov1000'], indent=1, qc=True)
         
         self.end_kv_pairs()
@@ -515,13 +516,13 @@ class WriterBase:
         
     def write_kraken2(self, s):
         self.start_kv_pairs("Kraken2", links=['kraken2/report'])
-        self.write_kv_pair("Reads SARS-CoV-2 (%)", s.kraken2['sars_cov2_percentage'], indent=1)
+        self.write_kv_pair("Reads\nSARS-CoV-2\n(%)", s.kraken2['sars_cov2_percentage'], indent=1)
         self.end_kv_pairs()
 
 
     def write_quast(self, s):
         self.start_kv_pairs("QUAST", links=['quast/report.html'])
-        self.write_kv_pair("Genome Length (bp)", s.quast['genome_length'], indent=1)
+        self.write_kv_pair("Genome\nLength\n(bp)", s.quast['genome_length'], indent=1)
 
         if self.unabridged:
             self.write_kv_pair("Genome Fraction (%)", s.quast['genome_fraction'], indent=1)
@@ -530,7 +531,7 @@ class WriterBase:
             self.write_kv_pair("Mismatches per 100 kbp", s.quast['mismatches_per_100_kbp'], indent=1)
             self.write_kv_pair("Indels per 100 kbp", s.quast['indels_per_100_kbp'], indent=1)
         
-        self.write_kv_pair("Average Depth of Coverage", s.coverage['mean_coverage'], indent=1)
+        self.write_kv_pair("Average\nDepth of\nCoverage", s.coverage['mean_coverage'], indent=1)
 
         if self.unabridged:
             for (l,f) in zip(s.coverage['bin_labels'], s.coverage['bin_fractions']):
@@ -548,7 +549,7 @@ class WriterBase:
         
     def write_ivar(self, s):
         title = "Variants in Consensus Genome (iVar)" if self.unabridged else "Variants (iVar)"
-        self.write_lines(title, s.ivar['variants'])
+        self.write_lines(title, s.ivar['variants'], coalesce=True)
 
     def write_breseq(self, s):
         title = "Variants in Read Alignment (BreSeq)" if self.unabridged else "Variants (BreSeq)"
@@ -566,6 +567,19 @@ class WriterBase:
         self.write_ivar(s)
         self.write_breseq(s)
         self.end_sample()
+
+
+    @staticmethod
+    def coalesce_lines(lines, n):
+        ret = [ ]
+        
+        for line in lines:
+            if (len(ret) > 0) and (len(ret[-1])+len(line) < n):
+                ret[-1] = f"{ret[-1]} {line}"
+            else:
+                ret.append(line)
+
+        return ret
 
 
 class HTMLWriterBase(WriterBase):
@@ -607,11 +621,15 @@ class SampleTextWriter(WriterBase):
 
     def write_kv_pair(self, key, val=None, indent=0, qc=False):
         s = ' ' * (4*indent)
+        k = key.replace('\n',' ')
         v = val if (val is not None) else ''
-        t = f'{v}  {key}' if qc else f'{key}: {v}'
+        t = f'{v}  {k}' if qc else f'{k}: {v}'
         print(f"{s}{t}", file=self.f)
 
-    def write_lines(self, title, lines):
+    def write_lines(self, title, lines, coalesce=False):
+        if coalesce:
+            lines = self.coalesce_lines(lines, 80)
+        
         self.start_kv_pairs(title)
         for line in lines:
             print(f"    {line}", file=self.f)
@@ -647,12 +665,16 @@ class SampleHTMLWriter(HTMLWriterBase):
         print(f'<tr><th colspan="2" style="text-align: left">{title}</th>', file=self.f)
 
     def write_kv_pair(self, key, val=None, indent=0, qc=False):
+        k = key.replace('\n',' ')
         v = val if (val is not None) else ''
-        td1 = f'<td style="padding-left: {20*indent}px">{key}</td>'
+        td1 = f'<td style="padding-left: {20*indent}px">{k}</td>'
         td2 = f'<td>{v}</td>'
         print(f"<tr>{td1}{td2}</tr>", file=self.f)
 
-    def write_lines(self, title, lines):
+    def write_lines(self, title, lines, coalesce=False):
+        if coalesce:
+            lines = self.coalesce_lines(lines, 80)
+
         self.start_kv_pairs(title)
         for line in lines:
             print(f'<tr><td colspan="2" style="padding-left: 20px">{line}</td></tr>', file=self.f)
@@ -667,7 +689,7 @@ class SampleHTMLWriter(HTMLWriterBase):
     
     def end_sample(self):
         print("</table>", file=self.f)
-        print('<iframe src="breseq/output/index.html" width="100%" height="500px" style="border: 0px"></iframe>', file=self.f)
+        print('<iframe src="breseq/output/index.html" width="100%" height="800px" style="border: 0px"></iframe>', file=self.f)
         self.close()
 
 
@@ -708,7 +730,7 @@ class SummaryHTMLWriter(HTMLWriterBase):
         
         self.first_row += f'<th>Sample</th>\n'
         self.second_row += f'<th style="{self.css_bborder}"></th>\n'
-        self.current_row += f'<td style="{self.css_color()}"><a href="{url}">{link_text}</a></td>'
+        self.current_row += f'<td style="{self.css_color()}">&nbsp;<br><a href="{url}">{link_text}</a><br>&nbsp;</td>'
         
         
     def start_kv_pairs(self, title, links=[]):
@@ -722,14 +744,17 @@ class SummaryHTMLWriter(HTMLWriterBase):
 
         css_c = self.css_color(val, qc)
         css_lb = self.css_lborder if (self.current_group_colspan == 0) else ''
+
+        k = key.replace('\n','<br>')
         v = val if (val is not None) else ''
+        s = '&nbsp;' if (self.current_group_colspan > 0) else ''
         
-        self.second_row += f'<td style="{self.css_bborder} {css_lb}">{key}</td>\n'
-        self.current_row += f'<td style="{css_c} {css_lb}">{v}</td>\n'
+        self.second_row += f'<td style="{self.css_bborder} {css_lb}">{k}</td>\n'
+        self.current_row += f'<td style="{css_c} {css_lb}">{s}{v}</td>\n'
         self.current_group_colspan += 1
 
 
-    def write_lines(self, title, lines):
+    def write_lines(self, title, lines, coalesce=False):
         val = '\n<p style="margin-bottom:0px; margin-top:8px">'.join(lines)
         val = f'<p style="margin-bottom:0px; margin-top:0px"> {val}'
         
