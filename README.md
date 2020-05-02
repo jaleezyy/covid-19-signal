@@ -3,9 +3,11 @@
 This snakemake pipeline is compatible with the [illumina artic nf pipeline](https://github.com/connor-lab/ncov2019-artic-nf).
 It performs the same consensus and variant calling procedure using `ivar`.
 In addition it adds screening with Kraken2/LMAT, enhanced contamination removal, and additional breseq mutation detection.
+By default the SARS-CoV2 reference genome: MN908947.3 is used throughout the analysis. This can be changed in the data dependencies download script (`script/get_data_dependencies.sh`) and updating the `config.yaml` accordingly.  Similarly, the default sequencing primer and trimming settings can easily be added and adjusted in the `config.yaml`.
 See below for full details.
 
 Future enhancements are intended to aid/automate metadata management in accordance with PHA4GE guidelines, and manage upload to GISAID and INDSC compatible BioSamples.
+
 
 ## Setup/Execution
 
@@ -62,7 +64,7 @@ See the example table `pipeline/example_sample_table.csv` for an idea of how to 
 
 5. Execute pipeline (optionally explicitly specify `--cores`):
 
-        snakemake --use-conda -s Snakefile.master --cores $(nproc) all
+        snakemake --use-conda -s Snakefile --cores $(nproc) all
 
 ### Docker (pending)
 
@@ -82,15 +84,15 @@ Add remaining files (e.g. primers) to your config and sample table in the data d
 
 Then execute the pipeline:
 
-        docker run -v $PWD/data:/data finlaymaguire/sars-cov2-pipeline:1.0.0 conda run -n snakemake snakemake --use-conda --conda-prefix $HOME/.snakemake --cores 8 -s Snakefile.master all
+        docker run -v $PWD/data:/data finlaymaguire/sars-cov2-pipeline:1.0.0 conda run -n snakemake snakemake --use-conda --conda-prefix $HOME/.snakemake --cores 8 -s Snakefile all
 
 ## Summaries:
 
-  - Generate summaries of BreSeq among many samples, [see](scripts/summaries/README.md)
+  - Generate summaries of BreSeq among many samples, [see](resources/dev_scripts/summaries/README.md)
 
 ## Pipeline details:
 
-For a step-by-step walkthrough of the pipeline, see [pipeline/README.md](pipeline/README.md).
+For a step-by-step walkthrough of the pipeline, see [pipeline/README.md](PIPELINE.md).
 
 A diagram of the workflow is shown below.
 
