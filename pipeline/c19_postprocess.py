@@ -411,9 +411,12 @@ def parse_breseq_output(html_filename, allow_missing=True):
         # TODO: improve breseq html parsing
         # Currently, the "annotation" is unreadable.
         # The "description" is sometimes readable and sometimes not (e.g. it can contain embedded javascript!)
+
+        # Ad hoc improvement of html parsing for 'gene', may need revisiting
+        gene = gene.replace('\xa0','')       # remove cosmetic html '&nbsp;'
+        gene = gene.replace('\u2011', '-')   # replace unicode underscore by vanilla underscore
         
-        # variant = f"{evi} {pos} {mut} {desc} ({freq}% of reads) {ann}"
-        variant = f"{evi} {pos} {mut} ({freq}%)"
+        variant = f"{evi} {mut} ({freq}%) {gene}"
         variants.append(variant)
         
         if float(freq[:-1]) < 90:
