@@ -11,10 +11,16 @@ import numpy as np
 import pandas as pd
 
 
-####################################################################################################
+########################    Helper functions/classes for text file parsing   #######################
 
 
 def file_is_missing(filename, allow_missing=True):
+    """
+    This helper function is called in several places where we want
+    to detect a missing file, and either print a warning or throw
+    an exception, depending on whether 'allow_missing' is True.
+    """
+
     if os.path.exists(filename):
         return False
     if not allow_missing:
@@ -24,6 +30,16 @@ def file_is_missing(filename, allow_missing=True):
 
 
 def read_file(filename, allow_missing=True, zname=None):
+    """
+    Generator which yields all lines in specified file.
+
+    If allow_missing=True, then missing file is treated as empty file
+    (but a warning is printed).
+
+    If 'zname' is specified, then 'filename' should be a .zip file,
+    and 'zname' should be the name of the constituent file to be read.
+    """
+    
     if file_is_missing(filename, allow_missing):
         pass    
     elif zname is None:
@@ -38,23 +54,42 @@ def read_file(filename, allow_missing=True, zname=None):
 
                     
 class TextFileParser:
-    def __init__(self):
-        self._column_names = [ ]
-        self._column_details = [ ]  # List of 4-tuples (regexp_pattern, regexp_group, dtype, required)
+    """
+    This helper class is used in several places to parse text files for
+    multiple 'fields', each field specified by a regular expression.
+    """
     
-    def add_column(self, name, regexp_pattern, regexp_group=1, dtype=str, required=True):
-        assert name not in self._column_names
-        self._column_names.append(name)
-        self._column_details.append((regexp_pattern, regexp_group, dtype, required))
+    def __init__(self):
+        self._field_names = [ ]
+        self._field_details = [ ]  # List of 4-tuples (regexp_pattern, regexp_group, dtype, required)
+    
+    def add_field(self, field_name, regexp_pattern, regexp_group=1, dtype=str, required=True):
+        assert name not in self._field_names
+        self._field_names.append(field_name)
+        self._field_details.append((regexp_pattern, regexp_group, dtype, required))
     
     def parse_file(self, filename, allow_missing=True, zname=None):
-        ret = { name: None for name in self._column_names }
+        """
+        Parses the specified file and returns a dict (field_name) -> (parsed_value).
+
+        If allow_missing=True, then missing file is treated as empty file
+        (but a warning is printed).
+        
+        If 'zname' is specified, then 'filename' should be a .zip file,
+        and 'zname' should be the name of the constituent file to be read.
+        
+        If a regexp fails to match, then either an exception is thrown, or the
+        corresponding parsed_value is set to None, depending on whether 'required'
+        was True when add_field() was called.
+        """
+
+        ret = { name: None for name in self._field_names }
 
         if file_is_missing(filename, allow_missing):
             return ret
         
         for line in read_file(filename, allow_missing, zname):
-            for (name, (regexp_pattern, regexp_group, dtype, _)) in zip(self._column_names, self._column_details):
+            for (name, (regexp_pattern, regexp_group, dtype, _)) in zip(self._field_names, self._field_details):
                 m = re.match(regexp_pattern, line)
                 if m is None:
                     continue
@@ -62,22 +97,29 @@ class TextFileParser:
                     raise RuntimeError(f"{filename}: attempt to set field '{name}' twice")                    
                 ret[name] = dtype(m.group(regexp_group))
         
-        for (name, (_,_,_,required)) in zip(self._column_names, self._column_details):
+        for (name, (_,_,_,required)) in zip(self._field_names, self._field_details):
             if required and ret[name] is None:
-                raise RuntimeError(f"{filename}: failed to parse column '{name}'")
+                raise RuntimeError(f"{filename}: failed to parse field '{name}'")
         
         return ret
 
     
 def comma_separated_int(s):
+    """
+    Used as the 'dtype' argument to TextFileParser.add_field(), to parse integer fields
+    which appear in text files with comma separators.
+    """
+    
     s = s.replace(',','')
     return int(s)
 
 
-####################################################################################################
+########################    Helper functions/classes for HTML file parsing   #######################
 
 
 class SimpleHTMLTableParser(html.parser.HTMLParser):
+    """Helper class for parse_html_tables()."""
+    
     def __init__(self):
         html.parser.HTMLParser.__init__(self)
         
@@ -127,13 +169,23 @@ class SimpleHTMLTableParser(html.parser.HTMLParser):
             
 
 def parse_html_tables(html_filename):
+    """
+    Reads all tables from an HTML file and returns a 3-d array 
+    indexed by (table-index, row-index, col-index).
+    
+    Limited in scope! Assumes non-nested tables, and perfectly-formed
+    HTML, e.g. each <tr> and <td> tag must be matched by a </tr> or </td>.
+    If anything goes wrong, an exception will be thrown!
+    """
+    
     with open(html_filename) as f:
         p = SimpleHTMLTableParser()
         p.feed(f.read())
         return p.tables
-    
+
+
 def show_html_tables(html_tables):
-    """Intended for debugging."""
+    """Pretty-prints the return value of parse_html_tables(). Intended for debugging."""
         
     for (it,t) in enumerate(html_tables):
         print(f"Table {it}")
@@ -143,11 +195,14 @@ def show_html_tables(html_tables):
                 print(f"    Col {ic}: {c}")
 
 
-####################################################################################################
+#########################    Helper functions for handling missing data    #########################
 
 
 def binop(x, y, op):
-    """Returns op(x,y), with None treated as zero."""
+    """
+    Returns op(x,y), where either x or y can be None, to indicate 'missing data'.
+    The op() argument is a binary callable, e.g. op=min or op=(lambda x,y:x+y).
+    """
 
     if (x is None) and (y is None):
         return None
@@ -158,32 +213,38 @@ def binop(x, y, op):
 
 
 def xround(x, ndigits):
+    """Rounds x to the specified number of digits, where x can be None to indicate 'missing data'."""
+    
     return round(x,ndigits) if (x is not None) else None
 
 
-####################################################################################################
+########################    Parsing functions for pipeline output files   ##########################
 
 
 def parse_cutadapt_log(filename, allow_missing=True):
+    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
+    
     t = TextFileParser()
-    t.add_column('read_pairs_processed', r'Total read pairs processed:\s+([0-9,]+)', dtype=comma_separated_int)
-    t.add_column('R1_with_adapter', r'\s*Read 1 with adapter:\s+([0-9,]+)\s+', dtype=comma_separated_int)
-    t.add_column('R2_with_adapter', r'\s*Read 2 with adapter:\s+([0-9,]+)\s+', dtype=comma_separated_int)
-    t.add_column('read_pairs_written', r'Pairs written \(passing filters\):\s+([0-9,]+)\s+', dtype=comma_separated_int)
-    t.add_column('base_pairs_processed', r'Total basepairs processed:\s+([0-9,]+)\s+', dtype=comma_separated_int)
-    t.add_column('base_pairs_written', r'Total written \(filtered\):\s+([0-9,]+)\s+', dtype=comma_separated_int)
+    t.add_field('read_pairs_processed', r'Total read pairs processed:\s+([0-9,]+)', dtype=comma_separated_int)
+    t.add_field('R1_with_adapter', r'\s*Read 1 with adapter:\s+([0-9,]+)\s+', dtype=comma_separated_int)
+    t.add_field('R2_with_adapter', r'\s*Read 2 with adapter:\s+([0-9,]+)\s+', dtype=comma_separated_int)
+    t.add_field('read_pairs_written', r'Pairs written \(passing filters\):\s+([0-9,]+)\s+', dtype=comma_separated_int)
+    t.add_field('base_pairs_processed', r'Total basepairs processed:\s+([0-9,]+)\s+', dtype=comma_separated_int)
+    t.add_field('base_pairs_written', r'Total written \(filtered\):\s+([0-9,]+)\s+', dtype=comma_separated_int)
 
     return t.parse_file(filename, allow_missing)
 
 
 def parse_fastqc_output(zip_filename, allow_missing=True):
+    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
+    
     assert zip_filename.endswith('_fastqc.zip')
     zname_data = f"{os.path.basename(zip_filename[:-4])}/fastqc_data.txt"
     zname_summ = f"{os.path.basename(zip_filename[:-4])}/summary.txt"
     
     t = TextFileParser()
-    t.add_column('total_sequences', r'Total Sequences\s+(\d+)', dtype=int)
-    t.add_column('flagged_sequences', r'Sequences flagged as poor quality\s+(\d+)', dtype=int)
+    t.add_field('total_sequences', r'Total Sequences\s+(\d+)', dtype=int)
+    t.add_field('flagged_sequences', r'Sequences flagged as poor quality\s+(\d+)', dtype=int)
     
     ret = t.parse_file(zip_filename, allow_missing, zname_data)
     ret['summary'] = { }   # dict (text -> flavor) pairs, where flavor is in ['PASS','WARN','FAIL']
@@ -198,6 +259,8 @@ def parse_fastqc_output(zip_filename, allow_missing=True):
 
 
 def parse_fastqc_pair(zip_filename1, zip_filename2, allow_missing=True):
+    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
+
     fastqc_r1 = parse_fastqc_output(zip_filename1)
     fastqc_r2 = parse_fastqc_output(zip_filename2)
 
@@ -229,28 +292,34 @@ def parse_fastqc_pair(zip_filename1, zip_filename2, allow_missing=True):
 
 
 def parse_kraken2_report(report_filename, allow_missing=True):
+    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
+
     t = TextFileParser()
-    t.add_column('sars_cov2_percentage', r'\s*([\d\.]*)\s+.*Severe acute respiratory syndrome coronavirus 2', dtype=float)
+    t.add_field('sars_cov2_percentage', r'\s*([\d\.]*)\s+.*Severe acute respiratory syndrome coronavirus 2', dtype=float)
     return t.parse_file(report_filename, allow_missing)
 
 
 def parse_hostremove_hisat2_log(log_filename, allow_missing=True):
+    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
+
     t = TextFileParser()
-    t.add_column('alignment_rate', r'([\d\.]*)%\s+overall alignment rate', dtype=float)
+    t.add_field('alignment_rate', r'([\d\.]*)%\s+overall alignment rate', dtype=float)
     return t.parse_file(log_filename, allow_missing)
 
 
 def parse_quast_report(report_filename, allow_missing=True):
+    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
+
     t = TextFileParser()
 
     # Note that some fields are "required=False" here.
     # Sometimes, QUAST doesn't write every field, but I didn't investigate why.
-    t.add_column("genome_length", r'Total length \(>= 0 bp\)\s+(\S+)', dtype=int)
-    t.add_column("genome_fraction", r'Genome fraction \(%\)\s+(\S+)', dtype=float, required=False)   # Note: genome "fraction" is really a percentage
-    t.add_column("genomic_features", r'# genomic features\s+(\S+)', required=False)
-    t.add_column("Ns_per_100_kbp", r"# N's per 100 kbp\s+(\S+)", dtype=float)
-    t.add_column("mismatches_per_100_kbp", r"# mismatches per 100 kbp\s+(\S+)", dtype=float, required=False)
-    t.add_column("indels_per_100_kbp", r"# indels per 100 kbp\s+(\S+)", dtype=float, required=False)
+    t.add_field("genome_length", r'Total length \(>= 0 bp\)\s+(\S+)', dtype=int)
+    t.add_field("genome_fraction", r'Genome fraction \(%\)\s+(\S+)', dtype=float, required=False)   # Note: genome "fraction" is really a percentage
+    t.add_field("genomic_features", r'# genomic features\s+(\S+)', required=False)
+    t.add_field("Ns_per_100_kbp", r"# N's per 100 kbp\s+(\S+)", dtype=float)
+    t.add_field("mismatches_per_100_kbp", r"# mismatches per 100 kbp\s+(\S+)", dtype=float, required=False)
+    t.add_field("indels_per_100_kbp", r"# indels per 100 kbp\s+(\S+)", dtype=float, required=False)
     
     ret = t.parse_file(report_filename, allow_missing=True)
     
@@ -261,6 +330,8 @@ def parse_quast_report(report_filename, allow_missing=True):
 
 
 def parse_consensus_assembly(fasta_filename, allow_missing=True):
+    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
+
     if file_is_missing(fasta_filename, allow_missing):
         return { 'N5prime': None, 'N3prime': None }
     
@@ -287,6 +358,8 @@ def parse_consensus_assembly(fasta_filename, allow_missing=True):
 
 
 def parse_coverage(depth_filename, allow_missing=True):
+    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
+        
     delims = [ 0, 10, 100, 1000, 2000, 10000]
     nbins = len(delims)+1
     
@@ -326,6 +399,8 @@ def parse_coverage(depth_filename, allow_missing=True):
 
 
 def parse_lmat_output(lmat_dirname, allow_missing=True):
+    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
+
     # Represent each taxon by a 4-tuple (nreads, score, rank, name)
     taxa = [ ]
     nreads_tot = 0
@@ -371,6 +446,8 @@ def parse_lmat_output(lmat_dirname, allow_missing=True):
 
 
 def parse_ivar_variants(tsv_filename, allow_missing=True):
+    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
+
     if file_is_missing(tsv_filename, allow_missing):
         return { 'variants': [] }
     
@@ -388,6 +465,8 @@ def parse_ivar_variants(tsv_filename, allow_missing=True):
 
 
 def parse_breseq_output(html_filename, allow_missing=True):
+    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
+
     if file_is_missing(html_filename, allow_missing):
         return { 'variants': [], 'qc_varfreq': 'FAIL' }
     
@@ -427,10 +506,33 @@ def parse_breseq_output(html_filename, allow_missing=True):
     return { 'variants': variants, 'qc_varfreq': qc_varfreq }
 
 
-####################################################################################################
+########  Base classes for writing summary files, see WriterBase docstring for explanation  ########
 
 
 class WriterBase:
+    """
+    The postprocessing script writes a bunch of output files with similar contents.
+
+    It's convenient to represent this by one "writer" class per output file, with the 
+    following class hierarchy:
+    
+        WriterBase
+           SampleTextWriter        writes sample.txt (single-sample)
+           HTMLWriterBase
+              SampleHTMLWriter     writes sample.html (single-sample)
+              SummaryHTMLWriter    writes summary.html (multi-sample)
+
+    TODO: add single-sample PDF, multi-sample CSV.
+
+    For each file, the write_sample() argument processes one sample. It will be called
+    once for "single-sample" outputs, and multiple times for "multi-sample" outputs.
+    
+    Note that write_sample() is implemented in the base class, but is factored into
+    multiple methods, in case a subclass wants to override part of the logic (e.g.
+    SampleHTMLWriter overrides write_breseq()).
+    """
+
+    
     def __init__(self, filename, unabridged):
         self.filename = filename
         self.unabridged = unabridged
@@ -438,23 +540,53 @@ class WriterBase:
 
     
     def start_sample(self, s):
+        """
+        The 's' argument should be an instance of type Sample (defined later in this file).
+
+        Each call to start_sample() is followed by:
+           - one or more calls to write_lines()
+           - one or more key/value blocks, delimited by start_kv_pairs..end_kv_pairs,
+             and containing one or more calls to write_kv_pair()
+           - one call to end_sample()
+        """
         raise RuntimeError('To be overridden by subclass')
 
-    def start_kv_pairs(self, title, links=[]):
-        raise RuntimeError('To be overridden by subclass')
     
-    def write_kv_pair(self, key, val=None, indent=0, qc=False):
+    def start_kv_pairs(self, title, links=[]):
+        """The 'links' argument is a list of filenames, relative to Sample.dirname."""
         raise RuntimeError('To be overridden by subclass')
+
+    
+    def write_kv_pair(self, key, val, indent=0, qc=False):
+        """
+        The 'key' argument is a string, and often contains newlines.  The newlines
+        are intended to be helpful for explicit formatting in narrow columns, but
+        some subclasses ignore them via "val = val.replace('\n','').
+        
+        The 'val' argument can be None, to indicate missing data.
+        
+        The 'qc' boolean flag can be used to enable special formatting for QC flags
+        (e.g. color-coding in HTML tables).
+        """
+        raise RuntimeError('To be overridden by subclass')
+
     
     def end_kv_pairs(self):
         raise RuntimeError('To be overridden by subclass')        
 
+    
     def write_lines(self, title, lines, coalesce=False):
+        """
+        The 'lines' argument is a list of strings.
+        The 'coalesce' argument tells the subclass that coalescing multiple lines is okay.
+        """
         raise RuntimeError('To be overridden by subclass')
+
     
     def end_sample(self):
         raise RuntimeError('To be overridden by subclass')
 
+    
     def close(self):
         if self.f is not None:
             self.f.close()
@@ -462,7 +594,7 @@ class WriterBase:
             print(f"Wrote {self.filename}")        
 
             
-    def write_data_volume(self, s):
+    def write_data_volume_summary(self, s):
         self.start_kv_pairs("Data Volume", links=['fastq_primers_removed/cutadapt.log'])
         self.write_kv_pair("Raw\nData\n(read\npairs)", s.cutadapt['read_pairs_processed'], indent=1)
 
@@ -476,7 +608,7 @@ class WriterBase:
         self.end_kv_pairs()
 
         
-    def write_qc(self, s):
+    def write_qc_flags(self, s):
         self.start_kv_pairs("Quality Control Flags")
 
         key = "Genome Fraction greater than 90%" if self.unabridged else "Genome\nfraction\n>90%"
@@ -505,7 +637,7 @@ class WriterBase:
         self.end_kv_pairs()
 
 
-    def write_fastqc(self, s):
+    def write_fastqc_summary(self, s):
         if not self.unabridged:
             return
         
@@ -563,9 +695,9 @@ class WriterBase:
     
     def write_sample(self, s):
         self.start_sample(s)
-        self.write_data_volume(s)
-        self.write_qc(s)
-        self.write_fastqc(s)
+        self.write_data_volume_summary(s)
+        self.write_qc_flags(s)
+        self.write_fastqc_summary(s)
         self.write_kraken2(s)
         self.write_quast(s)
         self.write_lmat(s)
@@ -576,6 +708,8 @@ class WriterBase:
 
     @staticmethod
     def coalesce_lines(lines, n):
+        """Helper method which might be useful in subclass implementation of write_lines()."""
+        
         ret = [ ]
         
         for line in lines:
@@ -604,6 +738,7 @@ class HTMLWriterBase(WriterBase):
         if self.f is not None:
             print("</body>", file=self.f)
             print("</html>", file=self.f)
+        
         WriterBase.close(self)
 
 
@@ -611,6 +746,8 @@ class HTMLWriterBase(WriterBase):
 
 
 class SampleTextWriter(WriterBase):
+    """Writes single-sample output file {sample_dir}/sample.txt"""
+    
     def __init__(self, filename):
         WriterBase.__init__(self, filename, unabridged=True)
         
@@ -644,10 +781,12 @@ class SampleTextWriter(WriterBase):
         print(file=self.f)
 
     def end_sample(self):
-        self.close()
+        pass
 
 
 class SampleHTMLWriter(HTMLWriterBase):
+    """Writes single-sample output file {sample_dir}/sample.html"""
+    
     def __init__(self, filename):
         HTMLWriterBase.__init__(self, filename, unabridged=True)
 
@@ -657,11 +796,13 @@ class SampleHTMLWriter(HTMLWriterBase):
         
     def start_kv_pairs(self, title, links=[]):
         t = [ ]
-        for l in links:
-            if os.path.exists(f'{self.sample_dirname}/{l}'):
-                t.append(f'<a href="{l}">{os.path.basename(l)}</a>')
+
+        for link_relpath in links:
+            link_abspath = os.path.join(self.sample_dirname, link_relpath)
+            if os.path.exists(link_abspath):
+                t.append(f'<a href="{link_relpath}">{os.path.basename(link_relpath)}</a>')
             else:
-                t.append(f'{l} not found')
+                t.append(f'{link_relpath} not found')
 
         if len(t) > 0:
             t = ' | '.join(t)
@@ -695,10 +836,11 @@ class SampleHTMLWriter(HTMLWriterBase):
     def end_sample(self):
         print("</table>", file=self.f)
         print('<iframe src="breseq/output/index.html" width="100%" height="800px" style="border: 0px"></iframe>', file=self.f)
-        self.close()
 
 
 class SummaryHTMLWriter(HTMLWriterBase):
+    """Writes multi-sample output file {sample_dir}/summary.html"""
+
     def __init__(self, filename):
         HTMLWriterBase.__init__(self, filename, unabridged=False)
 
@@ -797,7 +939,7 @@ class SummaryHTMLWriter(HTMLWriterBase):
         HTMLWriterBase.close(self)
 
 
-####################################################################################################
+#############################   High-level classes (Pipeline, Sample)   ############################
 
 
 class Sample:
@@ -844,6 +986,7 @@ class Pipeline:
             
             for w in [w_summary] + w_samp_list:
                 w.write_sample(s)
+            
             for w in w_samp_list:
                 w.close()
 
