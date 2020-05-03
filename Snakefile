@@ -32,8 +32,6 @@ def get_input_fastq_files(sample_name, r):
 
 ######################################   High-level targets   ######################################
 
-# In multi-sample runs, these targets apply to all samples.
-
 
 rule all:
     input: 'summary.html'
@@ -72,62 +70,6 @@ rule lmat:
 
 rule quast:
     input: expand('{sn}/quast/report.html', sn=sample_names)
-
-
-################################  Single-sample high-level targets  ################################
-
-# In multi-sample runs, it is sometimes useful to have high-level targets which apply to only
-# sample 1, for debugging or testing.
-
-
-rule sort_sample1:
-    input: expand('sample1/fastq_sorted/R{r}_fastqc.html', r=[1,2])
-    
-rule remove_primers_sample1:
-    input: expand('sample1/fastq_primers_removed/R{r}.fastq.gz', r=[1,2])
-
-rule trim_sample1:
-    input: expand('sample1/fastq_trimmed/R{r}_{s}_fastqc.html', r=[1,2], s=['paired','unpaired'])
-
-rule hostremove_sample1:
-    input:
-       'sample1/host_removed/both_ends_mapped_lsorted.bam',
-       expand('{sn}/host_removed/R{r}.fastq.gz', sn=sample_names, r=[1,2])
-
-rule consensus_sample1:
-    input: 'sample1/consensus/virus.consensus.fa'
-
-rule ivar_variants_sample1:
-    input: 'sample1/ivar_variants/ivar_variants.tsv'
-
-rule breseq_sample1:
-    input: 'sample1/breseq/output/index.html'
-    
-rule coverage_sample1:
-    input: 'sample1/coverage/depth.txt'
-
-rule kraken2_sample1:
-    input: 'sample1/kraken2/kraken2.out'
-
-rule lmat_sample1:
-    input: 'sample1/lmat/parseLMAT_output.txt'
-
-rule quast_sample1:
-    input: 'sample1/quast/report.html'
-
-rule all_sample1:
-    input:
-        rules.sort_sample1.input,
-        rules.remove_primers_sample1.input,
-        rules.trim_sample1.input,
-        rules.hostremove_sample1.input,
-        rules.breseq_sample1.input,
-        rules.coverage_sample1.input,
-        rules.consensus_sample1.input,
-        rules.ivar_variants_sample1.input,
-        rules.kraken2_sample1.input,
-        rules.lmat_sample1.input,
-        rules.quast_sample1.input
 
 
 #################################   Based on scripts/assemble.sh   #################################
