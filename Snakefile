@@ -156,7 +156,7 @@ rule concat_and_sort:
 
 rule run_fastqc:
     conda: 'conda_envs/trim_qc.yaml'
-    output: multiext('{s}_fastqc', '.html', '.zip')
+    output: expand('{{s}}_fastqc.{ext}', ext=['html','zip'])
     input: '{s}.fastq.gz'
     log: '{s}_fastqc.log',
     shell: 'fastqc {input} 2>{log}'
