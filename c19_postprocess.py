@@ -2,11 +2,13 @@
 
 import os
 import re
+import sys
 import glob
 import zipfile
 import html.parser
 
 import numpy as np
+import pandas as pd
 
 
 ####################################################################################################
@@ -816,43 +818,45 @@ class Sample:
 
 
 class Pipeline:
-    def __init__(self, dirname, sample_names):
-        self.dirname = dirname
-        self.sample_names = sample_names
-        self.samples = [ Sample(os.path.join(dirname,s), s) for s in sample_names ]
+    def __init__(self, sample_csv_filename):
+        sample_csv = pd.read_csv(sample_csv_filename)
+        
+        self.dirname = os.path.dirname(os.path.abspath(sample_csv_filename))
+        self.sample_names = sorted(sample_csv['sample'].drop_duplicates().values)
+        self.sample_dirnames = [ os.path.join(self.dirname,s) for s in self.sample_names ]
+        self.samples = [ Sample(d,s) for (d,s) in zip(self.sample_dirnames, self.sample_names) ]
+
+        if len(self.samples) == 0:
+            raise RuntimeError(f"{sample_csv_filename} contains zero samples, nothing to do!")
 
     
     def write(self):
-        w1 = SummaryHTMLWriter(os.path.join(self.dirname, 'summary.html'))
+        f = os.path.join(self.dirname, 'summary.html')
+        w_summary = SummaryHTMLWriter(f) if (len(self.samples) > 0) else SampleHTMLWriter(f)
 
         for s in self.samples:
-            w2 = SampleTextWriter(os.path.join(s.dirname, 'sample.txt'))
-            w3 = SampleHTMLWriter(os.path.join(s.dirname, 'sample.html'))
-
-            for w in [w1,w2,w3]:
+            if os.path.exists(s.dirname):
+                w_samp_list = [ SampleTextWriter(os.path.join(s.dirname, 'sample.txt')),
+                                SampleHTMLWriter(os.path.join(s.dirname, 'sample.html')) ]
+            else:
+                print(f"Warning: sample directory {s.dirname} does not exist")
+                w_samp_list = [ ]
+            
+            for w in [w_summary] + w_samp_list:
                 w.write_sample(s)
-            for w in [w2,w3]:
+            for w in w_samp_list:
                 w.close()
 
-        w1.close()
+        w_summary.close()
         
 
 ####################################################################################################
 
 
 if __name__ == '__main__':
-    p = Pipeline('Paper', [
-        'ARTIC-NEG',
-        'Iran1-ARTIC',
-        'Iran1-LA',
-        'Iran1-LN',
-        'Iran1-RA',
-        'Iran1-RN',
-        'Wuhan1-ARTIC',
-        'Wuhan1-LA',
-        'Wuhan1-LN',
-        'Wuhan1-RA',
-        'Wuhan1-RN'
-    ])
+    if len(sys.argv) != 2:
+        print(f"Usage: c19_postprocess.py <samples.csv>", file=sys.stderr)
+        sys.exit(1)
 
+    p = Pipeline(sys.argv[1])
     p.write()
