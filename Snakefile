@@ -35,6 +35,9 @@ def get_input_fastq_files(sample_name, r):
 # In multi-sample runs, these targets apply to all samples.
 
 
+rule all:
+    input: 'summary.html'
+
 rule sort:
     input: expand('{sn}/fastq_sorted/R{r}_fastqc.html', sn=sample_names, r=[1,2])
     
@@ -69,20 +72,6 @@ rule lmat:
 
 rule quast:
     input: expand('{sn}/quast/report.html', sn=sample_names)
-
-rule all:
-    input:
-        rules.sort.input,
-        rules.remove_primers.input,
-        rules.trim.input,
-        rules.hostremove.input,
-        rules.consensus.input,
-        rules.ivar_variants.input,
-        rules.breseq.input,
-        rules.coverage.input,
-        rules.kraken2.input,
-        rules.lmat.input,
-        rules.quast.input
 
 
 ################################  Single-sample high-level targets  ################################
@@ -522,3 +511,26 @@ rule run_quast:
          fcoords = config['viral_reference_feature_coords']
     shell:
          'quast {input} -r {params.genome} -g {params.fcoords} --output-dir {params.outdir} --threads {threads} >{log}'
+
+
+########################################   Postprocessing   ########################################
+
+
+rule postprocess:
+    output: 'summary.html'
+    input:
+        rules.sort.input,
+        rules.remove_primers.input,
+        rules.trim.input,
+        rules.hostremove.input,
+        rules.consensus.input,
+        rules.ivar_variants.input,
+        rules.breseq.input,
+        rules.coverage.input,
+        rules.kraken2.input,
+        rules.lmat.input,
+        rules.quast.input
+    params:
+        sample_csv_filename = config['samples']
+    shell:
+        'scripts/c19_postprocess.py {params.sample_csv_filename}'
