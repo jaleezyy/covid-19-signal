@@ -1,0 +1,4 @@
+# Allow git to perform $Id$-expansion in 'c19_postprocess.py'.
+# This is in order to write a version string to the pipeline summary files.
+
+scripts/c19_postprocess.py ident

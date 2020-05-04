@@ -11,6 +11,12 @@ import numpy as np
 import pandas as pd
 
 
+long_git_id = '$Id$'
+
+assert long_git_id.startswith('$Id: ')
+short_git_id = long_git_id[5:12]
+
+
 ########################    Helper functions/classes for text file parsing   #######################
 
 
@@ -536,8 +542,9 @@ class WriterBase:
     def __init__(self, filename, unabridged):
         self.filename = filename
         self.unabridged = unabridged
-        self.pipeline_name = 'SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL)'
+        self.pipeline_name = f'SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL), version {short_git_id}'
         self.pipeline_url = 'https://github.com/jaleezyy/covid-19-signal'
+        
         self.f = open(filename, 'w')
 
     
