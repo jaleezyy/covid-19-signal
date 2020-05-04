@@ -872,12 +872,15 @@ class SummaryHTMLWriter(HTMLWriterBase):
     def start_sample(self, s, links=[]):
         assert self.current_group_text is None
 
-        url = f"{os.path.basename(s.dirname)}/sample.html"
         link_text = s.sample_name
         
+        if os.path.exists(s.dirname):
+            url = f"{os.path.basename(s.dirname)}/sample.html"
+            link_text = f'<a href="{url}">{link_text}</a>'
+            
         self.first_row += f'<th>Sample</th>\n'
         self.second_row += f'<th style="{self.css_bborder}"></th>\n'
-        self.current_row += f'<td style="{self.css_color()}">&nbsp;<br><a href="{url}">{link_text}</a><br>&nbsp;</td>'
+        self.current_row += f'<td style="{self.css_color()}">&nbsp;<br>{link_text}<br>&nbsp;</td>'
         
         
     def start_kv_pairs(self, title, links=[]):
