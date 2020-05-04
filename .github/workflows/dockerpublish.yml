@@ -14,7 +14,7 @@ on:
   pull_request:
 
 env:
-  IMAGE_NAME: sars-cov2-pipeline
+  IMAGE_NAME: signal
 
 jobs:
   # Push image to Dockerhub.
