@@ -5,6 +5,7 @@ import re
 import sys
 import glob
 import zipfile
+import contextlib
 import html.parser
 
 import numpy as np
@@ -951,6 +952,82 @@ class SummaryHTMLWriter(HTMLWriterBase):
         HTMLWriterBase.close(self)
 
 
+####################################################################################################
+
+
+class _Archive:
+    """
+    Wrapper class around zipfile.ZipFile, used in Pipeline.write_archive().
+
+    Assumes all archive names are relative to the current working directory.
+    This can assumption is relaxed by using the Archive class, which provides
+    an additional level of wrapping.
+    """
+    
+    def __init__(self, filename, debug=False):
+        self.zipfile = zipfile.ZipFile(filename, 'w')
+        self.filename = filename
+        self.contents = set()
+        self.debug = debug
+
+        
+    def add_file(self, filename):
+        assert not os.path.isabs(filename)
+        assert os.path.exists(filename)
+        
+        if filename in self.contents:
+            return
+
+        if self.debug:
+            print(f'{self.filename}: adding {filename}')
+
+        self.zipfile.write(filename)
+        self.contents.add(filename)
+
+        
+    def add_glob(self, pattern):
+        for filename in glob.glob(pattern):
+            self.add_file(filename)
+
+            
+    def add_dir(self, topdir, allow_missing=True):
+        assert not os.path.isabs(topdir)
+
+        if allow_missing and not os.path.exists(topdir):
+            return
+            
+        for dirname, subdirs, filenames in os.walk(topdir):
+            for f in filenames:
+                self.add_file(os.path.join(dirname,f))
+
+                
+    def close(self):
+        self.zipfile.close()
+        print(f'Wrote {self.filename}')
+
+
+@contextlib.contextmanager
+def Archive(dirname, filename, debug=False):
+    """
+    The _Archive class assumes all archive names are relative to the current working directory.
+
+    This additional level of wrapping works around this limitation, by providing a context manager 
+    which temporarily changes the working directory, within the context manager scope.
+    """
+    
+    savedir = os.getcwd()
+    a = None
+    
+    try:
+        os.chdir(dirname)
+        a = _Archive(filename, debug)
+        yield a
+    finally:
+        if a is not None:
+            a.close()
+        os.chdir(savedir)
+
+
 #############################   High-level classes (Pipeline, Sample)   ############################
 
 
@@ -984,7 +1061,7 @@ class Pipeline:
             raise RuntimeError(f"{sample_csv_filename} contains zero samples, nothing to do!")
 
     
-    def write(self):
+    def write_reports(self):
         f = os.path.join(self.dirname, 'summary.html')
         w_summary = SummaryHTMLWriter(f) if (len(self.samples) > 0) else SampleHTMLWriter(f)
 
@@ -1003,6 +1080,30 @@ class Pipeline:
                 w.close()
 
         w_summary.close()
+
+
+    def write_archive(self, debug=False):
+        f = os.path.join(self.dirname, 'summary.html')
+        
+        if not os.path.exists(f):
+            return
+
+        with Archive(self.dirname, 'summary.zip', debug) as a:
+            a.add_file('summary.html')
+
+            for sample in self.samples:
+                s = sample.sample_name
+                a.add_glob(f'{s}/sample.txt')
+                a.add_glob(f'{s}/sample.html')
+                a.add_glob(f'{s}/fastq_primers_removed/cutadapt.log')
+                a.add_glob(f'{s}/fastq_trimmed/*_fastqc.html')
+                a.add_glob(f'{s}/kraken2/report')
+                a.add_glob(f'{s}/host_removed/hisat2.log')
+                a.add_glob(f'{s}/quast/*.html')
+                a.add_dir(f'{s}/quast/icarus_viewers')
+                a.add_glob(f'{s}/lmat/*.fastsummary')
+                a.add_glob(f'{s}/breseq/breseq.log')
+                a.add_dir(f'{s}/breseq/output')
         
 
 ####################################################################################################
@@ -1014,4 +1115,5 @@ if __name__ == '__main__':
         sys.exit(1)
 
     p = Pipeline(sys.argv[1])
-    p.write()
+    p.write_reports()
+    p.write_archive()
