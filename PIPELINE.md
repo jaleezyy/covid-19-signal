@@ -14,7 +14,7 @@
 
 - Numbering of pipeline stages follows the following diagram.
 
-![Workflow Version 5](../Workflow_Version_5.png)
+![Workflow Version 5](./Workflow_Version_5.png)
 
 ### 1. Concatenate and sort R1 and R2 reads
 ```

@@ -44,8 +44,8 @@ source $CONDA_BASE/etc/profile.d/conda.sh
 conda activate data_dependencies
 
 # get kraken2, and clean db after building
-kraken2-build --download-taxonomy --db $database_dir/Kraken2/db --threads 10
-kraken2-build --download-library viral --db $database_dir/Kraken2/db --threads 10
+kraken2-build --download-taxonomy --db $database_dir/Kraken2/db --threads 10 --use-ftp
+kraken2-build --download-library viral --db $database_dir/Kraken2/db --threads 10 --use-ftp
 kraken2-build --build --threads 10 --db $database_dir/Kraken2/db
 kraken2-build --clean --threads 10 --db $database_dir/Kraken2/db
 
