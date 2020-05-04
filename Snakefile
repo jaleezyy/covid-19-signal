@@ -1,9 +1,25 @@
+# To run the pipeline, do:
+#
+#    snakemake -kp --cores=NCORES --use-conda --conda-prefix=$HOME/.snakemake all
+#    snakemake -p --cores=1 postprocess
+#
+# Note that the pipeline postprocessing ('snakemake postprocess') is separated from
+# the rest of the pipeline ('snakemake all').  This is because in a multi-sample run,
+# it's likely that at least one pipeline stage will fail.  The postprocessing script
+# should handle failed pipeline stages gracefully, by substituting placeholder values
+# when expected pipeline output files are absent.  However, this confuses snakemake's
+# dependency tracking, so there seems to be no good alternative to separating piepline
+# processing and postprocessing into 'all' and 'postprocess' targets.
+#
+# Related: because pipeline stages can fail, we recommend running 'snakemake all'
+# with the -k flag ("Go on with independent jobs if a job fails").
+
+
+####################################################################################################
+
+
 from snakemake.utils import validate
 import pandas as pd
-
-# Note: this workflow uses specialized conda envs, run with 'snakemake --use-conda'.
-
-# TODO: needs final debug iteration, after the dust settles
 
 # The config file contains a high-level summary of pipeline configuration and inputs.
 # It is ingested by the Snakefile, and also intended to be human-readable.
@@ -32,9 +48,6 @@ def get_input_fastq_files(sample_name, r):
 
 ######################################   High-level targets   ######################################
 
-
-rule all:
-    input: 'summary.html'
 
 rule sort:
     input: expand('{sn}/fastq_sorted/R{r}_fastqc.html', sn=sample_names, r=[1,2])
@@ -70,6 +83,29 @@ rule lmat:
 
 rule quast:
     input: expand('{sn}/quast/report.html', sn=sample_names)
+
+
+# Note: 
+rule all:
+    input:
+        rules.sort.input,
+        rules.remove_primers.input,
+        rules.trim.input,
+        rules.hostremove.input,
+        rules.consensus.input,
+        rules.ivar_variants.input,
+        rules.breseq.input,
+        rules.coverage.input,
+        rules.kraken2.input,
+        rules.lmat.input,
+        rules.quast.input
+
+
+rule postprocess:
+    params:
+        sample_csv_filename = config['samples']
+    shell:
+        'scripts/c19_postprocess.py {params.sample_csv_filename}'
 
 
 #################################   Based on scripts/assemble.sh   #################################
@@ -453,26 +489,3 @@ rule run_quast:
          fcoords = config['viral_reference_feature_coords']
     shell:
          'quast {input} -r {params.genome} -g {params.fcoords} --output-dir {params.outdir} --threads {threads} >{log}'
-
-
-########################################   Postprocessing   ########################################
-
-
-rule postprocess:
-    output: 'summary.html'
-    input:
-        rules.sort.input,
-        rules.remove_primers.input,
-        rules.trim.input,
-        rules.hostremove.input,
-        rules.consensus.input,
-        rules.ivar_variants.input,
-        rules.breseq.input,
-        rules.coverage.input,
-        rules.kraken2.input,
-        rules.lmat.input,
-        rules.quast.input
-    params:
-        sample_csv_filename = config['samples']
-    shell:
-        'scripts/c19_postprocess.py {params.sample_csv_filename}'
