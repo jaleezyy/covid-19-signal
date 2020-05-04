@@ -1,4 +1,4 @@
-# Overview
+# SARS-CoV2 Illumina GeNome Assembly Line (SIGNAL) 
 
 This snakemake pipeline is compatible with the [illumina artic nf pipeline](https://github.com/connor-lab/ncov2019-artic-nf).
 It performs the same consensus and variant calling procedure using `ivar`.
@@ -71,20 +71,20 @@ See the example table `pipeline/example_sample_table.csv` for an idea of how to 
 Alternatively, the pipeline can be deployed using Docker (see `resources/Dockerfile_pipeline` for specification).
 To pull from dockerhub:
 
-        docker pull finlaymaguire/sars-cov2-pipeline
+        docker pull finlaymaguire/signal
 
 Download data dependencies:
 
-        mkdir -p data && docker run -v $PWD/data:/data finlaymaguire/sars-cov2-pipeline:1.0.0 bash scripts/get_data_dependencies.sh -d /data
+        mkdir -p data && docker run -v $PWD/data:/data finlaymaguire/signal:1.0.0 bash scripts/get_data_dependencies.sh -d /data
 
 Add remaining files (e.g. primers) to your config and sample table in the data directory:
 
         cp config.yaml sample_table.csv $PWD/data && \ 
-            docker run -v $PWD/data:/data finlaymaguire/sars-cov2-pipeline:1.0.0 mv data/config.yaml data/sample_table.csv .
+            docker run -v $PWD/data:/data finlaymaguire/signal:1.0.0 mv data/config.yaml data/sample_table.csv .
 
 Then execute the pipeline:
 
-        docker run -v $PWD/data:/data finlaymaguire/sars-cov2-pipeline:1.0.0 conda run -n snakemake snakemake --use-conda --conda-prefix $HOME/.snakemake --cores 8 -s Snakefile all
+        docker run -v $PWD/data:/data finlaymaguire/signal:1.0.0 conda run -n snakemake snakemake --use-conda --conda-prefix $HOME/.snakemake --cores 8 -s Snakefile all
 
 ## Summaries:
 
