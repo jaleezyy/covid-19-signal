@@ -1,4 +1,4 @@
-# SARS-CoV2 Illumina GeNome Assembly Line (SIGNAL) 
+# SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL) 
 
 This snakemake pipeline is compatible with the [illumina artic nf pipeline](https://github.com/connor-lab/ncov2019-artic-nf).
 It performs the same consensus and variant calling procedure using `ivar`.
@@ -13,7 +13,7 @@ Future enhancements are intended to aid/automate metadata management in accordan
 
 0. Clone the git repository
     
-        git clone https://github.com/jaleezyy/covid-19-sequencing
+        git clone https://github.com/jaleezyy/covid-19-signal
 
 1. Install `conda` and `snakemake` (version >5) e.g.
 
