@@ -71,7 +71,7 @@ See the example table `pipeline/example_sample_table.csv` for an idea of how to 
 Alternatively, the pipeline can be deployed using Docker (see `resources/Dockerfile_pipeline` for specification).
 To pull from dockerhub:
 
-        docker pull finlaymaguire/pipeline
+        docker pull finlaymaguire/sars-cov2-pipeline
 
 Download data dependencies:
 
