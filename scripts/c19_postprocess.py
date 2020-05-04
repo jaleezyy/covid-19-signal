@@ -536,6 +536,8 @@ class WriterBase:
     def __init__(self, filename, unabridged):
         self.filename = filename
         self.unabridged = unabridged
+        self.pipeline_name = 'SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL)'
+        self.pipeline_url = 'https://github.com/jaleezyy/covid-19-signal'
         self.f = open(filename, 'w')
 
     
@@ -730,9 +732,7 @@ class HTMLWriterBase(WriterBase):
         print("<head></head>", file=self.f)
         print("<body>", file=self.f)
         
-        url = "https://github.com/jaleezyy/covid-19-sequencing"
-        print(f'<h3>SARS-CoV-2 Genome Sequencing Consensus & Variants</h3>', file=self.f)
-        print(f'<a href="{url}">{url}</a>', file=self.f)
+        print(f'<h3>{self.pipeline_name}&nbsp;&nbsp;(<a href="{self.pipeline_url}">{self.pipeline_url}</a>)</h3>', file=self.f)
 
     def close(self):
         if self.f is not None:
@@ -750,13 +750,14 @@ class SampleTextWriter(WriterBase):
     
     def __init__(self, filename):
         WriterBase.__init__(self, filename, unabridged=True)
-        
-        print("SARS-CoV-2 Genome Sequencing Consensus & Variants", file=self.f)
-        print("https://github.com/jaleezyy/covid-19-sequencing", file=self.f)
+
+        print(self.pipeline_name, file=self.f)
+        print(self.pipeline_url, file=self.f)
         print("", file=self.f)
         
     def start_sample(self, s):
-        pass
+        print(f"Sample: {s.sample_name}", file=self.f)
+        print("", file=self.f)
 
     def start_kv_pairs(self, title, links=[]):
         print(title, file=self.f)
@@ -792,6 +793,7 @@ class SampleHTMLWriter(HTMLWriterBase):
 
     def start_sample(self, s):
         self.sample_dirname = s.dirname
+        print(f"<h3>Sample: {s.sample_name}</h3>", file=self.f)
         print("<p><table>", file=self.f)
         
     def start_kv_pairs(self, title, links=[]):
