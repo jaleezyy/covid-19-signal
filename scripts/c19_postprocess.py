@@ -64,7 +64,7 @@ class TextFileParser:
         self._field_details = [ ]  # List of 4-tuples (regexp_pattern, regexp_group, dtype, required)
     
     def add_field(self, field_name, regexp_pattern, regexp_group=1, dtype=str, required=True):
-        assert name not in self._field_names
+        assert field_name not in self._field_names
         self._field_names.append(field_name)
         self._field_details.append((regexp_pattern, regexp_group, dtype, required))
     
