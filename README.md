@@ -67,6 +67,13 @@ See the example table `pipeline/example_sample_table.csv` for an idea of how to 
       snakemake -kp --cores=NCORES --use-conda --conda-prefix=$HOME/.snakemake all
       snakemake -p --cores=1 postprocess
 
+After postprocessing finishes, you'll see the following summary files:
+
+  - summary.html                top-level summary, with links to per-sample summaries
+  - {sample_name}/sample.html   per-sample summaries, with links for more detailed info
+  - {sample_name}/sample.txt    per-sample summaries, in text-file format instead of HTML
+  - summary.zip                 zip archive containing all of the above summary files.
+
 Note that the pipeline postprocessing ('snakemake postprocess') is separated from
 the rest of the pipeline ('snakemake all').  This is because in a multi-sample run,
 it's likely that at least one pipeline stage will fail.  The postprocessing script
