@@ -51,21 +51,22 @@ The pipeline requires:
 
 All dependencies except the amplicon primers (\*) can be automatically fetched using the follow accessory script:
 
-        bash pipeline/scripts/get_data_dependencies.sh -d data -a MN908947.3
+        bash scripts/get_data_dependencies.sh -d data -a MN908947.3
 
 3. Configure your `config.yaml` file
 
 Either using the convenience python script (pending) or 
-through modifying the `pipeline/example_config.yaml` to suit your system
+through modifying the `example_config.yaml` to suit your system
 
 4. Specify your samples in CSV format (e.g. `sample_table.csv`)
 
-See the example table `pipeline/example_sample_table.csv` for an idea of how to organise this table.
+See the example table `example_sample_table.csv` for an idea of how to organise this table. You can attempt to use `generate_sample_table.sh` to circumvent manual creation of the table.
 
 5. Execute pipeline (optionally explicitly specify `--cores`):
 
-      snakemake -kp --cores=NCORES --use-conda --conda-prefix=$HOME/.snakemake all
-      snakemake -p --cores=1 postprocess
+      `snakemake -kp --cores=NCORES --use-conda --conda-prefix=$HOME/.snakemake all`
+      
+      `snakemake -p --cores=1 postprocess`
 
 After postprocessing finishes, you'll see the following summary files:
 
