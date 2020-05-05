@@ -562,8 +562,7 @@ class WriterBase:
         raise RuntimeError('To be overridden by subclass')
 
     
-    def start_kv_pairs(self, title, links=[]):
-        """The 'links' argument is a list of filenames, relative to Sample.dirname."""
+    def start_kv_pairs(self, title, link_filenames=[]):
         raise RuntimeError('To be overridden by subclass')
 
     
@@ -605,7 +604,7 @@ class WriterBase:
 
             
     def write_data_volume_summary(self, s):
-        self.start_kv_pairs("Data Volume", links=['fastq_primers_removed/cutadapt.log'])
+        self.start_kv_pairs("Data Volume", link_filenames=['fastq_primers_removed/cutadapt.log'])
         self.write_kv_pair("Raw\nData\n(read\npairs)", s.cutadapt['read_pairs_processed'], indent=1)
 
         if self.unabridged:
@@ -651,7 +650,7 @@ class WriterBase:
         if not self.unabridged:
             return
         
-        self.start_kv_pairs("FASTQC Flags", links=[f'fastq_trimmed/R{r}_paired_fastqc.html' for r in [1,2]])
+        self.start_kv_pairs("FASTQC Flags", link_filenames=[f'fastq_trimmed/R{r}_paired_fastqc.html' for r in [1,2]])
         
         for flavor in [ 'FAIL', 'WARN' ]:
             for (msg,f) in s.post_trim_qc['summary'].items():
@@ -662,13 +661,13 @@ class WriterBase:
 
         
     def write_kraken2(self, s):
-        self.start_kv_pairs("Kraken2", links=['kraken2/report'])
+        self.start_kv_pairs("Kraken2", link_filenames=['kraken2/report'])
         self.write_kv_pair("Reads\nSARS-CoV-2\n(%)", s.kraken2['sars_cov2_percentage'], indent=1)
         self.end_kv_pairs()
 
 
     def write_quast(self, s):
-        self.start_kv_pairs("QUAST", links=['quast/report.html'])
+        self.start_kv_pairs("QUAST", link_filenames=['quast/report.html'])
         self.write_kv_pair("Genome\nLength\n(bp)", s.quast['genome_length'], indent=1)
 
         if self.unabridged:
@@ -764,10 +763,10 @@ class SampleTextWriter(WriterBase):
         print("", file=self.f)
         
     def start_sample(self, s):
-        print(f"Sample: {s.sample_name}", file=self.f)
+        print(f"Sample: {s.name}", file=self.f)
         print("", file=self.f)
 
-    def start_kv_pairs(self, title, links=[]):
+    def start_kv_pairs(self, title, link_filenames=[]):
         print(title, file=self.f)
 
     def write_kv_pair(self, key, val=None, indent=0, qc=False):
@@ -800,15 +799,15 @@ class SampleHTMLWriter(HTMLWriterBase):
         HTMLWriterBase.__init__(self, filename, unabridged=True)
 
     def start_sample(self, s):
-        self.sample_dirname = s.dirname
-        print(f"<h3>Sample: {s.sample_name}</h3>", file=self.f)
+        self.sample_name = s.name
+        print(f"<h3>Sample: {s.name}</h3>", file=self.f)
         print("<p><table>", file=self.f)
         
-    def start_kv_pairs(self, title, links=[]):
+    def start_kv_pairs(self, title, link_filenames=[]):
         t = [ ]
 
-        for link_relpath in links:
-            link_abspath = os.path.join(self.sample_dirname, link_relpath)
+        for link_relpath in link_filenames:
+            link_abspath = os.path.join(self.sample_name, link_relpath)
             if os.path.exists(link_abspath):
                 t.append(f'<a href="{link_relpath}">{os.path.basename(link_relpath)}</a>')
             else:
@@ -879,13 +878,13 @@ class SummaryHTMLWriter(HTMLWriterBase):
         return f"background-color: {color};"
 
     
-    def start_sample(self, s, links=[]):
+    def start_sample(self, s, link_filenames=[]):
         assert self.current_group_text is None
 
-        link_text = s.sample_name
+        link_text = s.name
         
-        if os.path.exists(s.dirname):
-            url = f"{os.path.basename(s.dirname)}/sample.html"
+        if os.path.exists(s.name):
+            url = f"{os.path.basename(s.name)}/sample.html"
             link_text = f'<a href="{url}">{link_text}</a>'
             
         self.first_row += f'<th>Sample</th>\n'
@@ -893,7 +892,7 @@ class SummaryHTMLWriter(HTMLWriterBase):
         self.current_row += f'<td style="{self.css_color()}">&nbsp;<br>{link_text}<br>&nbsp;</td>'
         
         
-    def start_kv_pairs(self, title, links=[]):
+    def start_kv_pairs(self, title, link_filenames=[]):
         assert self.current_group_text is None
         self.current_group_text = title
         self.current_group_colspan = 0
@@ -955,13 +954,10 @@ class SummaryHTMLWriter(HTMLWriterBase):
 ####################################################################################################
 
 
-class _Archive:
+class Archive:
     """
     Wrapper class around zipfile.ZipFile, used in Pipeline.write_archive().
-
-    Assumes all archive names are relative to the current working directory.
-    This can assumption is relaxed by using the Archive class, which provides
-    an additional level of wrapping.
+    Must be run from toplevel pipeline directory.
     """
     
     def __init__(self, filename, debug=False):
@@ -1006,105 +1002,88 @@ class _Archive:
         print(f'Wrote {self.filename}')
 
 
-@contextlib.contextmanager
-def Archive(dirname, filename, debug=False):
-    """
-    The _Archive class assumes all archive names are relative to the current working directory.
-
-    This additional level of wrapping works around this limitation, by providing a context manager 
-    which temporarily changes the working directory, within the context manager scope.
-    """
-    
-    savedir = os.getcwd()
-    a = None
-    
-    try:
-        os.chdir(dirname)
-        a = _Archive(filename, debug)
-        yield a
-    finally:
-        if a is not None:
-            a.close()
-        os.chdir(savedir)
-
-
 #############################   High-level classes (Pipeline, Sample)   ############################
 
 
 class Sample:
-    def __init__(self, dirname, sample_name):
-        self.dirname = dirname
-        self.sample_name = sample_name
+    """Must be constructed from toplevel pipeline directory."""
+    
+    def __init__(self, name):
+        self.name = name
         
-        self.cutadapt = parse_cutadapt_log(f"{dirname}/fastq_primers_removed/cutadapt.log")
-        self.post_trim_qc = parse_fastqc_pair(f"{dirname}/fastq_trimmed/R1_paired_fastqc.zip", f"{dirname}/fastq_trimmed/R2_paired_fastqc.zip")
-        self.kraken2 = parse_kraken2_report(f"{dirname}/kraken2/report")
-        self.hostremove = parse_hostremove_hisat2_log(f"{dirname}/host_removed/hisat2.log")
-        self.quast = parse_quast_report(f"{dirname}/quast/report.txt")
-        self.consensus = parse_consensus_assembly(f"{dirname}/consensus/virus.consensus.fa")
-        self.coverage = parse_coverage(f"{dirname}/coverage/depth.txt")
-        self.lmat = parse_lmat_output(f"{dirname}/lmat")
-        self.ivar = parse_ivar_variants(f"{dirname}/ivar_variants/ivar_variants.tsv")
-        self.breseq = parse_breseq_output(f"{dirname}/breseq/output/index.html")
+        self.cutadapt = parse_cutadapt_log(f"{name}/fastq_primers_removed/cutadapt.log")
+        self.post_trim_qc = parse_fastqc_pair(f"{name}/fastq_trimmed/R1_paired_fastqc.zip", f"{name}/fastq_trimmed/R2_paired_fastqc.zip")
+        self.kraken2 = parse_kraken2_report(f"{name}/kraken2/report")
+        self.hostremove = parse_hostremove_hisat2_log(f"{name}/host_removed/hisat2.log")
+        self.quast = parse_quast_report(f"{name}/quast/report.txt")
+        self.consensus = parse_consensus_assembly(f"{name}/consensus/virus.consensus.fa")
+        self.coverage = parse_coverage(f"{name}/coverage/depth.txt")
+        self.lmat = parse_lmat_output(f"{name}/lmat")
+        self.ivar = parse_ivar_variants(f"{name}/ivar_variants/ivar_variants.tsv")
+        self.breseq = parse_breseq_output(f"{name}/breseq/output/index.html")
 
 
 class Pipeline:
+    """Must be constructed from toplevel pipeline directory."""
+    
     def __init__(self, sample_csv_filename):
         sample_csv = pd.read_csv(sample_csv_filename)
+        sample_names = sorted(sample_csv['sample'].drop_duplicates().values)
         
-        self.dirname = os.path.dirname(os.path.abspath(sample_csv_filename))
-        self.sample_names = sorted(sample_csv['sample'].drop_duplicates().values)
-        self.sample_dirnames = [ os.path.join(self.dirname,s) for s in self.sample_names ]
-        self.samples = [ Sample(d,s) for (d,s) in zip(self.sample_dirnames, self.sample_names) ]
+        self.samples = [ Sample(s) for s in sample_names ]
 
         if len(self.samples) == 0:
             raise RuntimeError(f"{sample_csv_filename} contains zero samples, nothing to do!")
 
     
     def write_reports(self):
-        f = os.path.join(self.dirname, 'summary.html')
-        w_summary = SummaryHTMLWriter(f) if (len(self.samples) > 0) else SampleHTMLWriter(f)
-
-        for s in self.samples:
-            if os.path.exists(s.dirname):
-                w_samp_list = [ SampleTextWriter(os.path.join(s.dirname, 'sample.txt')),
-                                SampleHTMLWriter(os.path.join(s.dirname, 'sample.html')) ]
-            else:
-                print(f"Warning: sample directory {s.dirname} does not exist")
-                w_samp_list = [ ]
+        if len(self.samples) > 1:
+            summary_writer = SummaryHTMLWriter('summary.html')
+        else:
+            summary_writer = SampleHTMLWriter('summary.html')
             
-            for w in [w_summary] + w_samp_list:
+        for s in self.samples:
+            if os.path.exists(s.name):
+                w1 = SampleTextWriter(f'{s.name}/sample.txt')
+                w2 = SampleHTMLWriter(f'{s.name}/sample.html')
+                sample_writers = [ w1, w2 ]
+            else:
+                print(f"Warning: sample directory {s.name} does not exist")
+                sample_writers = [ ]
+            
+            for w in [summary_writer] + sample_writers:
                 w.write_sample(s)
             
-            for w in w_samp_list:
+            for w in sample_writers:
                 w.close()
 
-        w_summary.close()
+        summary_writer.close()
 
 
     def write_archive(self, debug=False):
-        f = os.path.join(self.dirname, 'summary.html')
-        
-        if not os.path.exists(f):
+        if not os.path.exists('summary.html'):
+            print(f"write_archive: 'summary.html' does not exist, nothing to do")
             return
 
-        with Archive(self.dirname, 'summary.zip', debug) as a:
-            a.add_file('summary.html')
+        a = Archive('summary.zip', debug) 
+        a.add_file('summary.html')
 
-            for sample in self.samples:
-                s = sample.sample_name
-                a.add_glob(f'{s}/sample.txt')
-                a.add_glob(f'{s}/sample.html')
-                a.add_glob(f'{s}/fastq_primers_removed/cutadapt.log')
-                a.add_glob(f'{s}/fastq_trimmed/*_fastqc.html')
-                a.add_glob(f'{s}/kraken2/report')
-                a.add_glob(f'{s}/host_removed/hisat2.log')
-                a.add_glob(f'{s}/quast/*.html')
-                a.add_dir(f'{s}/quast/icarus_viewers')
-                a.add_glob(f'{s}/lmat/*.fastsummary')
-                a.add_glob(f'{s}/breseq/breseq.log')
-                a.add_dir(f'{s}/breseq/output')
+        for sample in self.samples:
+            s = sample.name
+            a.add_glob(f'{s}/sample.txt')
+            a.add_glob(f'{s}/sample.html')
+            a.add_glob(f'{s}/fastq_primers_removed/cutadapt.log')
+            a.add_glob(f'{s}/fastq_trimmed/*_fastqc.html')
+            a.add_glob(f'{s}/kraken2/report')
+            a.add_glob(f'{s}/host_removed/hisat2.log')
+            a.add_glob(f'{s}/quast/*.html')
+            a.add_dir(f'{s}/quast/icarus_viewers')
+            a.add_glob(f'{s}/lmat/*.fastsummary')
+            a.add_glob(f'{s}/breseq/breseq.log')
+            a.add_dir(f'{s}/breseq/output')
         
+        a.close()
+            
 
 ####################################################################################################
 
@@ -1112,6 +1091,7 @@ class Pipeline:
 if __name__ == '__main__':
     if len(sys.argv) != 2:
         print(f"Usage: c19_postprocess.py <samples.csv>", file=sys.stderr)
+        print(f"Note: must be run from toplevel pipeline directory", file=sys.stderr)
         sys.exit(1)
 
     p = Pipeline(sys.argv[1])
