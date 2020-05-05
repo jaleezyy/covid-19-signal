@@ -85,7 +85,6 @@ rule quast:
     input: expand('{sn}/quast/report.html', sn=sample_names)
 
 
-# Note: 
 rule all:
     input:
         rules.sort.input,
