@@ -1,9 +1,25 @@
+# To run the pipeline, do:
+#
+#    snakemake -kp --cores=NCORES --use-conda --conda-prefix=$HOME/.snakemake all
+#    snakemake -p --cores=1 postprocess
+#
+# Note that the pipeline postprocessing ('snakemake postprocess') is separated from
+# the rest of the pipeline ('snakemake all').  This is because in a multi-sample run,
+# it's likely that at least one pipeline stage will fail.  The postprocessing script
+# should handle failed pipeline stages gracefully, by substituting placeholder values
+# when expected pipeline output files are absent.  However, this confuses snakemake's
+# dependency tracking, so there seems to be no good alternative to separating piepline
+# processing and postprocessing into 'all' and 'postprocess' targets.
+#
+# Related: because pipeline stages can fail, we recommend running 'snakemake all'
+# with the -k flag ("Go on with independent jobs if a job fails").
+
+
+####################################################################################################
+
+
 from snakemake.utils import validate
 import pandas as pd
-
-# Note: this workflow uses specialized conda envs, run with 'snakemake --use-conda'.
-
-# TODO: needs final debug iteration, after the dust settles
 
 # The config file contains a high-level summary of pipeline configuration and inputs.
 # It is ingested by the Snakefile, and also intended to be human-readable.
@@ -31,8 +47,6 @@ def get_input_fastq_files(sample_name, r):
 
 
 ######################################   High-level targets   ######################################
-
-# In multi-sample runs, these targets apply to all samples.
 
 
 rule sort:
@@ -70,6 +84,8 @@ rule lmat:
 rule quast:
     input: expand('{sn}/quast/report.html', sn=sample_names)
 
+
+# Note: 
 rule all:
     input:
         rules.sort.input,
@@ -85,60 +101,11 @@ rule all:
         rules.quast.input
 
 
-################################  Single-sample high-level targets  ################################
-
-# In multi-sample runs, it is sometimes useful to have high-level targets which apply to only
-# sample 1, for debugging or testing.
-
-
-rule sort_sample1:
-    input: expand('sample1/fastq_sorted/R{r}_fastqc.html', r=[1,2])
-    
-rule remove_primers_sample1:
-    input: expand('sample1/fastq_primers_removed/R{r}.fastq.gz', r=[1,2])
-
-rule trim_sample1:
-    input: expand('sample1/fastq_trimmed/R{r}_{s}_fastqc.html', r=[1,2], s=['paired','unpaired'])
-
-rule hostremove_sample1:
-    input:
-       'sample1/host_removed/both_ends_mapped_lsorted.bam',
-       expand('{sn}/host_removed/R{r}.fastq.gz', sn=sample_names, r=[1,2])
-
-rule consensus_sample1:
-    input: 'sample1/consensus/virus.consensus.fa'
-
-rule ivar_variants_sample1:
-    input: 'sample1/ivar_variants/ivar_variants.tsv'
-
-rule breseq_sample1:
-    input: 'sample1/breseq/output/index.html'
-    
-rule coverage_sample1:
-    input: 'sample1/coverage/depth.txt'
-
-rule kraken2_sample1:
-    input: 'sample1/kraken2/kraken2.out'
-
-rule lmat_sample1:
-    input: 'sample1/lmat/parseLMAT_output.txt'
-
-rule quast_sample1:
-    input: 'sample1/quast/report.html'
-
-rule all_sample1:
-    input:
-        rules.sort_sample1.input,
-        rules.remove_primers_sample1.input,
-        rules.trim_sample1.input,
-        rules.hostremove_sample1.input,
-        rules.breseq_sample1.input,
-        rules.coverage_sample1.input,
-        rules.consensus_sample1.input,
-        rules.ivar_variants_sample1.input,
-        rules.kraken2_sample1.input,
-        rules.lmat_sample1.input,
-        rules.quast_sample1.input
+rule postprocess:
+    params:
+        sample_csv_filename = config['samples']
+    shell:
+        'scripts/c19_postprocess.py {params.sample_csv_filename}'
 
 
 #################################   Based on scripts/assemble.sh   #################################
@@ -156,7 +123,7 @@ rule concat_and_sort:
 
 rule run_fastqc:
     conda: 'conda_envs/trim_qc.yaml'
-    output: multiext('{s}_fastqc', '.html', '.zip')
+    output: expand('{{s}}_fastqc.{ext}', ext=['html','zip'])
     input: '{s}.fastq.gz'
     log: '{s}_fastqc.log',
     shell: 'fastqc {input} 2>{log}'
