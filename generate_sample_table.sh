@@ -41,8 +41,8 @@ fi
 
 for file in $database_dir/*.fastq*; do
 	sample=$(basename $file | cut -d_ -f 1)
-	r1=$(ls $database_dir/$(basename $file | cut -d_ -f1)*R1* | grep ${sample}[^0-9])
-	r2=$(ls $database_dir/$(basename $file | cut -d_ -f1)*R2* | grep ${sample}[^0-9])
+	r1=$(ls $database_dir/$(basename $file | cut -d_ -f1)*R1* | grep ${sample}_)
+	r2=$(ls $database_dir/$(basename $file | cut -d_ -f1)*R2* | grep ${sample}_)
 	echo ${sample},${r1},${r2} >> .${name} && echo ${sample},${r1},${r2} 
 done
 
