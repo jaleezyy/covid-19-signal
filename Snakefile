@@ -150,7 +150,7 @@ rule run_cutadapt:
     priority: 3
     conda: 'conda_envs/trim_qc.yaml'
     output:
-        expand('{{sn}}/fastq_trimmed/R{r}.fastq.gz', r=[1,2])
+        expand('{{sn}}/fastq_trimmed/R{r}_paired.fastq.gz', r=[1,2])
     input:
         expand('{{sn}}/fastq_sequencing_adapter_trimming/R{r}_paired.fastq.gz', r=[1,2])
     log:
