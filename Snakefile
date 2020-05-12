@@ -20,6 +20,7 @@
 
 from snakemake.utils import validate
 import pandas as pd
+import os
 
 # The config file contains a high-level summary of pipeline configuration and inputs.
 # It is ingested by the Snakefile, and also intended to be human-readable.
@@ -409,7 +410,7 @@ rule run_kraken2:
         '{sn}/kraken2/kraken2.log'
     params:
         outdir = '{sn}/kraken2',
-	db = config['kraken2_db']
+	    db = os.path.abspath(config['kraken2_db'])
     shell:
         'cd {params.outdir} '
 	'&& kraken2'
