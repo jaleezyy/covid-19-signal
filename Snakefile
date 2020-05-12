@@ -313,7 +313,7 @@ rule run_ivar_variants:
     shell:
         'samtools mpileup -A -d 0 --reference {input.reference} -B '
             '-Q 0 {input.read_bam} | '
-        'ivar variants -r {input.reference} -m {params.ivar_min_coverage_depth}'
+        'ivar variants -r {input.reference} -m {params.ivar_min_coverage_depth} '
         '-p {params.output_prefix} -q {params.ivar_min_variant_quality} '
         '-t {params.ivar_min_freq_threshold} 2> {log}'
 
