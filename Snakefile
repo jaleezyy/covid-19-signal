@@ -53,7 +53,7 @@ rule sort:
     input: expand('{sn}/fastq_sorted/R{r}_fastqc.html', sn=sample_names, r=[1,2])
     
 rule remove_primers:
-    input: expand('{sn}/fastq_primers_removed/R{r}.fastq.gz', sn=sample_names, r=[1,2])
+    input: expand('{sn}/fastq_sequencing_adapter_trimming/R{r}_paired.fastq.gz', sn=sample_names, r=[1,2])
 
 rule trim:
     input: expand('{sn}/fastq_trimmed/R{r}_paired_fastqc.html', sn=sample_names, r=[1,2])
