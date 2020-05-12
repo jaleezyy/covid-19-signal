@@ -127,17 +127,34 @@ rule run_fastqc:
     log: '{s}_fastqc.log',
     shell: 'fastqc {input} 2>{log}'
 
+# Note: expand()-statements in 'output:' and 'input:' have been written so that the ordering
+# of their outputs is consistent with the ordering of trimmomatic's command-line arguments.
+rule run_trimmomatic:
+    threads: 2
+    priority: 2
+    conda: 'conda_envs/trim_qc.yaml'
+    output:
+        expand('{{sn}}/fastq_sequencing_adapter_trimming/R{r}_{s}.fastq.gz', r=[1,2], s=['paired','unpaired'])
+    input:
+        expand('{{sn}}/fastq_sorted/R{r}.fastq.gz', r=[1,2])
+    log:
+        '{sn}/fastq_sequencing_adapter_trimming/trim.log'
+    params:
+        targs = config['trimmomatic_args']
+    shell:
+        'trimmomatic PE -threads {threads} {input} {output} {params.targs} 2>{log}'
+
 
 rule run_cutadapt:
     threads: 16
     priority: 3
     conda: 'conda_envs/trim_qc.yaml'
     output:
-        expand('{{sn}}/fastq_primers_removed/R{r}.fastq.gz', r=[1,2])
+        expand('{{sn}}/fastq_trimmed/R{r}.fastq.gz', r=[1,2])
     input:
-        expand('{{sn}}/fastq_sorted/R{r}.fastq.gz', r=[1,2])
+        expand('{{sn}}/fastq_sequencing_adapter_trimming/R{r}_paired.fastq.gz', r=[1,2])
     log:
-        '{sn}/fastq_primers_removed/cutadapt.log'
+        '{sn}/fastq_trimmed/cutadapt.log'
     params:
         primer_fw = config['primer_fw'],
         primer_rc = config['primer_rc']
@@ -147,24 +164,6 @@ rule run_cutadapt:
 	' -o {output[0]} -p {output[1]}'     # output files
 	' {input}'                           # input files
         ' >{log}'                            # log file
-
-# Note: expand()-statements in 'output:' and 'input:' have been written so that the ordering
-# of their outputs is consistent with the ordering of trimmomatic's command-line arguments.
-
-rule run_trimmomatic:
-    threads: 2
-    priority: 2
-    conda: 'conda_envs/trim_qc.yaml'
-    output:
-        expand('{{sn}}/fastq_trimmed/R{r}_{s}.fastq.gz', r=[1,2], s=['paired','unpaired'])
-    input:
-        expand('{{sn}}/fastq_primers_removed/R{r}.fastq.gz', r=[1,2])
-    log:
-        '{sn}/fastq_trimmed/trim.log'
-    params:
-        targs = config['trimmomatic_args']
-    shell:
-        'trimmomatic PE -threads {threads} {input} {output} {params.targs} 2>{log}'
 
 
 ############################  Based on scripts/remove_host_sequences.sh  ###########################
