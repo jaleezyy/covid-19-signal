@@ -126,7 +126,7 @@ rule run_fastqc:
     output: expand('{{s}}_fastqc.{ext}', ext=['html','zip'])
     input: '{s}.fastq.gz'
     log: '{s}_fastqc.log',
-    shell: 'fastqc {input} 2>{log}'
+    shell: 'fastqc {input} 2>{log} > /dev/null'
 
 # Note: expand()-statements in 'output:' and 'input:' have been written so that the ordering
 # of their outputs is consistent with the ordering of trimmomatic's command-line arguments.
@@ -236,8 +236,10 @@ rule hostremove_fastq:
         '{sn}/host_removed/R2.fastq'
     input:
         '{sn}/host_removed/both_ends_mapped_nsorted.bam'
+    log:
+        '{sn}/host_removed/bamtofastq.log'
     shell:
-        'bedtools bamtofastq -i {input} -fq {output[0]} -fq2 {output[1]}'
+        'bedtools bamtofastq -i {input} -fq {output[0]} -fq2 {output[1]} 2> {log}'
 
 
 rule hostremove_fastq_gzip:
@@ -267,10 +269,10 @@ rule run_consensus:
         ivar_freq_threshold = config['ivar_freq_threshold'],
         output_prefix = '{sn}/consensus/virus.consensus'
     shell:
-        'samtools mpileup -A -d {params.mpileup_depth} -Q0 {input} | '
+        'samtools mpileup -A -d {params.mpileup_depth} -Q0 {input} 2>{log} | '
         'ivar consensus -t {params.ivar_freq_threshold} '
         '-m {params.ivar_min_coverage_depth} -n N -p {params.output_prefix} '
-        '2>{log}'
+        '2>>{log}'
 
 
 rule run_ivar_variants:
@@ -289,10 +291,10 @@ rule run_ivar_variants:
         ivar_min_variant_quality = config['ivar_min_variant_quality']
     shell:
         'samtools mpileup -A -d 0 --reference {input.reference} -B '
-            '-Q 0 {input.read_bam} | '
+            '-Q 0 {input.read_bam} 2> {log} | '
         'ivar variants -r {input.reference} -m {params.ivar_min_coverage_depth} '
         '-p {params.output_prefix} -q {params.ivar_min_variant_quality} '
-        '-t {params.ivar_min_freq_threshold} 2> {log}'
+        '-t {params.ivar_min_freq_threshold} 2>> {log}'
 
 
 ################################   Based on scripts/breseq.sh   ####################################
