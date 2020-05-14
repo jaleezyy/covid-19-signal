@@ -189,7 +189,7 @@ rule hostremove_hisat2:
     priority: 2
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        '{sn}/host_removed/mapped_and_unmapped.sam'
+        '{sn}/host_removed/both_ends_mapped.bam'
     input:
         '{sn}/fastq_trimmed/R1_paired.fastq.gz',
         '{sn}/fastq_trimmed/R2_paired.fastq.gz',
@@ -202,32 +202,9 @@ rule hostremove_hisat2:
     shell:
         'hisat2 --threads {threads}'
         ' -x {params.genome}'
-	' -1 {input[0]} -2 {input[1]}'
-	' --summary-file {params.summary_file}'
-	' -S {output}'
-	' 2>{log}'
-
-
-rule hostremove_sam_to_bam:
-    priority: 2
-    conda: 'conda_envs/snp_mapping.yaml'
-    output:
-        '{sn}/host_removed/mapped_and_unmapped.bam'
-    input:
-        '{sn}/host_removed/mapped_and_unmapped.sam'
-    shell:
-        'samtools view -bS {input} > {output}'
-
-
-rule hostremove_map_pairs:
-    priority: 2
-    conda: 'conda_envs/snp_mapping.yaml'
-    output:
-        '{sn}/host_removed/both_ends_mapped.bam'
-    input:
-        '{sn}/host_removed/mapped_and_unmapped.bam'
-    shell:
-        'samtools view -b -f 3 -F 4 {input} > {output}'
+	    ' -1 {input[0]} -2 {input[1]}'
+	    ' --summary-file {params.summary_file} 2>{log} | '
+        'samtools view -bS | samtools view -b -f 3 -F 4 > {output}'
 
 
 rule hostremove_lsort:
