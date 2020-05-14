@@ -62,7 +62,7 @@ def run():
 	parser.add_argument('-1','--forward_primers', dest="forward_primers", default=None, required=True, help='fasta forward primers file')
 	parser.add_argument('-2','--reverse_primers', dest="reverse_primers", default=None, required=True, help='fasta reverse primers file')
 	parser.add_argument('-o','--output', dest="output", default="count.txt", required=False, help='output file name. "count.txt" is the default.')
-	parser.add_argument('--summary', dest="summary", action="store_true", help='output summary counts for forward and reverse primers in separate file')
+	parser.add_argument('--summary', dest="summary", action="store_true", help='output summary counts for forward and reverse primers in separate .summary file')
 	args = parser.parse_args()
 	main(args)  
 
