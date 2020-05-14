@@ -341,51 +341,37 @@ rule run_breseq:
 ##################  Based on scripts/hisat2.sh and scripts/coverage_stats_avg.sh  ##################
 
 
-rule coverage_hisat2_build:
+rule coverage_bwa_build:
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        '{sn}/coverage/genome.1.ht2'
+        '{sn}/coverage/genome.bwt'
     input:
         '{sn}/consensus/virus.consensus.fa'
     log:
-        '{sn}/coverage/hisat2-build.log'
+        '{sn}/coverage/bwa-build.log'
     params:
         genome = '{sn}/coverage/genome'
     shell:
-        'hisat2-build {input} {params.genome} >{log} 2>&1'
+        'bwa index -p {params.genome} {input} >{log} 2>&1'
 
 
-rule coverage_hisat2:
+rule coverage_bwa:
     threads: 2
-    conda: 'conda_envs/snp_mapping.yaml'
-    output:
-        '{sn}/coverage/output.sam'
-    input:
-        '{sn}/host_removed/R1.fastq.gz',
-        '{sn}/host_removed/R2.fastq.gz',
-        '{sn}/coverage/genome.1.ht2'
-    log:
-        '{sn}/coverage/hisat2.log'
-    params:
-        genome = '{sn}/coverage/genome',
-        summary_file = '{sn}/coverage/hisat2_summary.txt'
-    shell:
-        'hisat2 --threads {threads}'
-        ' -x {params.genome}'
-	' -1 {input[0]} -2 {input[1]}'
-	' --summary-file {params.summary_file}'
-	' -S {output}'
-	' 2>{log}'
-
-
-rule coverage_sam_to_bam:
     conda: 'conda_envs/snp_mapping.yaml'
     output:
         '{sn}/coverage/output.bam'
     input:
-        '{sn}/coverage/output.sam'
+        r1 = '{sn}/host_removed/R1.fastq.gz',
+        r2 = '{sn}/host_removed/R2.fastq.gz',
+        ref = '{sn}/coverage/genome.bwt'
+    params:
+        genome = '{sn}/coverage/genome'
+    log:
+        '{sn}/coverage/bwa.log'
     shell:
-        'samtools view -b {input} | samtools sort > {output}'
+        'bwa mem -t {threads} {params.genome} '
+        '{input.r1} {input.r2} 2> {log} | '
+        'samtools view -bS | samtools sort -@{threads} -o {output}'
 
 
 rule coverage_depth:

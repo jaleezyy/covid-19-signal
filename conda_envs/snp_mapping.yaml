@@ -1,6 +1,7 @@
+name: snp_mapping
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
   - defaults
 dependencies:
   - _libgcc_mutex=0.1=conda_forge
@@ -11,6 +12,7 @@ dependencies:
   - binutils_linux-64=2.34=hc952b39_18
   - bowtie2=2.3.5.1=py36he513fc3_0
   - breseq=0.35.0=h8b12597_0
+  - bwa=0.7.17=hed695b0_7
   - bwidget=1.9.14=0
   - bzip2=1.0.8=h516909a_2
   - ca-certificates=2020.4.5.1=hecc5488_0
