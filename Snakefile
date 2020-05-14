@@ -20,6 +20,7 @@
 
 from snakemake.utils import validate
 import pandas as pd
+import os
 
 # The config file contains a high-level summary of pipeline configuration and inputs.
 # It is ingested by the Snakefile, and also intended to be human-readable.
@@ -53,7 +54,7 @@ rule sort:
     input: expand('{sn}/fastq_sorted/R{r}_fastqc.html', sn=sample_names, r=[1,2])
     
 rule remove_primers:
-    input: expand('{sn}/fastq_primers_removed/R{r}.fastq.gz', sn=sample_names, r=[1,2])
+    input: expand('{sn}/fastq_sequencing_adapter_trimming/R{r}_paired.fastq.gz', sn=sample_names, r=[1,2])
 
 rule trim:
     input: expand('{sn}/fastq_trimmed/R{r}_paired_fastqc.html', sn=sample_names, r=[1,2])
@@ -289,11 +290,10 @@ rule run_consensus:
         ivar_freq_threshold = config['ivar_freq_threshold'],
         output_prefix = '{sn}/consensus/virus.consensus'
     shell:
-        """
-        samtools mpileup -A -d {params.mpileup_depth} -Q0 {input} | \
-        ivar consensus -t {params.ivar_freq_threshold} -m {params.ivar_min_coverage_depth} \
-                                    -n N -p {params.output_prefix} 2>{log}
-        """
+        'samtools mpileup -A -d {params.mpileup_depth} -Q0 {input} | '
+        'ivar consensus -t {params.ivar_freq_threshold} '
+        '-m {params.ivar_min_coverage_depth} -n N -p {params.output_prefix} '
+        '2>{log}'
 
 
 rule run_ivar_variants:
@@ -303,16 +303,19 @@ rule run_ivar_variants:
     input:
         reference = config['viral_reference_genome'],
         read_bam = '{sn}/host_removed/both_ends_mapped_lsorted.bam'
+    log:
+        '{sn}/ivar_variants/ivar_variants.log'
     params:
         output_prefix = '{sn}/ivar_variants/ivar_variants',
         ivar_min_coverage_depth = config['ivar_min_coverage_depth'],
         ivar_min_freq_threshold = config['ivar_min_freq_threshold'],
         ivar_min_variant_quality = config['ivar_min_variant_quality']
     shell:
-        """
-        samtools mpileup -A -d 0 --reference {input.reference} -B -Q 0 {input.read_bam} |\
-        ivar variants -r {input.reference} -m {params.ivar_min_coverage_depth} -p {params.output_prefix} -q {params.ivar_min_variant_quality} -t {params.ivar_min_freq_threshold}
-        """
+        'samtools mpileup -A -d 0 --reference {input.reference} -B '
+            '-Q 0 {input.read_bam} | '
+        'ivar variants -r {input.reference} -m {params.ivar_min_coverage_depth} '
+        '-p {params.output_prefix} -q {params.ivar_min_variant_quality} '
+        '-t {params.ivar_min_freq_threshold} 2> {log}'
 
 
 ################################   Based on scripts/breseq.sh   ####################################
@@ -409,7 +412,7 @@ rule run_kraken2:
         '{sn}/kraken2/kraken2.log'
     params:
         outdir = '{sn}/kraken2',
-	db = config['kraken2_db']
+	    db = os.path.abspath(config['kraken2_db'])
     shell:
         'cd {params.outdir} '
 	'&& kraken2'
