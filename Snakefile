@@ -117,6 +117,8 @@ rule concat_and_sort:
         '{sn}/fastq_sorted/R{r}.fastq.gz'
     input:
         lambda wildcards: get_input_fastq_files(wildcards.sn, wildcards.r)
+    benchmark:
+        "{sn}/benchmarks/concat_and_sort_R{r}.benchmark.tsv"
     shell:
         'zcat {input} | paste - - - - | sort -k1,1 -t " " | tr "\\t" "\\n" | gzip > {output}'
 
@@ -125,6 +127,8 @@ rule run_fastqc:
     conda: 'conda_envs/trim_qc.yaml'
     output: expand('{{s}}_fastqc.{ext}', ext=['html','zip'])
     input: '{s}.fastq.gz'
+    benchmark:
+        "{s}/benchmarks/fastqc.benchmark.tsv"
     log: '{s}_fastqc.log',
     shell: 'fastqc {input} 2>{log} > /dev/null'
 
@@ -140,6 +144,8 @@ rule run_trimmomatic:
         expand('{{sn}}/fastq_sorted/R{r}.fastq.gz', r=[1,2])
     log:
         '{sn}/fastq_sequencing_adapter_trimming/trim.log'
+    benchmark:
+        "{sn}/benchmarks/trimmomatic.benchmark.tsv"
     params:
         targs = config['trimmomatic_args']
     shell:
@@ -156,6 +162,8 @@ rule run_cutadapt:
         expand('{{sn}}/fastq_sequencing_adapter_trimming/R{r}_paired.fastq.gz', r=[1,2])
     log:
         '{sn}/fastq_trimmed/cutadapt.log'
+    benchmark:
+        "{sn}/benchmarks/cutadapt.benchmark.tsv"
     params:
         primer_fw = config['primer_fw'],
         primer_rc = config['primer_rc']
@@ -179,7 +187,9 @@ rule hostremove_hisat2_build:
         '{sn}/host_removed/hisat2-build.log'
     params:
         reference = config['viral_reference_genome'],
-	genome = '{sn}/host_removed/sars-cov-2'
+        genome = '{sn}/host_removed/sars-cov-2'
+    benchmark:
+        "{sn}/benchmarks/hostremove_hisat2_build.benchmark.tsv"
     shell:
         'hisat2-build {params.reference} {params.genome} >{log} 2>&1'
 
@@ -196,6 +206,8 @@ rule hostremove_hisat2:
         '{sn}/host_removed/sars-cov-2.1.ht2'
     log:
         '{sn}/host_removed/hisat2.log'
+    benchmark:
+        "{sn}/benchmarks/hostremove_hisat2.benchmark.tsv"
     params:
         genome = '{sn}/host_removed/sars-cov-2',
 	summary_file = '{sn}/fastq_hist_removed/hisat2_summary.txt'
@@ -213,6 +225,8 @@ rule hostremove_lsort:
         '{sn}/host_removed/both_ends_mapped_lsorted.bam'
     input:
         '{sn}/host_removed/both_ends_mapped.bam'
+    benchmark:
+        "{sn}/benchmarks/hostremove_lsort.benchmark.tsv"
     shell:
         'samtools sort {input} -o {output}'
 
@@ -224,6 +238,8 @@ rule hostremove_nsort:
         '{sn}/host_removed/both_ends_mapped_nsorted.bam'
     input:
         '{sn}/host_removed/both_ends_mapped.bam'
+    benchmark:
+        "{sn}/benchmarks/hostremove_nsort.benchmark.tsv"
     shell:
         'samtools sort -n {input} -o {output}'
 
@@ -236,6 +252,8 @@ rule hostremove_fastq:
         '{sn}/host_removed/R2.fastq'
     input:
         '{sn}/host_removed/both_ends_mapped_nsorted.bam'
+    benchmark:
+        "{sn}/benchmarks/hostremove_fastq.benchmark.tsv"
     log:
         '{sn}/host_removed/bamtofastq.log'
     shell:
@@ -248,6 +266,8 @@ rule hostremove_fastq_gzip:
         '{sn}/host_removed/R{r}.fastq.gz'
     input:
         '{sn}/host_removed/R{r}.fastq'
+    benchmark:
+        "{sn}/benchmarks/hostremove_fastq_gzip_R{r}.benchmark.tsv"
     shell:
         'gzip {input}'
 
@@ -263,16 +283,18 @@ rule run_consensus:
         '{sn}/host_removed/both_ends_mapped_lsorted.bam'
     log:
         '{sn}/consensus/ivar.log'
+    benchmark:
+        "{sn}/benchmarks/run_consensus.benchmark.tsv"
     params:
         mpileup_depth = config['mpileup_depth'],
         ivar_min_coverage_depth = config['ivar_min_coverage_depth'],
         ivar_freq_threshold = config['ivar_freq_threshold'],
         output_prefix = '{sn}/consensus/virus.consensus'
     shell:
-        'samtools mpileup -A -d {params.mpileup_depth} -Q0 {input} 2>{log} | '
+        '(samtools mpileup -A -d {params.mpileup_depth} -Q0 {input} | '
         'ivar consensus -t {params.ivar_freq_threshold} '
-        '-m {params.ivar_min_coverage_depth} -n N -p {params.output_prefix} '
-        '2>>{log}'
+        '-m {params.ivar_min_coverage_depth} -n N -p {params.output_prefix}) '
+        '2>{log}'
 
 
 rule run_ivar_variants:
@@ -284,17 +306,19 @@ rule run_ivar_variants:
         read_bam = '{sn}/host_removed/both_ends_mapped_lsorted.bam'
     log:
         '{sn}/ivar_variants/ivar_variants.log'
+    benchmark:
+        "{sn}/benchmarks/run_ivar_variants.benchmark.tsv"
     params:
         output_prefix = '{sn}/ivar_variants/ivar_variants',
         ivar_min_coverage_depth = config['ivar_min_coverage_depth'],
         ivar_min_freq_threshold = config['ivar_min_freq_threshold'],
         ivar_min_variant_quality = config['ivar_min_variant_quality']
     shell:
-        'samtools mpileup -A -d 0 --reference {input.reference} -B '
-            '-Q 0 {input.read_bam} 2> {log} | '
+        '(samtools mpileup -A -d 0 --reference {input.reference} -B '
+            '-Q 0 {input.read_bam} | '
         'ivar variants -r {input.reference} -m {params.ivar_min_coverage_depth} '
         '-p {params.output_prefix} -q {params.ivar_min_variant_quality} '
-        '-t {params.ivar_min_freq_threshold} 2>> {log}'
+        '-t {params.ivar_min_freq_threshold}) 2> {log}'
 
 
 ################################   Based on scripts/breseq.sh   ####################################
@@ -310,6 +334,8 @@ rule run_breseq:
         expand('{{sn}}/host_removed/R{r}.fastq.gz', r=[1,2])
     log:
         '{sn}/breseq/breseq.log',
+    benchmark:
+        "{sn}/benchmarks/run_breseq.benchmark.tsv"
     params:
         ref = config['breseq_reference'],
 	outdir = '{sn}/breseq'
@@ -328,6 +354,8 @@ rule coverage_bwa_build:
         '{sn}/consensus/virus.consensus.fa'
     log:
         '{sn}/coverage/bwa-build.log'
+    benchmark:
+        "{sn}/benchmarks/coverage_bwa_build.benchmark.tsv"
     params:
         genome = '{sn}/coverage/genome'
     shell:
@@ -343,10 +371,12 @@ rule coverage_bwa:
         r1 = '{sn}/host_removed/R1.fastq.gz',
         r2 = '{sn}/host_removed/R2.fastq.gz',
         ref = '{sn}/coverage/genome.bwt'
-    params:
-        genome = '{sn}/coverage/genome'
+    benchmark:
+        "{sn}/benchmarks/coverage_bwa.benchmark.tsv"
     log:
         '{sn}/coverage/bwa.log'
+    params:
+        genome = '{sn}/coverage/genome'
     shell:
         'bwa mem -t {threads} {params.genome} '
         '{input.r1} {input.r2} 2> {log} | '
@@ -359,6 +389,8 @@ rule coverage_depth:
         '{sn}/coverage/depth.txt'
     input:
         '{sn}/coverage/output.bam'
+    benchmark:
+        "{sn}/benchmarks/coverage_depth.benchmark.tsv"
     shell:
         'bedtools genomecov -d -ibam {input} >{output}'
 
@@ -375,6 +407,8 @@ rule run_kraken2:
         expand('{{sn}}/fastq_trimmed/R{r}_paired.fastq.gz', r=[1,2])
     log:
         '{sn}/kraken2/kraken2.log'
+    benchmark:
+        "{sn}/benchmarks/run_kraken2.benchmark.tsv"
     params:
         outdir = '{sn}/kraken2',
 	    db = os.path.abspath(config['kraken2_db'])
@@ -399,6 +433,8 @@ rule lmat_pretile:
         '{sn}/lmat/assembly.tiled.fasta'
     input:
         '{sn}/consensus/virus.consensus.fa'
+    benchmark:
+        "{sn}/benchmarks/lmat_pretile.benchmark.tsv"
     params:
         fsize = config['lmat_fragment_size']
     shell:
@@ -412,18 +448,22 @@ rule run_lmat:
         '{sn}/lmat/assembly.tiled.fasta.{db}.lo.rl_output0.out'
     input:
         '{sn}/lmat/assembly.tiled.fasta'
+    benchmark:
+        "{sn}/benchmarks/run_lmat_{db}.benchmark.tsv"
+    log:
+        "{sn}/lmat/lmat_{db}.log"
     params:
         outdir = '{sn}/lmat',
         lmat_basedir = config['lmat_basedir'],
         lmat_db = '{db}'
     shell:
         'LMAT_DIR={params.lmat_basedir}/runtime_inputs '
-	'bash $(which run_rl.sh)'
-	' --db_file={params.lmat_basedir}/data/{params.lmat_db}'
-	' --query_file={input}'
-	' --odir={params.outdir}'
-	' --overwrite --verbose'
-	' --threads={threads}'
+	    'bash $(which run_rl.sh)'
+	    ' --db_file={params.lmat_basedir}/data/{params.lmat_db}'
+	    ' --query_file={input}'
+	    ' --odir={params.outdir}'
+	    ' --overwrite --verbose'
+	    ' --threads={threads} 2> {log}'
 
 
 rule lmat_postprocess:
@@ -431,6 +471,8 @@ rule lmat_postprocess:
         '{sn}/lmat/parseLMAT_output.txt'
     input:
         expand('{{sn}}/lmat/assembly.tiled.fasta.{db}.lo.rl_output0.out', db=[config['lmat_db']])
+    benchmark:
+        "{sn}/benchmarks/lmat_postprocess.benchmark.tsv"
     params:
         outdir = '{sn}/lmat'
     shell:
@@ -449,6 +491,8 @@ rule run_quast:
          '{sn}/consensus/virus.consensus.fa'
     log:
          '{sn}/quast/quast.log'
+    benchmark:
+        "{sn}/benchmarks/run_quast.benchmark.tsv"
     params:
          outdir = '{sn}/quast',
          genome = config['viral_reference_genome'],
