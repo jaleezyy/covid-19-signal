@@ -65,10 +65,10 @@ rule hostremove:
        expand('{sn}/host_removed/R{r}.fastq.gz', sn=sample_names, r=[1,2])
 
 rule consensus:
-    input: expand('{sn}/consensus/virus.consensus.fa', sn=sample_names)
+    input: expand('{sn}/core/virus.consensus.fa', sn=sample_names)
 
 rule ivar_variants:
-    input: expand('{sn}/ivar_variants/ivar_variants.tsv', sn=sample_names)
+    input: expand('{sn}/core/ivar_variants.tsv', sn=sample_names)
 
 rule breseq:
     input: expand('{sn}/breseq/output/index.html', sn=sample_names)
@@ -274,42 +274,107 @@ rule hostremove_fastq_gzip:
 
 ###### Based on github.com/connor-lab/ncov2019-artic-nf/blob/master/modules/illumina.nf#L124 ######
 
-
-rule run_consensus:
-    conda: 'conda_envs/ivar.yaml'
+rule reference_bwa_build:
+    conda: 
+        'conda_envs/snp_mapping.yaml'
     output:
-        '{sn}/consensus/virus.consensus.fa'
+        '{sn}/core/reference.bwt'
     input:
-        '{sn}/host_removed/both_ends_mapped_lsorted.bam'
+        reference = config['viral_reference_genome'],
     log:
-        '{sn}/consensus/ivar.log'
+        '{sn}/core/bwa-build.log'
     benchmark:
-        "{sn}/benchmarks/run_consensus.benchmark.tsv"
+        "{sn}/benchmarks/reference_bwa_build.benchmark.tsv"
+    params:
+        output_prefix = "{sn}/core/reference"
+    shell:
+        'bwa index -p {params.output_prefix} {input} >{log} 2>&1'
+
+rule reference_bwa_map:
+    threads: 2
+    conda: 
+        'conda_envs/snp_mapping.yaml'
+    output:
+        '{sn}/core/reference.bam'
+    input:
+        r1 = '{sn}/host_removed/R1.fastq.gz',
+        r2 = '{sn}/host_removed/R2.fastq.gz',
+        ref = '{sn}/core/reference.bwt'
+    benchmark:
+        "{sn}/benchmarks/reference_bwa_map.benchmark.tsv"
+    log:
+        '{sn}/core/bwa.log'
+    params:
+       ref_prefix = '{sn}/core/reference.bwt'
+    shell:
+        '(bwa mem -t {threads} {params.ref_prefix} '
+        '{input.r1} {input.r2} | '
+        'samtools view -bS | samtools sort -@{threads} -o {output}) 2> {log}'
+
+rule run_bed_primer_trim:
+    conda: 
+        'conda_envs/ivar.yaml'
+    input:
+        "{sn}/core/reference.bam"
+    output:
+        sorted_trimmed_mapped_bam = "{sn}/core/reference.mapped.primertrimmed.sorted.bam",
+        trimmed_mapped_bam = "{sn}/core/reference.mapped.primertrimmed.bam",
+        mapped_bam = "{sn}/core/reference.mapped.bam"
+    benchmark:
+        "{sn}/benchmarks/bed_primer_trim.benchmark.tsv"
+    log:
+        "{sn}/core/ivar_trim.log"
+    params:
+        scheme_bed = config['scheme_bed'],
+        ivar_output_prefix = "{sn}/core/reference.mapped.primertrimmed",
+        min_len = config['min_len'],
+        min_qual = config['min_qual'],
+    shell:
+        """
+        samtools view -F4 -o {output.mapped_bam} {input}
+        samtools index {output.mapped_bam}
+        ivar trim -e -i {output.mapped_bam} -b {params.scheme_bed} \
+            -m {params.min_len} -q {params.min_qual} \
+            -p {params.ivar_output_prefix} 2> {log}
+        samtools sort -o {output.sorted_trimmed_mapped_bam} \
+            {output.trimmed_mapped_bam} 
+        """
+
+rule run_ivar_consensus:
+    conda: 
+        'conda_envs/ivar.yaml'
+    output:
+        '{sn}/core/virus.consensus.fa'
+    input:
+        "{sn}/core/reference.mapped.primertrimmed.sorted.bam"
+    log:
+        '{sn}/core/ivar_consensus.log'
+    benchmark:
+        "{sn}/benchmarks/ivar_consensus.benchmark.tsv"
     params:
         mpileup_depth = config['mpileup_depth'],
         ivar_min_coverage_depth = config['ivar_min_coverage_depth'],
         ivar_freq_threshold = config['ivar_freq_threshold'],
-        output_prefix = '{sn}/consensus/virus.consensus'
+        output_prefix = '{sn}/core/virus.consensus'
     shell:
         '(samtools mpileup -A -d {params.mpileup_depth} -Q0 {input} | '
         'ivar consensus -t {params.ivar_freq_threshold} '
         '-m {params.ivar_min_coverage_depth} -n N -p {params.output_prefix}) '
         '2>{log}'
 
-
 rule run_ivar_variants:
     conda: 'conda_envs/ivar.yaml'
     output:
-        '{sn}/ivar_variants/ivar_variants.tsv'
+        '{sn}/core/ivar_variants.tsv'
     input:
         reference = config['viral_reference_genome'],
-        read_bam = '{sn}/host_removed/both_ends_mapped_lsorted.bam'
+        bam = "{sn}/core/reference.mapped.primertrimmed.sorted.bam"
     log:
-        '{sn}/ivar_variants/ivar_variants.log'
+        '{sn}/core/ivar_variants.log'
     benchmark:
-        "{sn}/benchmarks/run_ivar_variants.benchmark.tsv"
+        "{sn}/benchmarks/ivar_variants.benchmark.tsv"
     params:
-        output_prefix = '{sn}/ivar_variants/ivar_variants',
+        output_prefix = '{sn}/core/ivar_variants',
         ivar_min_coverage_depth = config['ivar_min_coverage_depth'],
         ivar_min_freq_threshold = config['ivar_min_freq_threshold'],
         ivar_min_variant_quality = config['ivar_min_variant_quality']
@@ -325,7 +390,7 @@ rule run_ivar_variants:
 
 
 rule run_breseq:
-    threads: 1
+    threads: 4
     priority: 1
     conda: 'conda_envs/snp_mapping.yaml'
     output:
@@ -351,7 +416,7 @@ rule coverage_bwa_build:
     output:
         '{sn}/coverage/genome.bwt'
     input:
-        '{sn}/consensus/virus.consensus.fa'
+        '{sn}/core/virus.consensus.fa'
     log:
         '{sn}/coverage/bwa-build.log'
     benchmark:
@@ -432,7 +497,7 @@ rule lmat_pretile:
     output:
         '{sn}/lmat/assembly.tiled.fasta'
     input:
-        '{sn}/consensus/virus.consensus.fa'
+        '{sn}/core/virus.consensus.fa'
     benchmark:
         "{sn}/benchmarks/lmat_pretile.benchmark.tsv"
     params:
@@ -488,7 +553,7 @@ rule run_quast:
     output:
          '{sn}/quast/report.html'
     input:
-         '{sn}/consensus/virus.consensus.fa'
+         '{sn}/core/virus.consensus.fa'
     log:
          '{sn}/quast/quast.log'
     benchmark:
