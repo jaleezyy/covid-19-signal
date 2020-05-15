@@ -305,7 +305,7 @@ rule reference_bwa_map:
     log:
         '{sn}/core/bwa.log'
     params:
-       ref_prefix = '{sn}/core/reference.bwt'
+       ref_prefix = '{sn}/core/reference'
     shell:
         '(bwa mem -t {threads} {params.ref_prefix} '
         '{input.r1} {input.r2} | '
@@ -363,12 +363,13 @@ rule run_ivar_consensus:
         '2>{log}'
 
 rule run_ivar_variants:
-    conda: 'conda_envs/ivar.yaml'
+    conda: 
+        'conda_envs/ivar.yaml'
     output:
         '{sn}/core/ivar_variants.tsv'
     input:
         reference = config['viral_reference_genome'],
-        bam = "{sn}/core/reference.mapped.primertrimmed.sorted.bam"
+        read_bam = "{sn}/core/reference.mapped.primertrimmed.sorted.bam"
     log:
         '{sn}/core/ivar_variants.log'
     benchmark:
