@@ -257,8 +257,8 @@ rule get_mapping_reads:
         '{sn}/mapped_clean_reads/bamtofastq.log'
     shell:
         """
-        samtools sort -n {input} -o {bam} 2> {log}
-        bedtools bamtofastq -i {bam} -fq {output.r1} -fq2 {output.r2} 2>> {log} 
+        samtools sort -n {input} -o {output.bam} 2> {log}
+        bedtools bamtofastq -i {output.bam} -fq {output.r1} -fq2 {output.r2} 2>> {log} 
         """
 
 rule clean_reads_gzip:
