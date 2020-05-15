@@ -49,8 +49,3 @@ kraken2-build --download-library viral --db $database_dir/Kraken2/db --threads 1
 kraken2-build --build --threads 10 --db $database_dir/Kraken2/db
 kraken2-build --clean --threads 10 --db $database_dir/Kraken2/db
 
-## get lmat database
-export LMAT_ROOTDIR="$database_dir/LMAT-1.2.6"
-mkdir -p $LMAT_ROOTDIR
-bash $(which get_db.sh) --dtype=db --name=kML+Human.v4-14.20.g10.db --outdir=$database_dir/LMAT-1.2.6/data
-bash $(which get_db.sh) --dtype=inputs --name=04072014 --outdir=$database_dir/LMAT-1.2.6

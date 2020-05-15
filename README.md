@@ -31,8 +31,7 @@ Additional software dependencies are managed directly by `snakemake` using conda
   - kraken2 2.0.7-beta ([docs](https://ccb.jhu.edu/software/kraken2/))
   - unicycler 0.4.8 ([github](https://github.com/rrwick/Unicycler))
   - quast 5.0.2 ([docs](http://quast.sourceforge.net/quast))
-  - hisat 2.1.0 ([docs](http://daehwankimlab.github.io/hisat2/))
-  - lmat, "sourceforge" version ([sourceforge](https://sourceforge.net/projects/lmat/))
+  - bwa 
   - samtools 1.7 ([docs](http://www.htslib.org/))
   - bedtools 2.26.0 ([docs](https://bedtools.readthedocs.io/en/latest/))
   - ivar 1.2 ([docs](https://github.com/andersen-lab/ivar))

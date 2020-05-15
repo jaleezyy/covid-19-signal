@@ -1016,10 +1016,10 @@ class Sample:
         self.kraken2 = parse_kraken2_report(f"{name}/kraken2/report")
         self.hostremove = parse_hostremove_hisat2_log(f"{name}/host_removed/hisat2.log")
         self.quast = parse_quast_report(f"{name}/quast/report.txt")
-        self.consensus = parse_consensus_assembly(f"{name}/consensus/virus.consensus.fa")
+        self.consensus = parse_consensus_assembly(f"{name}/core/virus.consensus.fa")
         self.coverage = parse_coverage(f"{name}/coverage/depth.txt")
         self.lmat = parse_lmat_output(f"{name}/lmat")
-        self.ivar = parse_ivar_variants(f"{name}/ivar_variants/ivar_variants.tsv")
+        self.ivar = parse_ivar_variants(f"{name}/core/ivar_variants.tsv")
         self.breseq = parse_breseq_output(f"{name}/breseq/output/index.html")
 
 

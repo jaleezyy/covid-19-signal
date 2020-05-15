@@ -1,10 +1,13 @@
 $schema: "http://json-schema.org/draft-07/schema#"
-primer_rc: 
+min_len:
+    type: int
+    description: "minimum read length to retain"
+min_qual:
+    type: int
+    description: "minimum quality score to retain"
+scheme_bed:
     type: string
-    description: "path to sequencing primer (reverse complement)"
-primer_fw: 
-    type: string
-    description: "path to sequencing primer (forward)"
+    description: "path to .bed file defining amplicon primer scheme"
 trimmomatic_args:
     type: string
     description: "args for trimmomatic e.g. 'ILLUMINACLIP:data/NexteraPE-PE.fa:2:30:10 SLIDINGWINDOW:4:20'"
@@ -55,8 +58,9 @@ samples:
     type: string
     description: "Sample filepaths/table"
 required:
-    - primer_rc
-    - primer_fw
+    - min_len
+    - min_qual
+    - scheme_bed
     - trimmomatic_args
     - viral_reference_genome
     - viral_reference_feature_coords
