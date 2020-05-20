@@ -3,12 +3,15 @@
 # This file contains a high-level summary of pipeline configuration and inputs.
 # It is ingested by the Snakefile, and also intended to be human-readable.
 
-# Used as -a,-A arguments to 'cutadapt'
-primer_rc: '/home/kmsmith/data/wuhan_primers_28.01.20_trim_RC.fa'
-primer_fw: '/home/kmsmith/data/wuhan_primers_28.01.20_trim_FW.fa'
 
-# Last arguments on 'trimmomatic' command line (after input, output files)
-trimmomatic_args: 'ILLUMINACLIP:/home/kmsmith/data/NexteraPE-PE.fa:2:30:10 SLIDINGWINDOW:4:20'
+# Minimum quality threshold, used in 'trim_galore' and 'ivar trim'
+min_qual: 20
+
+# Minimum read length to retain after trimming, used in 'trim_galore' and 'ivar trim'
+min_len: 20
+
+# Path to .bed file defining amplicon primer scheme
+scheme_bed: 'resources/primer_schemes/Wuhan_liverpool_primers_28.01.20.bed'
 
 # Used as hisat2 reference genome when removing host sequences.
 # Also used as 'ivar' reference genome in variant detection + consensus.
@@ -32,12 +35,5 @@ ivar_min_coverage_depth: 10
 ivar_min_freq_threshold: 0.25
 # iVar minimum mapQ to call variant (ivar variants: -q)
 ivar_min_variant_quality: 20
-
-# lmat_fragment_size: size of fragments (in bp) analyzed by 'lmat'
-# Absolute pathname of the LMAT DB is {lmat_basedir}/data/{lmat_db}.
-# LMAT's expected "runtime inputs" (e.g. 'ncbi_taxid_to_rank.txt') should be in {lmat_basedir}/runtime_inputs.
-lmat_fragment_size: 250
-lmat_basedir: '/home/kmsmith/data/LMAT-1.2.6'
-lmat_db: 'kML+Human.v4-14.20.g10.db'
 
 samples: "sample_table.csv"
