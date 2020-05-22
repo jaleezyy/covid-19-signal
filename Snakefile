@@ -55,6 +55,9 @@ rule sort:
 rule remove_adapters:
     input: expand('{sn}/adapter_trimmed/R{r}_val_{r}.fq.gz', sn=sample_names, r=[1,2])
 
+rule host_removed_raw_reads:
+    input: expand('{sn}/host_removal/R{r}.fastq.gz', sn=sample_names, r=[1,2])
+
 rule fastqc:
     input: expand('{sn}/adapter_trimmed/R{r}_val_{r}_fastqc.html', sn=sample_names, r=[1,2])
     
@@ -85,6 +88,7 @@ rule quast:
 rule all:
     input:
         rules.sort.input,
+        rules.host_removed_raw_reads.input,
         rules.remove_adapters.input,
         rules.fastqc.input,
         rules.clean_reads.input,
@@ -135,6 +139,57 @@ rule run_raw_fastqc:
         fastqc -o {params.output_prefix} {input} 2> {log}
         """
 
+########################## Human Host Removal ################################
+rule raw_reads_human_reference_bwa_map:
+    threads: 2
+    conda: 
+        'conda_envs/snp_mapping.yaml'
+    output:
+        '{sn}/host_removal/human_mapping_reads.bam'
+    input:
+        raw_r1 = '{sn}/combined_raw_fastq/R1.fastq.gz',
+        raw_r2 = '{sn}/combined_raw_fastq/R2.fastq.gz'
+    benchmark:
+        "{sn}/benchmarks/human_reference_bwa_map.benchmark.tsv"
+    log:
+        '{sn}/host_removal/human_read_mapping.log'
+    params:
+       human_index = os.path.abspath(config['human_reference'])
+    shell:
+        '(bwa mem -t {threads} {params.human_index} '
+        '{input.raw_r1} {input.raw_r2} | '
+        'samtools view -bS | samtools sort -@{threads} -o {output}) 2> {log}'
+
+rule get_host_removed_reads:
+    conda: 'conda_envs/snp_mapping.yaml'
+    output:
+        r1 = '{sn}/host_removal/R1.fastq',
+        r2 = '{sn}/host_removal/R2.fastq',
+        bam = '{sn}/host_removal/sort_human_mapping_locations.bam'
+    input:
+        '{sn}/host_removal/human_mapping_reads.bam'
+    benchmark:
+        "{sn}/benchmarks/get_host_removed_reads.benchmark.tsv"
+    log:
+        '{sn}/host_removal/bamtofastq.log'
+    shell:
+        """
+        samtools view -b -f4 {input} | samtools sort -n > {output.bam} 2> {log}
+        bedtools bamtofastq -i {output.bam} -fq {output.r1} -fq2 {output.r2} 2>> {log} 
+        """
+
+rule gzip_host_removed_reads:
+    output:
+        '{sn}/host_removal/R1.fastq.gz',
+        '{sn}/host_removal/R2.fastq.gz',
+    input:
+        '{sn}/host_removal/R1.fastq',
+        '{sn}/host_removal/R2.fastq',
+    shell:
+        """
+        gzip {input}
+        """
+
 ###### Based on github.com/connor-lab/ncov2019-artic-nf/blob/master/modules/illumina.nf#L124 ######
 
 rule run_trimgalore:
@@ -163,21 +218,6 @@ rule run_trimgalore:
         ' -o {params.output_prefix} --cores {threads} --fastqc '
         '--paired {input.raw_r1} {input.raw_r2} 2> {log}'
 
-#rule tidy_trimmed_name:
-#    priority: 2
-#    output:
-#        r1 = '{sn}/adapter_trimmed/R1_paired.fastq.gz', 
-#        r2 = '{sn}/adapter_trimmed/R2_paired.fastq.gz'
-#    input:
-#        r1 = '{sn}/adapter_trimmed/R1_val_1.fq.gz',
-#        r2 = '{sn}/adapter_trimmed/R2_val_2.fq.gz'
-#    shell:
-#        """
-#        mv {input.r1} {output.r1}
-#        mv {input.r1} {output.r2}
-#        """
-#
-
 rule reference_bwa_build:
     conda: 
         'conda_envs/snp_mapping.yaml'
@@ -193,6 +233,7 @@ rule reference_bwa_build:
         output_prefix = "{sn}/core/reference"
     shell:
         'bwa index -p {params.output_prefix} {input} >{log} 2>&1'
+
 
 rule reference_bwa_map:
     threads: 2
