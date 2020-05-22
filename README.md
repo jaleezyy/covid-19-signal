@@ -40,15 +40,12 @@ Additional software dependencies are managed directly by `snakemake` using conda
 
 The pipeline requires:
  
- - Amplicon primer scheme sequences (\*)
- - Nextera sequencing primer sequence files from trimmomatic 
+ - Amplicon primer scheme sequences
  - SARS-CoV2 reference fasta
  - SARS-CoV2 reference gbk 
  - SARS-CoV2 reference gff3
  - kraken2 viral database
- - LMAT `kML+Human.v4-14.20.g10.db` database
-
-All dependencies except the amplicon primers (\*) can be automatically fetched using the follow accessory script:
+ - Human GRCh38 BWA indexed reference
 
         bash scripts/get_data_dependencies.sh -d data -a MN908947.3
 

@@ -44,11 +44,10 @@ def get_input_fastq_files(sample_name, r):
     elif r == '2':
         relpaths = sample_fastqs['r2_path'].values
 
-    return [ os.path.join(sample_name, r) for r in relpaths ]
+    return [ os.path.abspath(r) for r in relpaths ]
 
 
 ######################################   High-level targets   ######################################
-
 
 rule sort:
     input: expand('{sn}/combined_raw_fastq/R{r}_fastqc.html', sn=sample_names, r=[1,2])
@@ -177,6 +176,7 @@ rule run_trimgalore:
 #        mv {input.r1} {output.r1}
 #        mv {input.r1} {output.r2}
 #        """
+#
 
 rule reference_bwa_build:
     conda: 
