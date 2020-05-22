@@ -13,7 +13,9 @@ min_len: 20
 # Path to .bed file defining amplicon primer scheme
 scheme_bed: 'resources/primer_schemes/Wuhan_liverpool_primers_28.01.20.bed'
 
-# Used as hisat2 reference genome when removing host sequences.
+# Path to bwa preindex
+
+# Used as bwa reference genome when removing host sequences.
 # Also used as 'ivar' reference genome in variant detection + consensus.
 # Used as -r,-g arguments to 'quast'
 viral_reference_genome: '/home/kmsmith/data/MN908947_3.fasta'
