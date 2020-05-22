@@ -20,7 +20,7 @@ Future enhancements are intended to aid/automate metadata management in accordan
         wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
         bash Miniconda3-latest-Linux-x86_64.sh # follow instructions
         source $(conda info --base)/etc/profile.d/conda.sh
-        conda create -n snakemake snakemake=5.11.2
+        conda create -n snakemake snakemake=5.11.2 pandas
         conda activate snakemake
 
 Additional software dependencies are managed directly by `snakemake` using conda environment files:
