@@ -114,7 +114,7 @@ rule concat_and_sort:
     benchmark:
         "{sn}/benchmarks/concat_and_sort_R{r}.benchmark.tsv"
     shell:
-        'zcat {input} | paste - - - - | sort -k1,1 -t " " | tr "\\t" "\\n" | gzip > {output}'
+        'zcat -f {input} | paste - - - - | sort -k1,1 -t " " | tr "\\t" "\\n" | gzip > {output}'
 
 rule run_raw_fastqc:
     conda: 
