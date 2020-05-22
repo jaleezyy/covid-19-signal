@@ -406,7 +406,12 @@ def parse_coverage(depth_filename, allow_missing=True):
 
 
 def parse_lmat_output(lmat_dirname, allow_missing=True):
-    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
+    """
+    Returns dict (field_name) -> (parsed_value), see code for list of field_names.
+
+    No longer used (LMAT isn't part of pipeline any more), but kept around in case
+    it's useful to resurrect it some day.
+    """
 
     # Represent each taxon by a 4-tuple (nreads, score, rank, name)
     taxa = [ ]
@@ -688,11 +693,6 @@ class WriterBase:
         self.end_kv_pairs()
 
 
-    def write_lmat(self, s):
-        title = "Taxonomic Composition of Assembly (LMAT)" if self.unabridged else "Composition (LMAT)"
-        lines = s.lmat['top_taxa_ann'] if self.unabridged else s.lmat['top_taxa']
-        self.write_lines(title, lines)
-
     def write_ivar(self, s):
         title = "Variants in Consensus Genome (iVar)" if self.unabridged else "Variants (iVar)"
         self.write_lines(title, s.ivar['variants'], coalesce=True)
@@ -709,7 +709,6 @@ class WriterBase:
         self.write_fastqc_summary(s)
         self.write_kraken2(s)
         self.write_quast(s)
-        self.write_lmat(s)
         self.write_ivar(s)
         self.write_breseq(s)
         self.end_sample()
@@ -1018,7 +1017,6 @@ class Sample:
         self.quast = parse_quast_report(f"{name}/quast/report.txt")
         self.consensus = parse_consensus_assembly(f"{name}/core/virus.consensus.fa")
         self.coverage = parse_coverage(f"{name}/coverage/depth.txt")
-        self.lmat = parse_lmat_output(f"{name}/lmat")
         self.ivar = parse_ivar_variants(f"{name}/core/ivar_variants.tsv")
         self.breseq = parse_breseq_output(f"{name}/breseq/output/index.html")
 
@@ -1078,7 +1076,6 @@ class Pipeline:
             a.add_glob(f'{s}/host_removed/hisat2.log')
             a.add_glob(f'{s}/quast/*.html')
             a.add_dir(f'{s}/quast/icarus_viewers')
-            a.add_glob(f'{s}/lmat/*.fastsummary')
             a.add_glob(f'{s}/breseq/breseq.log')
             a.add_dir(f'{s}/breseq/output')
 
