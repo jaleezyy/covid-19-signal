@@ -229,7 +229,7 @@ rule run_bed_primer_trim:
     log:
         "{sn}/core/ivar_trim.log"
     params:
-        scheme_bed = config['scheme_bed'],
+        scheme_bed = os.path.abspath(config['scheme_bed']),
         ivar_output_prefix = "{sn}/core/reference.mapped.primertrimmed",
         min_len = config['min_len'],
         min_qual = config['min_qual'],
