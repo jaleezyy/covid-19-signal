@@ -10,7 +10,7 @@ import html.parser
 
 import numpy as np
 import pandas as pd
-
+import matplotlib.pyplot as plt
 
 long_git_id = '$Id$'
 
@@ -681,9 +681,9 @@ class WriterBase:
     def write_quast(self, s):
         self.start_kv_pairs("QUAST", link_filenames=['quast/report.html'])
         self.write_kv_pair("Genome\nLength\n(bp)", s.quast['genome_length'], indent=1)
+        self.write_kv_pair("Genome\nFraction\n(%)", s.quast['genome_fraction'], indent=1)
 
         if self.unabridged:
-            self.write_kv_pair("Genome Fraction (%)", s.quast['genome_fraction'], indent=1)
             self.write_kv_pair("Genomic Features", s.quast['genomic_features'], indent=1)
             self.write_kv_pair("N's per 100 kbp", s.quast['Ns_per_100_kbp'], indent=1)
             self.write_kv_pair("Mismatches per 100 kbp", s.quast['mismatches_per_100_kbp'], indent=1)
@@ -871,6 +871,7 @@ class SummaryHTMLWriter(HTMLWriterBase):
         self.css_lborder = 'border-left: 1px solid black;'
         self.css_bborder = 'border-bottom: 1px solid black;'
 
+        print('<p><img src="summary.png">', file=self.f)
         print('<p><table style="border-collapse: collapse; border: 1px solid black;">', file=self.f)
 
 
@@ -1047,6 +1048,40 @@ class Pipeline:
             raise RuntimeError(f"{sample_csv_filename} contains zero samples, nothing to do!")
 
 
+    def write_summary_plot(self):
+        """Writes toplevel summary plot: %SARS versus completeness."""
+
+        plt.figure(figsize=(10.4,7.8))
+        
+        xvec = [ ]
+        yvec = [ ]
+
+        for s in self.samples:
+            x = s.kraken2['sars_cov2_percentage']
+            y = s.quast['genome_fraction']
+
+            if (x is None) or (y is None):
+                continue
+            
+            xvec.append(x)
+            yvec.append(y)
+
+            if (x < 90.) or (y < 90.):
+                depth = s.coverage['mean_coverage']
+                label = f'{s.name}, {int(depth)}x'
+                plt.annotate(label, (x,y))
+
+        plt.scatter(xvec, yvec, marker='o', facecolor='blue')
+        plt.xlabel(r'SARS-COV-2 in Trimmed FASTQ (%)')
+        plt.ylabel(r'Genome Fraction (%)')
+        plt.xlim(0, 100)
+        plt.ylim(0, 100)
+
+        print('Writing summary.png')
+        plt.savefig('summary.png')
+        plt.clf()
+            
+
     def write_reports(self):
         if len(self.samples) > 1:
             summary_writer = SummaryHTMLWriter('summary.html')
@@ -1078,6 +1113,7 @@ class Pipeline:
 
         a = Archive('summary.zip', debug)
         a.add_file('summary.html')
+        a.add_file('summary.png')
 
         for sample in self.samples:
             s = sample.name
@@ -1105,5 +1141,6 @@ if __name__ == '__main__':
         sys.exit(1)
 
     p = Pipeline(sys.argv[1])
+    p.write_summary_plot()
     p.write_reports()
     p.write_archive()
