@@ -655,7 +655,7 @@ class WriterBase:
         if not self.unabridged:
             return
 
-        self.start_kv_pairs("FASTQC Flags", link_filenames=[f'fastq_trimmed/R{r}_paired_fastqc.html' for r in [1,2]])
+        self.start_kv_pairs("FASTQC Flags", link_filenames=[f'adapter_trimmed/R{r}_val_{r}_fastqc.html' for r in [1,2]])
 
         for flavor in [ 'FAIL', 'WARN' ]:
             for (msg,f) in s.post_trim_qc['summary'].items():
@@ -1011,7 +1011,7 @@ class Sample:
         self.name = name
 
         self.cutadapt = parse_cutadapt_log(f"{name}/fastq_trimmed/cutadapt.log")
-        self.post_trim_qc = parse_fastqc_pair(f"{name}/fastq_trimmed/R1_paired_fastqc.zip", f"{name}/fastq_trimmed/R2_paired_fastqc.zip")
+        self.post_trim_qc = parse_fastqc_pair(f"{name}/adapter_trimmed/R1_val_1_fastqc.zip", f"{name}/adapter_trimmed/R2_val_2_fastqc.zip")
         self.kraken2 = parse_kraken2_report(f"{name}/kraken2/report")
         self.hostremove = parse_hostremove_hisat2_log(f"{name}/host_removed/hisat2.log")
         self.quast = parse_quast_report(f"{name}/quast/report.txt")
@@ -1071,7 +1071,7 @@ class Pipeline:
             a.add_glob(f'{s}/sample.txt')
             a.add_glob(f'{s}/sample.html')
             a.add_glob(f'{s}/fastq_primers_removed/cutadapt.log')
-            a.add_glob(f'{s}/fastq_trimmed/*_fastqc.html')
+            a.add_glob(f'{s}/adapter_trimmed/*_fastqc.html')
             a.add_glob(f'{s}/kraken2/report')
             a.add_glob(f'{s}/host_removed/hisat2.log')
             a.add_glob(f'{s}/quast/*.html')
@@ -1087,7 +1087,7 @@ class Pipeline:
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
-        print(f"Usage: c19_postprocess.py <samples.csv>", file=sys.stderr)
+        print(f"Usage: c19_postprocess.py <sample_table.csv>", file=sys.stderr)
         print(f"Note: must be run from toplevel pipeline directory", file=sys.stderr)
         sys.exit(1)
 
