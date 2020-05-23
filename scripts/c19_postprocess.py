@@ -856,13 +856,14 @@ class SampleHTMLWriter(HTMLWriterBase):
 class SummaryHTMLWriter(HTMLWriterBase):
     """Writes multi-sample output file {sample_dir}/summary.html"""
 
-    def __init__(self, filename):
+    def __init__(self, filename, maxlines=8):
         HTMLWriterBase.__init__(self, filename, unabridged=False)
 
         self.first_row = ''
         self.second_row = ''
         self.current_row = ''
         self.num_rows_written = 0
+        self.maxlines = maxlines
 
         self.current_group_text = None
         self.current_group_colspan = 0
@@ -920,6 +921,12 @@ class SummaryHTMLWriter(HTMLWriterBase):
 
 
     def write_lines(self, title, lines, coalesce=False):
+        if len(lines) > self.maxlines:
+            n = len(lines)
+            m = self.maxlines
+            last = f'&nbsp;&nbsp;&nbsp; (+ {n-m+1} more)'
+            lines = lines[:(m-1)] + [last]
+        
         val = '\n<p style="margin-bottom:0px; margin-top:8px">'.join(lines)
         val = f'<p style="margin-bottom:0px; margin-top:0px"> {val}'
 
