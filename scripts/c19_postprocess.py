@@ -90,11 +90,11 @@ class TextFileParser:
         was True when add_field() was called.
         """
 
-        ret = { name: [] for name in self._field_names }
-
         if file_is_missing(filename, allow_missing):
-            return ret
-
+            return { name: None for name in self._field_names }
+        
+        ret = { name: [] for name in self._field_names }
+        
         for line in read_file(filename, allow_missing, zname):
             for (name, (regexp_pattern, regexp_group, dtype, _, _)) in zip(self._field_names, self._field_details):
                 m = re.match(regexp_pattern, line)
@@ -311,7 +311,10 @@ def parse_kraken2_report(report_filename, allow_missing=True):
 
 
 def parse_hostremove_hisat2_log(log_filename, allow_missing=True):
-    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
+    """
+    Returns dict (field_name) -> (parsed_value), see code for list of field_names.
+    No longer used, but kept around in case it's useful to resurrect it some day.
+    """
 
     t = TextFileParser()
     t.add_field('alignment_rate', r'([\d\.]*)%\s+overall alignment rate', dtype=float)
@@ -622,7 +625,7 @@ class WriterBase:
             self.write_kv_pair("Post Primer Removal (base pairs)", s.trim_galore['base_pairs_written'], indent=1)
 
         self.write_kv_pair("Post\nTrim\n(read\npairs)", s.post_trim_qc['read_pairs'], indent=1)
-        self.write_kv_pair("Post\nhuman\npurge\n(%)", s.hostremove['alignment_rate'], indent=1)
+        # self.write_kv_pair("Post\nhuman\npurge\n(%)", s.hostremove['alignment_rate'], indent=1)
         self.end_kv_pairs()
 
 
@@ -1017,7 +1020,6 @@ class Sample:
         self.trim_galore = parse_trim_galore_log(f"{name}/adapter_trimmed/trim_galore.log")
         self.post_trim_qc = parse_fastqc_pair(f"{name}/adapter_trimmed/R1_val_1_fastqc.zip", f"{name}/adapter_trimmed/R2_val_2_fastqc.zip")
         self.kraken2 = parse_kraken2_report(f"{name}/kraken2/report")
-        self.hostremove = parse_hostremove_hisat2_log(f"{name}/host_removed/hisat2.log")
         self.quast = parse_quast_report(f"{name}/quast/report.txt")
         self.consensus = parse_consensus_assembly(f"{name}/core/virus.consensus.fa")
         self.coverage = parse_coverage(f"{name}/coverage/depth.txt")
