@@ -70,10 +70,10 @@ class TextFileParser:
         self._field_names = [ ]
         self._field_details = [ ]  # List of 4-tuples (regexp_pattern, regexp_group, dtype, required)
 
-    def add_field(self, field_name, regexp_pattern, regexp_group=1, dtype=str, required=True):
+    def add_field(self, field_name, regexp_pattern, regexp_group=1, dtype=str, required=True, reducer=None):
         assert field_name not in self._field_names
         self._field_names.append(field_name)
-        self._field_details.append((regexp_pattern, regexp_group, dtype, required))
+        self._field_details.append((regexp_pattern, regexp_group, dtype, required, reducer))
 
     def parse_file(self, filename, allow_missing=True, zname=None):
         """
@@ -90,24 +90,30 @@ class TextFileParser:
         was True when add_field() was called.
         """
 
-        ret = { name: None for name in self._field_names }
+        ret = { name: [] for name in self._field_names }
 
         if file_is_missing(filename, allow_missing):
             return ret
 
         for line in read_file(filename, allow_missing, zname):
-            for (name, (regexp_pattern, regexp_group, dtype, _)) in zip(self._field_names, self._field_details):
+            for (name, (regexp_pattern, regexp_group, dtype, _, _)) in zip(self._field_names, self._field_details):
                 m = re.match(regexp_pattern, line)
-                if m is None:
-                    continue
-                if ret[name] is not None:
-                    raise RuntimeError(f"{filename}: attempt to set field '{name}' twice")
-                ret[name] = dtype(m.group(regexp_group))
+                if m is not None:
+                    val = dtype(m.group(regexp_group))
+                    ret[name].append(val)                
 
-        for (name, (_,_,_,required)) in zip(self._field_names, self._field_details):
-            if required and ret[name] is None:
+        for (name, (_,_,_,required,reducer)) in zip(self._field_names, self._field_details):
+            if required and len(ret[name]) == 0:
                 raise RuntimeError(f"{filename}: failed to parse field '{name}'")
-
+            if reducer is not None:
+                ret[name] = reducer(ret[name])
+            elif len(ret[name]) > 1:
+                raise RuntimeError(f"{filename}: field '{name}' parsed more than once")
+            elif len(ret[name]) == 1:
+                ret[name] = ret[name][0]
+            else:
+                ret[name] = None
+            
         return ret
 
 
@@ -228,19 +234,17 @@ def xround(x, ndigits):
 ########################    Parsing functions for pipeline output files   ##########################
 
 
-def parse_cutadapt_log(filename, allow_missing=True):
+def parse_trim_galore_log(filename, allow_missing=True):
     """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
 
     t = TextFileParser()
-    t.add_field('read_pairs_processed', r'Total read pairs processed:\s+([0-9,]+)', dtype=comma_separated_int)
-    t.add_field('R1_with_adapter', r'\s*Read 1 with adapter:\s+([0-9,]+)\s+', dtype=comma_separated_int)
-    t.add_field('R2_with_adapter', r'\s*Read 2 with adapter:\s+([0-9,]+)\s+', dtype=comma_separated_int)
-    t.add_field('read_pairs_written', r'Pairs written \(passing filters\):\s+([0-9,]+)\s+', dtype=comma_separated_int)
-    t.add_field('base_pairs_processed', r'Total basepairs processed:\s+([0-9,]+)\s+', dtype=comma_separated_int)
-    t.add_field('base_pairs_written', r'Total written \(filtered\):\s+([0-9,]+)\s+', dtype=comma_separated_int)
+    t.add_field('read_pairs_processed', r'Total reads processed:\s+([0-9,]+)', dtype=comma_separated_int, reducer=min)
+    t.add_field('read_pairs_written', r'Reads written \(passing filters\):\s+([0-9,]+)\s+', dtype=comma_separated_int, reducer=min)
+    t.add_field('base_pairs_processed', r'Total basepairs processed:\s+([0-9,]+)\s+', dtype=comma_separated_int, reducer=sum)
+    t.add_field('base_pairs_written', r'Total written \(filtered\):\s+([0-9,]+)\s+', dtype=comma_separated_int, reducer=sum)
 
     return t.parse_file(filename, allow_missing)
-
+    
 
 def parse_fastqc_output(zip_filename, allow_missing=True):
     """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
@@ -609,13 +613,13 @@ class WriterBase:
 
 
     def write_data_volume_summary(self, s):
-        self.start_kv_pairs("Data Volume", link_filenames=['fastq_trimmed/cutadapt.log'])
-        self.write_kv_pair("Raw\nData\n(read\npairs)", s.cutadapt['read_pairs_processed'], indent=1)
+        self.start_kv_pairs("Data Volume", link_filenames=['adapter_trimmed/trim_galore.log'])
+        self.write_kv_pair("Raw\nData\n(read\npairs)", s.trim_galore['read_pairs_processed'], indent=1)
 
         if self.unabridged:
-            self.write_kv_pair("Raw Data (base pairs)", s.cutadapt['base_pairs_processed'], indent=1)
-            self.write_kv_pair("Post Primer Removal (read pairs)", s.cutadapt['read_pairs_written'], indent=1)
-            self.write_kv_pair("Post Primer Removal (base pairs)", s.cutadapt['base_pairs_written'], indent=1)
+            self.write_kv_pair("Raw Data (base pairs)", s.trim_galore['base_pairs_processed'], indent=1)
+            self.write_kv_pair("Post Primer Removal (read pairs)", s.trim_galore['read_pairs_written'], indent=1)
+            self.write_kv_pair("Post Primer Removal (base pairs)", s.trim_galore['base_pairs_written'], indent=1)
 
         self.write_kv_pair("Post\nTrim\n(read\npairs)", s.post_trim_qc['read_pairs'], indent=1)
         self.write_kv_pair("Post\nhuman\npurge\n(%)", s.hostremove['alignment_rate'], indent=1)
@@ -1010,7 +1014,7 @@ class Sample:
     def __init__(self, name):
         self.name = name
 
-        self.cutadapt = parse_cutadapt_log(f"{name}/fastq_trimmed/cutadapt.log")
+        self.trim_galore = parse_trim_galore_log(f"{name}/adapter_trimmed/trim_galore.log")
         self.post_trim_qc = parse_fastqc_pair(f"{name}/adapter_trimmed/R1_val_1_fastqc.zip", f"{name}/adapter_trimmed/R2_val_2_fastqc.zip")
         self.kraken2 = parse_kraken2_report(f"{name}/kraken2/report")
         self.hostremove = parse_hostremove_hisat2_log(f"{name}/host_removed/hisat2.log")
@@ -1070,7 +1074,7 @@ class Pipeline:
             s = sample.name
             a.add_glob(f'{s}/sample.txt')
             a.add_glob(f'{s}/sample.html')
-            a.add_glob(f'{s}/fastq_primers_removed/cutadapt.log')
+            a.add_glob(f'{s}/adapter_trimmed/trim_galore.log')
             a.add_glob(f'{s}/adapter_trimmed/*_fastqc.html')
             a.add_glob(f'{s}/kraken2/report')
             a.add_glob(f'{s}/host_removed/hisat2.log')
