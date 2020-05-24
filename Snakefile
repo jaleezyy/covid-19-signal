@@ -56,7 +56,7 @@ rule remove_adapters:
     input: expand('{sn}/adapter_trimmed/R{r}_val_{r}.fq.gz', sn=sample_names, r=[1,2])
 
 rule host_removed_raw_reads:
-    input: expand('{sn}/host_removal/R{r}.fastq.gz', sn=sample_names, r=[1,2])
+    input: expand('{sn}/host_removal/R{r}.fastq.gz', sn=sample_names, r=[1,2]),
 
 rule fastqc:
     input: expand('{sn}/adapter_trimmed/R{r}_val_{r}_fastqc.html', sn=sample_names, r=[1,2])
@@ -156,16 +156,16 @@ rule raw_reads_human_reference_bwa_map:
     params:
        human_index = os.path.abspath(config['human_reference'])
     shell:
-        '(bwa mem -t {threads} {params.human_index} '
+        '(bwa mem -T 30 -t {threads} {params.human_index} '
         '{input.raw_r1} {input.raw_r2} | '
-        'samtools view -bS | samtools sort -@{threads} -o {output}) 2> {log}'
+        'samtools view -bS | samtools sort -n -@{threads} -o {output}) 2> {log}'
 
 rule get_host_removed_reads:
     conda: 'conda_envs/snp_mapping.yaml'
     output:
         r1 = '{sn}/host_removal/R1.fastq',
         r2 = '{sn}/host_removal/R2.fastq',
-        bam = '{sn}/host_removal/sort_human_mapping_locations.bam'
+        bam = '{sn}/host_removal/human_mapping_reads_filtered_sorted.bam'
     input:
         '{sn}/host_removal/human_mapping_reads.bam'
     benchmark:
@@ -203,8 +203,8 @@ rule run_trimgalore:
         '{sn}/adapter_trimmed/R1_val_1_fastqc.html',
         '{sn}/adapter_trimmed/R2_val_2_fastqc.html'
     input:
-        raw_r1 = '{sn}/combined_raw_fastq/R1.fastq.gz',
-        raw_r2 = '{sn}/combined_raw_fastq/R2.fastq.gz'
+        raw_r1 = '{sn}/host_removal/R1.fastq.gz',
+        raw_r2 = '{sn}/host_removal/R2.fastq.gz'
     log:
         '{sn}/adapter_trimmed/trim_galore.log'
     benchmark:
@@ -385,49 +385,12 @@ rule run_breseq:
 ##################  Based on scripts/hisat2.sh and scripts/coverage_stats_avg.sh  ##################
 
 
-rule coverage_bwa_build:
-    conda: 'conda_envs/snp_mapping.yaml'
-    output:
-        '{sn}/coverage/genome.bwt'
-    input:
-        '{sn}/core/virus.consensus.fa'
-    log:
-        '{sn}/coverage/bwa-build.log'
-    benchmark:
-        "{sn}/benchmarks/coverage_bwa_build.benchmark.tsv"
-    params:
-        genome = '{sn}/coverage/genome'
-    shell:
-        'bwa index -p {params.genome} {input} >{log} 2>&1'
-
-
-rule coverage_bwa:
-    threads: 2
-    conda: 'conda_envs/snp_mapping.yaml'
-    output:
-        '{sn}/coverage/output.bam'
-    input:
-        r1 = '{sn}/mapped_clean_reads/R1.fastq.gz',
-        r2 = '{sn}/mapped_clean_reads/R2.fastq.gz',
-        ref = '{sn}/coverage/genome.bwt'
-    benchmark:
-        "{sn}/benchmarks/coverage_bwa.benchmark.tsv"
-    log:
-        '{sn}/coverage/bwa.log'
-    params:
-        genome = '{sn}/coverage/genome'
-    shell:
-        'bwa mem -t {threads} {params.genome} '
-        '{input.r1} {input.r2} 2> {log} | '
-        'samtools view -bS | samtools sort -@{threads} -o {output}'
-
-
 rule coverage_depth:
     conda: 'conda_envs/snp_mapping.yaml'
     output:
         '{sn}/coverage/depth.txt'
     input:
-        '{sn}/coverage/output.bam'
+        "{sn}/core/reference.mapped.primertrimmed.sorted.bam"
     benchmark:
         "{sn}/benchmarks/coverage_depth.benchmark.tsv"
     shell:
