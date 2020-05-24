@@ -806,8 +806,13 @@ class SampleHTMLWriter(HTMLWriterBase):
 
     def start_sample(self, s):
         self.sample_name = s.name
-        print(f"<h3>Sample: {s.name}</h3>", file=self.f)
-        print("<p><table>", file=self.f)
+        print(f'<h3>Sample: {s.name}</h3>', file=self.f)
+
+        # Start outer table for left/right alignment of summary stats, coverage plot
+        print('<p><table><tr>', file=self.f)
+        
+        # Start inner table for summary stats
+        print('<td style="vertical-align: top"><table>', file=self.f)
 
     def start_kv_pairs(self, title, link_filenames=[]):
         t = [ ]
@@ -849,7 +854,16 @@ class SampleHTMLWriter(HTMLWriterBase):
         pass
 
     def end_sample(self):
-        print("</table>", file=self.f)
+        # End inner table for summary stats
+        print('</table></td>', file=self.f)
+
+        # Coverage plot
+        print('<td style="vertical-align: top"><img src="coverage.png"></td>', file=self.f)
+
+        # End outer table
+        print('</tr></table>', file=self.f)
+
+        # Breseq iframe
         print('<iframe src="breseq/output/index.html" width="100%" height="800px" style="border: 0px"></iframe>', file=self.f)
 
 
@@ -1035,6 +1049,52 @@ class Sample:
         self.breseq = parse_breseq_output(f"{name}/breseq/output/index.html")
 
 
+    def write_coverage_plot(self):
+        in_filename = f"{self.name}/coverage/depth.txt"
+        out_filename = f"{self.name}/coverage.png"
+
+        if not os.path.exists(in_filename):
+            return
+
+        coverage = []
+        for line in open(in_filename):
+            t = line.split('\t')
+            assert len(t) == 3
+            coverage.append(int(t[2]))
+
+        coverage = np.array(coverage)
+        assert np.all(coverage >= 0)
+
+        n = len(coverage)
+        assert n >= 1
+
+        chunk_size = 2500
+        nchunks = (n + chunk_size -1) // chunk_size
+
+        kwds = {'wspace':0, 'hspace':0.2, 'bottom':0.02, 'top':0.98 }
+        fig, axarr = plt.subplots(nchunks, 1, sharex=True, gridspec_kw=kwds)
+        
+        fig.set_figwidth(8)
+        fig.set_figheight(0.75 * nchunks)
+        
+        for i, ax in enumerate(axarr):
+            lo = i*chunk_size
+            hi = min(n, (i+1)*chunk_size)
+            label = f'{lo}-{hi}'
+            
+            ax.fill_between(np.arange(hi-lo), coverage[lo:hi] + 0.1, 1)
+            for level in [ 1.0e1, 1.0e2, 1.0e3]:
+                ax.plot([0,hi-lo], [level,level], ls=':', color='black')
+        
+            ax.set_yscale('log')
+            ax.set_ylim(1.0, 3.0e4)
+            ax.text(0.01, 0.95, label, verticalalignment='top', transform=ax.transAxes, color='red')
+
+        print(f"Writing {out_filename}")
+        plt.savefig(out_filename)
+        plt.clf()
+
+
 class Pipeline:
     """Must be constructed from toplevel pipeline directory."""
 
@@ -1097,6 +1157,8 @@ class Pipeline:
                 print(f"Warning: sample directory {s.name} does not exist")
                 sample_writers = [ ]
 
+            s.write_coverage_plot()
+            
             for w in [summary_writer] + sample_writers:
                 w.write_sample(s)
 
@@ -1119,6 +1181,7 @@ class Pipeline:
             s = sample.name
             a.add_glob(f'{s}/sample.txt')
             a.add_glob(f'{s}/sample.html')
+            a.add_glob(f'{s}/coverage.png')
             a.add_glob(f'{s}/adapter_trimmed/trim_galore.log')
             a.add_glob(f'{s}/adapter_trimmed/*_fastqc.html')
             a.add_glob(f'{s}/kraken2/report')
