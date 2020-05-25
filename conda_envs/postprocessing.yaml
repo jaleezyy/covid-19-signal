@@ -1,0 +1,9 @@
+name: postprocessing
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - matplotlib
+  - numpy
+  - pandas

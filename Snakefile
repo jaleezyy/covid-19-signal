@@ -102,6 +102,8 @@ rule all:
 
 
 rule postprocess:
+    conda: 
+        'conda_envs/postprocessing.yaml'
     params:
         sample_csv_filename = config['samples']
     shell:
