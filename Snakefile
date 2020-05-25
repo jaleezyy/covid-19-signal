@@ -59,8 +59,9 @@ rule host_removed_raw_reads:
     input: expand('{sn}/host_removal/R{r}.fastq.gz', sn=sample_names, r=[1,2]),
 
 rule fastqc:
-    input: expand('{sn}/adapter_trimmed/R{r}_val_{r}_fastqc.html', sn=sample_names, r=[1,2])
-    
+    input: expand('{sn}/adapter_trimmed/R{r}_val_{r}_fastqc.html', sn=sample_names, r=[1,2]),
+           expand('{sn}/mapped_clean_reads/R{r}_fastqc.html', sn=sample_names, r=[1,2])
+
 rule clean_reads:
     input:
        expand("{sn}/core/reference.mapped.primertrimmed.bam", sn=sample_names),
@@ -282,6 +283,25 @@ rule run_bed_primer_trim:
         '-p {params.ivar_output_prefix} 2> {log}; '
         'samtools sort -o {output.sorted_trimmed_mapped_bam} '
         '{output.trimmed_mapped_bam}'
+
+rule run_fastqc_on_mapped_reads:
+    conda: 'conda_envs/trim_qc.yaml'
+    output:
+        r1_fastqc = '{sn}/mapped_clean_reads/R1_fastqc.html',
+        r2_fastqc = '{sn}/mapped_clean_reads/R2_fastqc.html'
+    input:
+        r1 = '{sn}/mapped_clean_reads/R1.fastq.gz',
+        r2 = '{sn}/mapped_clean_reads/R2.fastq.gz'
+    benchmark:
+        '{sn}/benchmarks/clean_fastqc.benchmark.tsv'
+    params:
+        output_prefix = '{sn}/mapped_clean_reads'
+    log:
+        '{sn}/mapped_clean_reads/fastqc.log'
+    shell:
+        """
+        fastqc -o {params.output_prefix} {input} 2> {log}
+        """
 
 rule get_mapping_reads:
     priority: 2
