@@ -111,7 +111,7 @@ rule postprocess:
 
 rule ncov_tools:
     conda:
-        'conda_envs/ncov-tools.yml'
+        'conda_envs/ncov-tools.yaml'
     #output:
     #    qc_analysis
     input:
