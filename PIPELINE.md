@@ -60,6 +60,10 @@
 ```
 
 - **Note:** using MN908947.3 reference genome here.
+- Threshold was chosen by quick analysis of the small numbers of reads which mapped
+to both host and viral references. Of those problematic reads, the majority had only a weak
+map against the human reference and a 60 MAPQ against the viral reference.
+The threshold means those reads shouldn't be removed.
 
 ### 4. TrimGalore (sequencing adapter trimming and fastqc)
 
