@@ -173,13 +173,23 @@ breseq --reference /home/kmsmith/data/MN908947_primer_annotated_prot_clinical.gb
 	    --threads 1 \
 	>sample1/quast/quast.log
 ```
+
+### 14. Viral Read Quality Control
+```
+    
+        fastqc sample1/mapped_clean_reads/R1.fastq.gz sample1/mapped_clean_reads/R2.fastq.gz
+
+```
+
 ### Postprocessing Report
 
-Postprocessing Report Script that summarisied outputs
+Postprocessing report script that summarisied outputs
+
+Optional invocation of `ncov-tools` to generate phylogenies and alternative
+summary plots.
 
 ### Future Development
 
 - Upload to GISAID
 - Upload to SRA
-- Run Jared Simpsons ncov-tools on all samples
 
