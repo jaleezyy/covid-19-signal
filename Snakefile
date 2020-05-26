@@ -17,7 +17,6 @@
 
 ####################################################################################################
 
-
 from snakemake.utils import validate
 import pandas as pd
 import os
@@ -108,6 +107,19 @@ rule postprocess:
         sample_csv_filename = config['samples']
     shell:
         'scripts/c19_postprocess.py {params.sample_csv_filename}'
+
+
+rule ncov_tools:
+    conda:
+        'conda_envs/ncov-tools.yml'
+    #output:
+    #    qc_analysis
+    input:
+        consensus = expand('{sn}/core/virus.consensus.fa', sn=sample_names),
+        bams = expand("{sn}/core/reference.mapped.primertrimmed.sorted.bam", sn=sample_names)
+    script: "scripts/ncov-tools.py"
+        
+        
 
 
 #################################   Based on scripts/assemble.sh   #################################

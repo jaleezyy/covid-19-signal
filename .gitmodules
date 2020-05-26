@@ -1,0 +1,3 @@
+[submodule "ncov-tools"]
+	path = ncov-tools
+	url = ./ncov-tools
