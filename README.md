@@ -67,7 +67,9 @@ See the example table `example_sample_table.csv` for an idea of how to organise 
 5. Execute pipeline (optionally explicitly specify `--cores`):
 
       `snakemake -kp --cores=NCORES --use-conda --conda-prefix=$HOME/.snakemake all`
-      
+
+6. Postprocessing analyses:
+
       `snakemake -p --cores=1 postprocess`
 
 After postprocessing finishes, you'll see the following summary files:
@@ -88,6 +90,17 @@ processing and postprocessing into 'all' and 'postprocess' targets.
 
 Related: because pipeline stages can fail, we recommend running 'snakemake all'
 with the -k flag ("Go on with independent jobs if a job fails").
+
+Additionally, you can run @jts' [ncov-tools](https://github.com/jts/ncov-tools)
+to generate phylogenies and alternative summaries.
+
+    snakemake --use-conda --cores 10 ncov_tools
+
+Signal manages installing the dependencies and will invoke `ncov-tools` if 
+it has been cloned as a sub-module and a fasta containing sequences to include in 
+the tree has been specified using `phylo_include_seqs:` in the main signal `config.yaml`.
+
+Outputs will be written as specified within the `ncov-tools` folder and documentation.
 
 ### Docker (pending)
 

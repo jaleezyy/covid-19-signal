@@ -55,19 +55,5 @@ if __name__ == '__main__':
     set_up()
     run_all_qc_sequencing()
     run_all_qc_analysis()
-    run_all_qc_summary()
-
-
-#config = {'data_root': 'test',
-#          'amplicon_bed': '../resources/primer_schemes/nCoV-2019_v3.bed', #grab from signal snakemake config
-#          'reference_genome': '../data/MN908947_3.fasta', #grab from signal snakemake config
-#          'bam_pattern': '{data_root}/{sample}.bam', # symlink files following this
-#          'consensus_pattern': '{data_root}/{sample}.consensus.fasta', # symlink files following this
-#          'metadata': '../sample_table.csv', # use outer signal sample.tsv
-#          'assigned_lienages': 'true'}
-
-
-#snakemake -s qc/Snakefile all_qc_sequencing
-#snakemake -s qc/Snakefile all_qc_analysis
-#snakemake -s qc/Snakefile all_qc_summary
-
+    # seems to include hard-coded issues
+    #run_all_qc_summary()
