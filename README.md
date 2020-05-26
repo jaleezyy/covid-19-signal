@@ -13,28 +13,34 @@ Future enhancements are intended to aid/automate metadata management in accordan
 
 0. Clone the git repository
     
-        git clone https://github.com/jaleezyy/covid-19-signal
+        git clone --recursive https://github.com/jaleezyy/covid-19-signal
 
 1. Install `conda` and `snakemake` (version >5) e.g.
 
         wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
         bash Miniconda3-latest-Linux-x86_64.sh # follow instructions
         source $(conda info --base)/etc/profile.d/conda.sh
-        conda create -n snakemake snakemake=5.11.2 pandas
-        conda activate snakemake
+        conda create -n signal -c conda-forge -c bioconda -c defaults snakemake>5 pandas
+        conda activate signal 
+
+There are some issues with `conda` failing to install newer versions of snakemake
+so alternatively install `mamba` and use that (snakemake has beta support for it within the workflow)
+    
+        conda install -c conda-forge mamba
+        mamba create -c conda-forge -c bioconda -n signal snakemake
+        mamba activate signal
 
 Additional software dependencies are managed directly by `snakemake` using conda environment files:
 
-  - fastqc 0.11.8 ([docs](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
-  - cutadapt 1.18 ([docs](https://cutadapt.readthedocs.io/en/stable/)
-  - trimmomatic 0.36 ([docs](http://www.usadellab.org/cms/?page=trimmomatic))
+  - trim-galore 0.6.5 ([docs](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/))
   - kraken2 2.0.7-beta ([docs](https://ccb.jhu.edu/software/kraken2/))
-  - unicycler 0.4.8 ([github](https://github.com/rrwick/Unicycler))
   - quast 5.0.2 ([docs](http://quast.sourceforge.net/quast))
-  - bwa 
-  - samtools 1.7 ([docs](http://www.htslib.org/))
+  - bwa 0.7.17 ([docs](http://bio-bwa.sourceforge.net/))
+  - samtools 1.7/1.9 ([docs](http://www.htslib.org/))
   - bedtools 2.26.0 ([docs](https://bedtools.readthedocs.io/en/latest/))
+  - breseq 0.35.0 ([docs](https://barricklab.org/twiki/bin/view/Lab/ToolsBacterialGenomeResequencing))
   - ivar 1.2 ([docs](https://github.com/andersen-lab/ivar))
+  - ncov-tools postprocessing scripts require additional dependencies (see [file](conda_envs/ncov-tools.yaml)).
 
 2. Download necessary database files
 
