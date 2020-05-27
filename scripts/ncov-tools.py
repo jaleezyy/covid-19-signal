@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
-import os
+import os, sys
 import shutil
 import subprocess
+import fileinput
 
 def set_up():
     print("Writing config for ncov to ncov-tools/config.yaml")
@@ -37,6 +38,13 @@ def set_up():
         ln_path = f"{data_root}/{sample}.consensus.fasta"
         if not os.path.exists(ln_path):
             os.link(consensus, ln_path)
+        for line in fileinput.input(ln_path, inplace=True):
+            if line.startswith(">"):
+                new_header = str(">"+sample)
+                new_line = line.replace(line, new_header)
+                print(new_line, end='\n')
+            else:
+                print(line, end='\n')
 
     os.chdir('ncov-tools')
 
