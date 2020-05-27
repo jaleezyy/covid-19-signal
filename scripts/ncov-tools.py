@@ -20,7 +20,7 @@ def set_up():
               'consensus_pattern': "'{data_root}/{sample}.consensus.fasta'", # symlink files following this
               'tree_include_consensus': f"'{os.path.abspath(snakemake.config['phylo_include_seqs'])}'",
               #'metadata': snakemake.config['samples'], # causes error get example
-              'assigned_lineages': 'true'}
+              'assign_lineages': 'true'}
 
     with open('ncov-tools/config.yaml', 'w') as fh:
         for key, value in config.items():
