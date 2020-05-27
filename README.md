@@ -11,7 +11,7 @@ Future enhancements are intended to aid/automate metadata management in accordan
 
 ## Setup/Execution
 
-0. Clone the git repository
+0. Clone the git repository (`--recursive` only needed to run`ncov-tools` postprocessing)
     
         git clone --recursive https://github.com/jaleezyy/covid-19-signal
 
@@ -20,15 +20,15 @@ Future enhancements are intended to aid/automate metadata management in accordan
         wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
         bash Miniconda3-latest-Linux-x86_64.sh # follow instructions
         source $(conda info --base)/etc/profile.d/conda.sh
-        conda create -n signal -c conda-forge -c bioconda -c defaults snakemake>5 pandas
+        conda create -n signal -c conda-forge -c bioconda -c defaults snakemake=5.11 pandas
         conda activate signal 
 
 There are some issues with `conda` failing to install newer versions of snakemake
 so alternatively install `mamba` and use that (snakemake has beta support for it within the workflow)
     
         conda install -c conda-forge mamba
-        mamba create -c conda-forge -c bioconda -n signal snakemake
-        mamba activate signal
+        mamba create -c conda-forge -c bioconda -n signal snakemake conda
+        conda activate signal
 
 Additional software dependencies are managed directly by `snakemake` using conda environment files:
 
