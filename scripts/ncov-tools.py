@@ -3,6 +3,7 @@
 import os
 import shutil
 import subprocess
+import fileinput
 
 def set_up():
     print("Writing config for ncov to ncov-tools/config.yaml")
@@ -19,7 +20,7 @@ def set_up():
               'consensus_pattern': "'{data_root}/{sample}.consensus.fasta'", # symlink files following this
               'tree_include_consensus': f"'{os.path.abspath(snakemake.config['phylo_include_seqs'])}'",
               #'metadata': snakemake.config['samples'], # causes error get example
-              'assigned_lineages': 'true'}
+              'assign_lineages': 'true'}
 
     with open('ncov-tools/config.yaml', 'w') as fh:
         for key, value in config.items():
@@ -37,6 +38,13 @@ def set_up():
         ln_path = f"{data_root}/{sample}.consensus.fasta"
         if not os.path.exists(ln_path):
             os.link(consensus, ln_path)
+        for line in fileinput.input(ln_path, inplace=True):
+            if line.startswith(">"):
+                new_header = str(">"+sample)
+                new_line = line.replace(line, new_header)
+                print(new_line, end='\n')
+            else:
+                print(line, end='\n')
 
     os.chdir('ncov-tools')
 
