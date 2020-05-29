@@ -70,7 +70,7 @@ See the example table `example_sample_table.csv` for an idea of how to organise 
 
 6. Postprocessing analyses:
 
-      `snakemake -p --cores=1 postprocess`
+      `snakemake -p --use-conda --cores=1 postprocess`
 
 After postprocessing finishes, you'll see the following summary files:
 
