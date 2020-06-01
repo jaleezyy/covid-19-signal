@@ -885,7 +885,13 @@ class SummaryHTMLWriter(HTMLWriterBase):
         self.css_lborder = 'border-left: 1px solid black;'
         self.css_bborder = 'border-bottom: 1px solid black;'
 
-        print('<p><img src="summary.png">', file=self.f)
+        # Single-row table containing two summary plots
+        print('<p><table><tr>', file=self.f)
+        print('<td><img src="summary1.png"></td>', file=self.f)
+        print('<td><img src="summary2.png"></td>', file=self.f)
+        print('</tr></table>', file=self.f)
+
+        # Start long table containing statistics
         print('<p><table style="border-collapse: collapse; border: 1px solid black;">', file=self.f)
 
 
@@ -997,7 +1003,9 @@ class Archive:
 
     def add_file(self, filename):
         assert not os.path.isabs(filename)
-        assert os.path.exists(filename)
+
+        if not os.path.exists(filename):
+            raise RuntimeError(f'File {filename} not found')
 
         if filename in self.contents:
             return
@@ -1108,10 +1116,10 @@ class Pipeline:
             raise RuntimeError(f"{sample_csv_filename} contains zero samples, nothing to do!")
 
 
-    def write_summary_plot(self):
+    def write_summary_plot1(self):
         """Writes toplevel summary plot: %SARS versus completeness."""
 
-        plt.figure(figsize=(10.4,7.8))
+        plt.figure(figsize=(7.6,5.7))
         
         xvec = [ ]
         yvec = [ ]
@@ -1128,8 +1136,10 @@ class Pipeline:
 
             if (x < 90.) or (y < 90.):
                 depth = s.coverage['mean_coverage']
-                label = f'{s.name}, {int(depth)}x'
-                plt.annotate(label, (x,y))
+                label = f'{s.name}'
+                if depth is not None:
+                    label += f', {int(depth)}x'
+                plt.annotate(label, (x,y), xytext=(x,y-5))
 
         plt.scatter(xvec, yvec, marker='o', facecolor='blue')
         plt.xlabel(r'SARS-COV-2 in Trimmed FASTQ (%)')
@@ -1137,10 +1147,45 @@ class Pipeline:
         plt.xlim(0, 100)
         plt.ylim(0, 100)
 
-        print('Writing summary.png')
-        plt.savefig('summary.png')
+        print('Writing summary1.png')
+        plt.savefig('summary1.png')
         plt.clf()
+
+        
+    def write_summary_plot2(self):
+        """Writes toplevel summary plot: depth versus completeness."""
+
+        plt.figure(figsize=(7.6,5.7))
+        
+        xvec = [ ]
+        yvec = [ ]
+
+        for s in self.samples:
+            x = s.coverage['mean_coverage']
+            y = s.quast['genome_fraction']
+
+            if (x is None) or (y is None):
+                continue
             
+            xvec.append(x)
+            yvec.append(y)
+
+            if True:
+                scov2 = s.kraken2['sars_cov2_percentage']
+                label = f'{s.name}'
+                if scov2 is not None:
+                    label += f', {scov2:.1f}%'
+                plt.annotate(label, (x,y), xytext=(x,y-5))
+
+        plt.scatter(xvec, yvec, marker='o', facecolor='red')
+        plt.xlabel(r'Average Depth of Coverage')
+        plt.ylabel(r'Genome Fraction (%)')
+        plt.ylim(0, 100)
+
+        print('Writing summary2.png')
+        plt.savefig('summary2.png')
+        plt.clf()
+
 
     def write_reports(self):
         if len(self.samples) > 1:
@@ -1175,7 +1220,8 @@ class Pipeline:
 
         a = Archive('summary.zip', debug)
         a.add_file('summary.html')
-        a.add_file('summary.png')
+        a.add_file('summary1.png')
+        a.add_file('summary2.png')
 
         for sample in self.samples:
             s = sample.name
@@ -1204,6 +1250,7 @@ if __name__ == '__main__':
         sys.exit(1)
 
     p = Pipeline(sys.argv[1])
-    p.write_summary_plot()
+    p.write_summary_plot1()
+    p.write_summary_plot2()
     p.write_reports()
     p.write_archive()
