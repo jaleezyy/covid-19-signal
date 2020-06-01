@@ -1,0 +1,18 @@
+{
+  "signal.samplename": "String",
+  "signal.fastq_R1s": "Array[File]",
+  "signal.fastq_R2s": "Array[File]",
+  "signal.viral_reference_genome": "File",
+  "signal.human_reference": "File",
+  "signal.min_length": "Int (optional, default = 20)",
+  "signal.min_qual": "Int (optional, default = 20)",
+  "signal.scheme_bed": "File",
+  "signal.ivar_freq_threshold": "Float (optional, default = 0.75)",
+  "signal.ivar_min_coverage_depth": "Int (optional, default = 10)",
+  "signal.ivar_min_freq_threshold": "Float (optional, default = 0.25)",
+  "signal.ivar_min_variant_quality": "Int (optional, default = 20)",
+  "signal.mpileup_depth": "Int (optional, default = 100000)",
+  "signal.breseq_reference": "File",
+  "signal.kraken_db": "File",
+  "signal.viral_reference_feature_coords": "File"
+}
