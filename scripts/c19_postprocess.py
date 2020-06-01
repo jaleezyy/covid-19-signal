@@ -17,6 +17,10 @@ long_git_id = '$Id$'
 assert long_git_id.startswith('$Id: ')
 short_git_id = long_git_id[5:12]
 
+# Suppresses matplotlib warning (https://github.com/jaleezyy/covid-19-signal/issues/59)
+# Creates a small memory leak, but it's nontrivial to fix, and won't be a practical concern!
+plt.rcParams.update({'figure.max_open_warning': 0})
+
 
 ########################    Helper functions/classes for text file parsing   #######################
 
