@@ -682,10 +682,10 @@ class WriterBase:
         self.start_kv_pairs("QUAST", link_filenames=['quast/report.html'])
         self.write_kv_pair("Genome\nLength\n(bp)", s.quast['genome_length'], indent=1)
         self.write_kv_pair("Genome\nFraction\n(%)", s.quast['genome_fraction'], indent=1)
+        self.write_kv_pair("N's per\n100 kbp", s.quast['Ns_per_100_kbp'], indent=1)
 
         if self.unabridged:
             self.write_kv_pair("Genomic Features", s.quast['genomic_features'], indent=1)
-            self.write_kv_pair("N's per 100 kbp", s.quast['Ns_per_100_kbp'], indent=1)
             self.write_kv_pair("Mismatches per 100 kbp", s.quast['mismatches_per_100_kbp'], indent=1)
             self.write_kv_pair("Indels per 100 kbp", s.quast['indels_per_100_kbp'], indent=1)
 
