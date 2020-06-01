@@ -670,6 +670,11 @@ class WriterBase:
 
         for flavor in [ 'FAIL', 'WARN' ]:
             for (msg,f) in s.post_trim_qc['summary'].items():
+                if msg in [ 'Sequence Duplication Levels', 'Overrepresented sequences' ]:
+                    # From Natalie Knox (https://github.com/jaleezyy/covid-19-signal/issues/54):
+                    # Fastqc HTML report should not include "sequence duplication" or "overrepresented sequence"
+                    # flags as these will generally fail with an amplicon-based protocol.
+                    continue
                 if f == flavor:
                     self.write_kv_pair(msg, f, indent=1, qc=True)
 
