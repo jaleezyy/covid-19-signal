@@ -132,4 +132,4 @@ For a step-by-step walkthrough of the pipeline, see [pipeline/README.md](PIPELIN
 
 A diagram of the workflow is shown below.
 
-![Workflow Version 5](Workflow_Version_5.png)
+![Workflow Version 6](./resources/Workflow_Version_6.pdf)
