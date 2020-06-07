@@ -39,8 +39,9 @@ else
 		echo -e "Using existing sample table called ${name}\n"
 		cat $existing > .${name}
 	else
-		echo -e "File does not exist. Creating new sample table called ${name}\n"
-		echo "sample,r1_path,r2_path" > .${name} && echo "sample1,r1_path,r2_path"
+		echo -e "Sample table does not exist."
+		echo "$HELP"
+		exit 1
 	fi
 fi
 
