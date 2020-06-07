@@ -31,19 +31,24 @@ if [ $database_dir = 0 ] ; then
 fi
 
 if [ $existing = 0 ] ; then
-	echo "Creating new sample table called ${name}"
+	echo -e "Creating new sample table called ${name}\n"
  	echo "sample,r1_path,r2_path" > .${name} && echo "sample1,r1_path,r2_path"
 else
 	name=$(basename $existing)
-	echo "Using existing sample table called ${name}"
-	cat $existing > .${name}
+	if [ -f ""$existing"" ] ; then
+		echo -e "Using existing sample table called ${name}\n"
+		cat $existing > .${name}
+	else
+		echo -e "File does not exist. Creating new sample table called ${name}\n"
+		echo "sample,r1_path,r2_path" > .${name} && echo "sample1,r1_path,r2_path"
+	fi
 fi
 
 for file in $database_dir/*.fastq*; do
 	sample=$(basename $file | cut -d_ -f 1)
 	r1=$(ls $database_dir/$(basename $file | cut -d_ -f1)*R1* | grep ${sample}_)
 	r2=$(ls $database_dir/$(basename $file | cut -d_ -f1)*R2* | grep ${sample}_)
-	echo ${sample},${r1},${r2} >> .${name} && echo ${sample},${r1},${r2} 
+	echo ${sample},${r1},${r2} >> .${name} && echo ${sample},${r1},${r2}
 done
 
 uniq .${name} > $name
