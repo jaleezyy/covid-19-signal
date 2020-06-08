@@ -13,7 +13,9 @@ ASSUMES FASTQ FILES ARE NAMED AS <sample_name>_*_R1_*.fastq(.gz)
 Flags:
     -d  :  Absolute path to directory containing fastq(.gz) (can use relative paths, but no guarantee of successful run)
     -n  :  Name of final sample table (with extension) (default "sample_table.csv")
-    -e  :  Name of an existing sample table (OPTIONAL) (Will default to creating new sample table, if not provided)
+    -e  :  Name of an existing sample table
+
+Select one of '-n' (new sample table) OR '-e' (existing sample table).
 """
 
 while getopts ":d:n:e:" option; do
@@ -39,7 +41,7 @@ else
 		echo -e "Using existing sample table called ${name}\n"
 		cat $existing > .${name}
 	else
-		echo -e "Sample table does not exist."
+		echo -e "Sample table does not exist. Check that sample table exists or create a new sample table."
 		echo "$HELP"
 		exit 1
 	fi
