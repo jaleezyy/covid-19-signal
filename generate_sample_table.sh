@@ -15,7 +15,8 @@ Flags:
     -n  :  Name of final sample table (with extension) (default "sample_table.csv")
     -e  :  Name of an existing sample table
 
-Select one of '-n' (new sample table) OR '-e' (existing sample table).
+Select one of "-n" (new sample table) or "-e" (existing sample table). 
+If neither provided, a new sample table called "sample_table.csv" will be created (or overwritten) by default. 
 """
 
 while getopts ":d:n:e:" option; do
