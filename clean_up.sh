@@ -37,8 +37,10 @@ else
 fi
 
 for file in $(sed '1d' ${sample_table} | cut -d, -f1); do
-	echo $file
-	mv $file $output_dir
+	if [ -d $file ] ; then
+		echo $file
+		mv $file $output_dir
+	fi
 done
 
 if [ -f "summary.html" ] ; then
