@@ -11,7 +11,7 @@ HELP="""
 ASSUMES FASTQ FILES ARE NAMED AS <sample_name>_*_R1_*.fastq(.gz)
 
 Flags:
-    -d  :  Absolute path to directory containing fastq(.gz) (can use relative paths, but no guarantee of successful run)
+    -d  :  Path to directory containing fastq(.gz) (Absolute paths preferred for consistency, but can use relative paths)
     -n  :  Name of final sample table (with extension) (default: 'sample_table.csv') - will overwrite if file exists
     -e  :  Name of an existing sample table - will append to the end of the provided table
 
@@ -50,8 +50,8 @@ fi
 
 for file in $database_dir/*.fastq*; do
 	sample=$(basename $file | cut -d_ -f 1)
-	r1=$(ls $database_dir/$(basename $file | cut -d_ -f1)*R1* | grep ${sample}_)
-	r2=$(ls $database_dir/$(basename $file | cut -d_ -f1)*R2* | grep ${sample}_)
+	r1=$(ls $database_dir/$(basename $file | cut -d_ -f1)*R1* | grep /${sample}_)
+	r2=$(ls $database_dir/$(basename $file | cut -d_ -f1)*R2* | grep /${sample}_)
 	echo ${sample},${r1},${r2} >> .${name} && echo ${sample},${r1},${r2}
 done
 
