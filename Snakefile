@@ -404,7 +404,8 @@ rule run_ivar_variants:
         '{sn}/core/{sn}_ivar_variants.tsv'
     input:
         reference = os.path.join(exec_dir, config['viral_reference_genome']),
-        read_bam = "{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam"
+        read_bam = "{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam",
+        viral_reference_gff = os.path.join(exec_dir, config['viral_reference_feature_coords'])
     log:
         '{sn}/core/{sn}_ivar_variants.log'
     benchmark:
@@ -419,7 +420,7 @@ rule run_ivar_variants:
             '-Q 0 {input.read_bam} | '
         'ivar variants -r {input.reference} -m {params.ivar_min_coverage_depth} '
         '-p {params.output_prefix} -q {params.ivar_min_variant_quality} '
-        '-t {params.ivar_min_freq_threshold}) 2> {log}'
+        '-t {params.ivar_min_freq_threshold} -g {input.viral_reference_gff}) 2> {log}'
 
 
 ################################   Based on scripts/breseq.sh   ####################################
