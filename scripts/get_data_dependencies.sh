@@ -38,7 +38,7 @@ curl -s "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nucleotide
 curl -s "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nucleotide&id=${accession}&rettype=fasta&retmode=txt" > $database_dir/$accession.fasta
 
 # install and activate env for lmat/kraken to build their databases
-conda create -n data_dependencies -c conda-forge -c bioconda -c fmaguire -y lmat=1.2.6 kraken2=2.0.8
+conda create -n data_dependencies -c conda-forge -c bioconda -y kraken2=2.0.8
 CONDA_BASE=$(conda info --base)
 source $CONDA_BASE/etc/profile.d/conda.sh
 conda activate data_dependencies
