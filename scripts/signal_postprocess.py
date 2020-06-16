@@ -520,7 +520,15 @@ def parse_breseq_output(html_filename, allow_missing=True):
         gene = gene.replace('\xa0','')       # remove cosmetic html '&nbsp;'
         gene = gene.replace('\u2011', '-')   # replace unicode underscore by vanilla underscore
 
-        variant = f"{evi} {mut} ({freq}%) {gene}"
+        ann = ann .replace('\xa0','')       # remove cosmetic html '&nbsp;'
+        ann = ann.replace('\u2011', '-')   # replace unicode underscore by vanilla underscore
+        ann = ann.replace(' ', '').replace('(', ' (')
+
+        if ann.count('(') > 1:
+            ann = ann.replace(')', ') & ', 1)
+            gene = gene.replace('→', '→ &', 1)
+
+        variant = f"{evi};\t{pos};\t{mut};\t({freq}%);\t'{ann}';\t'{gene}'"
         variants.append(variant)
 
         if float(freq[:-1]) < 90:
