@@ -20,6 +20,7 @@ short_git_id = long_git_id[5:12]
 # Suppresses matplotlib warning (https://github.com/jaleezyy/covid-19-signal/issues/59)
 # Creates a small memory leak, but it's nontrivial to fix, and won't be a practical concern!
 plt.rcParams.update({'figure.max_open_warning': 0})
+plt.style.use('seaborn-whitegrid')
 
 
 ########################    Helper functions/classes for text file parsing   #######################
@@ -390,7 +391,8 @@ def parse_coverage(depth_filename, allow_missing=True):
         'mean_coverage': None,
         'qc_meancov': 'FAIL',
         'qc_cov100': 'FAIL',
-        'qc_cov1000': 'FAIL'
+        'qc_cov1000': 'FAIL',
+        'cov100': 0
     }
 
     if file_is_missing(depth_filename, allow_missing):
@@ -407,6 +409,8 @@ def parse_coverage(depth_filename, allow_missing=True):
     bin_fractions = np.bincount(bin_assignments, minlength=nbins) / float(len(coverage))
     assert bin_fractions.shape == (nbins,)
 
+
+    ret['cov100'] = np.mean(coverage >= 100)
     ret['bin_fractions'] = [ xround(f,3) for f in bin_fractions ]
     ret['mean_coverage'] = xround(np.mean(coverage), 1)
     ret['qc_meancov'] = "PASS" if (np.mean(coverage) >= 2000) else "FAIL"
@@ -903,6 +907,8 @@ class SummaryHTMLWriter(HTMLWriterBase):
         print('<p><table><tr>', file=self.f)
         print('<td><img src="summary_ncov2_in_reads_v_genome_fraction.png"></td>', file=self.f)
         print('<td><img src="summary_average_depth_v_genome_fraction.png"></td>', file=self.f)
+        print('</tr>', file=self.f)
+        print('<td><img src="summary_highly_covered_v_genome_fraction.png"></td>', file=self.f)
         print('</tr></table>', file=self.f)
 
         # Start long table containing statistics
@@ -1153,6 +1159,40 @@ class Pipeline:
         plt.savefig('summary_average_depth_v_genome_fraction.png')
         plt.clf()
 
+    def write_summary_plot3(self):
+        """Writes toplevel summary plot: highly covered % versus completeness."""
+
+        plt.figure(figsize=(7.6,5.7))
+
+        xvec = [ ]
+        yvec = [ ]
+
+        for s in self.samples:
+            x = s.coverage['cov100']
+            y = s.quast['genome_fraction']
+
+            if (x is None) or (y is None):
+                continue
+
+            xvec.append(x)
+            yvec.append(y)
+
+            if True:
+                scov2 = s.kraken2['sars_cov2_percentage']
+                label = f'{s.name}'
+                if scov2 is not None:
+                    label += f', {scov2:.1f}%'
+                plt.annotate(label, (x,y), xytext=(x,y-5))
+
+        plt.scatter(xvec, yvec, marker='o', facecolor='red')
+        plt.xlabel(r'Fraction of Genome with >100x Coverage')
+        plt.ylabel(r'Genome Fraction (%)')
+        plt.xlim(0, 1)
+        plt.ylim(0, 100)
+
+        print('Writing summary_highly_covered_v_genome_fraction.png')
+        plt.savefig('summary_highly_covered_v_genome_fraction.png')
+        plt.clf()
 
     def write_reports(self):
         if len(self.samples) > 1:
@@ -1187,6 +1227,7 @@ class Pipeline:
         a.add_file('summary.html')
         a.add_file('summary_ncov2_in_reads_v_genome_fraction.png')
         a.add_file('summary_average_depth_v_genome_fraction.png')
+        a.add_file('summary_highly_covered_v_genome_fraction.png')
 
 
         for sample in self.samples:
@@ -1218,5 +1259,6 @@ if __name__ == '__main__':
     p = Pipeline(sys.argv[1])
     p.write_summary_plot1()
     p.write_summary_plot2()
+    p.write_summary_plot3()
     p.write_reports()
     p.write_archive()
