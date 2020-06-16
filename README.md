@@ -64,9 +64,12 @@ through modifying the `example_config.yaml` to suit your system
 
 See the example table `example_sample_table.csv` for an idea of how to organise this table. You can attempt to use `generate_sample_table.sh` to circumvent manual creation of the table.
 
-5. Execute pipeline (optionally explicitly specify `--cores`):
+5. Execute pipeline (optionally explicitly specify `--cores`)
 
-      `snakemake -kp --cores=NCORES --use-conda --conda-prefix=$HOME/.snakemake all`
+      `snakemake -kp --cores=NCORES --use-conda --conda-prefix=$PWD/.snakemake/conda all`
+   
+   If the `--conda-prefix` is not set as this then all envs will be reinstalled for each
+   time you change the `results_dir` in the `config.yaml`.
 
 6. Postprocessing analyses:
 

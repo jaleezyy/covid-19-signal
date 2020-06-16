@@ -33,6 +33,11 @@ validate(config, 'resources/config.schema.yaml')
 samples = pd.read_table(config['samples'], sep=',')
 validate(samples, 'resources/sample.schema.yaml')
 
+# set output directory
+exec_dir = os.getcwd()
+config['exec_dir'] = exec_dir
+workdir: os.path.abspath(config['result_dir'])
+
 # get sample names 
 sample_names = sorted(samples['sample'].drop_duplicates().values)
 
@@ -43,7 +48,7 @@ def get_input_fastq_files(sample_name, r):
     elif r == '2':
         relpaths = sample_fastqs['r2_path'].values
 
-    return [ os.path.abspath(r) for r in relpaths ]
+    return [ os.path.abspath(os.path.join(exec_dir, r)) for r in relpaths ]
 
 
 ######################################   High-level targets   ######################################
@@ -84,6 +89,11 @@ rule kraken2:
 rule quast:
     input: expand('{sn}/quast/{sn}_quast_report.html', sn=sample_names)
 
+rule config_sample_log:
+    input: 
+        "config.yaml", 
+        config['samples']
+
 
 rule all:
     input:
@@ -97,16 +107,18 @@ rule all:
         rules.breseq.input,
         rules.coverage.input,
         rules.kraken2.input,
-        rules.quast.input
+        rules.quast.input,
+        rules.config_sample_log.input
 
 
 rule postprocess:
     conda: 
         'conda_envs/postprocessing.yaml'
     params:
-        sample_csv_filename = config['samples']
+        sample_csv_filename = os.path.join(exec_dir, config['samples']),
+        postprocess_script_path = os.path.join(config['exec_dir'], 'scripts', 'signal_postprocess.py')
     shell:
-        'scripts/c19_postprocess.py {params.sample_csv_filename}'
+        '{params.postprocess_script_path} {params.sample_csv_filename}'
 
 
 rule ncov_tools:
@@ -120,7 +132,19 @@ rule ncov_tools:
     script: "scripts/ncov-tools.py"
         
         
-
+################################# Copy config and sample table to output folder ##################
+rule copy_config_sample_log:
+    output: 
+        config="config.yaml", 
+        sample_table=config["samples"]
+    input:
+        origin_config = os.path.join(exec_dir, 'config.yaml'),
+        origin_sample_table = os.path.join(exec_dir, config['samples'])
+    shell:
+        """
+        cp {input.origin_config} {output.config}
+        cp {input.origin_sample_table} {output.sample_table}
+        """
 
 #################################   Based on scripts/assemble.sh   #################################
 rule concat_and_sort:
@@ -169,7 +193,7 @@ rule raw_reads_human_reference_bwa_map:
     log:
         '{sn}/host_removal/{sn}_human_read_mapping.log'
     params:
-       human_index = os.path.abspath(config['human_reference'])
+       human_index = os.path.join(exec_dir, config['human_reference'])
     shell:
         '(bwa mem -T 30 -t {threads} {params.human_index} '
         '{input.raw_r1} {input.raw_r2} | '
@@ -239,7 +263,7 @@ rule viral_reference_bwa_build:
     output:
         '{sn}/core/viral_reference.bwt'
     input:
-        reference = config['viral_reference_genome'],
+        reference = os.path.join(exec_dir, config['viral_reference_genome']),
     log:
         '{sn}/core/{sn}_viral_reference_bwa-build.log'
     benchmark:
@@ -285,7 +309,7 @@ rule run_bed_primer_trim:
     log:
         "{sn}/core/{sn}_ivar_trim.log"
     params:
-        scheme_bed = os.path.abspath(config['scheme_bed']),
+        scheme_bed = os.path.join(exec_dir, config['scheme_bed']),
         ivar_output_prefix = "{sn}/core/{sn}_viral_reference.mapping.primertrimmed",
         min_len = config['min_len'],
         min_qual = config['min_qual'],
@@ -376,7 +400,7 @@ rule run_ivar_variants:
     output:
         '{sn}/core/{sn}_ivar_variants.tsv'
     input:
-        reference = config['viral_reference_genome'],
+        reference = os.path.join(exec_dir, config['viral_reference_genome']),
         read_bam = "{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam"
     log:
         '{sn}/core/{sn}_ivar_variants.log'
@@ -410,7 +434,7 @@ rule run_breseq:
     benchmark:
         "{sn}/benchmarks/{sn}_run_breseq.benchmark.tsv"
     params:
-        ref = config['breseq_reference'],
+        ref = os.path.join(exec_dir, config['breseq_reference']),
     	outdir = '{sn}/breseq',
         unlabelled_output_dir = '{sn}/breseq/output',
         labelled_output_dir = '{sn}/breseq/{sn}_output'
@@ -452,7 +476,7 @@ rule run_kraken2:
         "{sn}/benchmarks/{sn}_run_kraken2.benchmark.tsv"
     params:
         outdir = '{sn}/kraken2',
-	    db = os.path.abspath(config['kraken2_db']),
+	    db = os.path.join(exec_dir, config['kraken2_db']),
         labelled_output = '{sn}_kraken2.out',
         labelled_report = '{sn}_kraken2.report',
         labelled_unclassified_reads = '{sn}_kraken2_unclassified_reads#',
@@ -487,8 +511,8 @@ rule run_quast:
         "{sn}/benchmarks/{sn}_run_quast.benchmark.tsv"
     params:
          outdir = '{sn}/quast',
-         genome = config['viral_reference_genome'],
-         fcoords = config['viral_reference_feature_coords'],
+         genome = os.path.join(exec_dir, config['viral_reference_genome']),
+         fcoords = os.path.join(exec_dir, config['viral_reference_feature_coords']),
          sample_name = '{sn}_quast_report',
          unlabelled_reports = '{sn}/quast/report.*'
     shell:

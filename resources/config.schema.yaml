@@ -43,6 +43,10 @@ ivar_min_variant_quality:
 samples:
     type: string
     description: "Sample filepaths/table"
+result_dir:
+    type: string
+    default: "results"
+    description: "Path to output results"
 required:
     - min_len
     - min_qual
@@ -52,3 +56,4 @@ required:
     - breseq_reference
     - kraken2_db
     - samples
+    - result_dir
