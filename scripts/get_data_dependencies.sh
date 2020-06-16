@@ -8,7 +8,7 @@ accession="MN908947.3"
 
 HELP="""
 Flags:
-    -d  :  Directory to configure database within (~50-60GB)
+    -d  :  Directory to configure database within (~10GB)
     -a  :  Accession to use as viral reference (default=MN908947.3)
 """
 
@@ -25,7 +25,7 @@ if [ $database_dir = 0 ] ; then
     exit 1
 fi
 
-echo "Warning: databases require 50-60GB for final databases and can use up to 100GB during building"
+echo "Warning: databases require ~10GB storage for final databases and can use up to ~35GB of storage and (~2GB of memory) during building (takes up to ~1.5 hours)"
 
 # make database dir and get abspath to it
 mkdir -p $database_dir
