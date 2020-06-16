@@ -35,7 +35,6 @@ validate(samples, 'resources/sample.schema.yaml')
 
 # set output directory
 exec_dir = os.getcwd()
-config['exec_dir'] = exec_dir
 workdir: os.path.abspath(config['result_dir'])
 
 # get sample names 
@@ -83,6 +82,9 @@ rule breseq:
 rule coverage:
     input: expand('{sn}/coverage/{sn}_depth.txt', sn=sample_names)
 
+rule coverage_plot:
+    input: expand('{sn}/coverage/{sn}_coverage_plot.png', sn=sample_names)
+
 rule kraken2:
     input: expand('{sn}/kraken2/{sn}_kraken2.out', sn=sample_names)
 
@@ -106,6 +108,7 @@ rule all:
         rules.ivar_variants.input,
         rules.breseq.input,
         rules.coverage.input,
+        rules.coverage_plot.input,
         rules.kraken2.input,
         rules.quast.input,
         rules.config_sample_log.input
@@ -116,7 +119,7 @@ rule postprocess:
         'conda_envs/postprocessing.yaml'
     params:
         sample_csv_filename = os.path.join(exec_dir, config['samples']),
-        postprocess_script_path = os.path.join(config['exec_dir'], 'scripts', 'signal_postprocess.py')
+        postprocess_script_path = os.path.join(exec_dir, 'scripts', 'signal_postprocess.py')
     shell:
         '{params.postprocess_script_path} {params.sample_csv_filename}'
 
@@ -459,7 +462,17 @@ rule coverage_depth:
     shell:
         'bedtools genomecov -d -ibam {input} >{output}'
 
-
+rule generate_coverage_plot:
+    conda: 'conda_envs/postprocessing.yaml'
+    output: 
+        '{sn}/coverage/{sn}_coverage_plot.png' 
+    input:
+        '{sn}/coverage/{sn}_depth.txt'
+    params:
+        script_path = os.path.join(exec_dir, "scripts", "generate_coverage_plot.py")
+    shell:
+        "python {params.script_path} {input} {output}"
+    
 ################################   Based on scripts/kraken2.sh   ###################################
 
 

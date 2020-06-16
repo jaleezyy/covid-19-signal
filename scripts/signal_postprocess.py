@@ -875,7 +875,7 @@ class SampleHTMLWriter(HTMLWriterBase):
         print('</table></td>', file=self.f)
 
         # Coverage plot
-        print(f'<td style="vertical-align: top"><img src="{s.name}_coverage.png"></td>', file=self.f)
+        print(f'<td style="vertical-align: top"><img src="coverage/{s.name}_coverage_plot.png"></td>', file=self.f)
 
         # Breseq iframe
         print(f'<iframe src="breseq/{s.name}_output/index.html" width="100%" height="800px" style="border: 0px"></iframe>', file=self.f)
@@ -901,8 +901,8 @@ class SummaryHTMLWriter(HTMLWriterBase):
 
         # Single-row table containing two summary plots
         print('<p><table><tr>', file=self.f)
-        print('<td><img src="summary1.png"></td>', file=self.f)
-        print('<td><img src="summary2.png"></td>', file=self.f)
+        print('<td><img src="summary_ncov2_in_reads_v_genome_fraction.png"></td>', file=self.f)
+        print('<td><img src="summary_average_depth_v_genome_fraction.png"></td>', file=self.f)
         print('</tr></table>', file=self.f)
 
         # Start long table containing statistics
@@ -1070,53 +1070,6 @@ class Sample:
         self.ivar = parse_ivar_variants(f"{name}/core/{name}_ivar_variants.tsv")
         self.breseq = parse_breseq_output(f"{name}/breseq/{name}_output/index.html")
 
-
-    def write_coverage_plot(self):
-        in_filename = f"{self.name}/coverage/{self.name}_depth.txt"
-        out_filename = f"{self.name}/{self.name}_coverage.png"
-
-        if not os.path.exists(in_filename):
-            return
-
-        coverage = []
-        for line in open(in_filename):
-            t = line.split('\t')
-            assert len(t) == 3
-            coverage.append(int(t[2]))
-
-        coverage = np.array(coverage)
-        assert np.all(coverage >= 0)
-
-        n = len(coverage)
-        assert n >= 1
-
-        chunk_size = 2500
-        nchunks = (n + chunk_size -1) // chunk_size
-
-        kwds = {'wspace':0, 'hspace':0.2, 'bottom':0.02, 'top':0.98 }
-        fig, axarr = plt.subplots(nchunks, 1, sharex=True, gridspec_kw=kwds)
-
-        fig.set_figwidth(8)
-        fig.set_figheight(0.75 * nchunks)
-
-        for i, ax in enumerate(axarr):
-            lo = i*chunk_size
-            hi = min(n, (i+1)*chunk_size)
-            label = f'{lo}-{hi}'
-
-            ax.fill_between(np.arange(hi-lo), coverage[lo:hi] + 0.1, 1)
-            for level in [ 1.0e1, 1.0e2, 1.0e3]:
-                ax.plot([0,hi-lo], [level,level], ls=':', color='black')
-
-            ax.set_yscale('log')
-            ax.set_ylim(1.0, 3.0e4)
-            ax.text(0.01, 0.95, label, verticalalignment='top', transform=ax.transAxes, color='red')
-
-        print(f"Writing {out_filename}")
-        plt.savefig(out_filename)
-        plt.clf()
-
-
 class Pipeline:
     """Must be constructed from toplevel pipeline directory."""
 
@@ -1161,8 +1114,8 @@ class Pipeline:
         plt.xlim(0, 100)
         plt.ylim(0, 100)
 
-        print('Writing summary1.png')
-        plt.savefig('summary1.png')
+        print('Writing summary_ncov2_in_reads_v_genome_fraction.png')
+        plt.savefig('summary_ncov2_in_reads_v_genome_fraction.png')
         plt.clf()
 
 
@@ -1196,8 +1149,8 @@ class Pipeline:
         plt.ylabel(r'Genome Fraction (%)')
         plt.ylim(0, 100)
 
-        print('Writing summary2.png')
-        plt.savefig('summary2.png')
+        print('Writing summary_average_depth_v_genome_fraction.png')
+        plt.savefig('summary_average_depth_v_genome_fraction.png')
         plt.clf()
 
 
@@ -1216,8 +1169,6 @@ class Pipeline:
                 print(f"Warning: sample directory {s.name} does not exist")
                 sample_writers = [ ]
 
-            s.write_coverage_plot()
-
             for w in [summary_writer] + sample_writers:
                 w.write_sample(s)
 
@@ -1234,14 +1185,15 @@ class Pipeline:
 
         a = Archive('summary.zip', debug)
         a.add_file('summary.html')
-        a.add_file('summary1.png')
-        a.add_file('summary2.png')
+        a.add_file('summary_ncov2_in_reads_v_genome_fraction.png')
+        a.add_file('summary_average_depth_v_genome_fraction.png')
+
 
         for sample in self.samples:
             s = sample.name
             a.add_glob(f'{s}/{s}_sample.txt')
             a.add_glob(f'{s}/{s}_sample.html')
-            a.add_glob(f'{s}/{s}_coverage.png')
+            a.add_glob(f'{s}/coverage/{s}_coverage_plot.png')
             a.add_glob(f'{s}/adapter_trimmed/{s}_trim_galore.log')
             a.add_glob(f'{s}/adapter_trimmed/{s}_*_fastqc.html')
             a.add_glob(f'{s}/kraken2/{s}_kraken2.report')
