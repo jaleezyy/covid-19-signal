@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-long_git_id = '$Id$'
+long_git_id = '$Id: b158164f87c79271ddc9d1083e64e4be1fc26d8e $'
 
 assert long_git_id.startswith('$Id: ')
 short_git_id = long_git_id[5:12]
