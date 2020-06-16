@@ -14,7 +14,7 @@
 
 - Numbering of pipeline stages follows the following diagram.
 
-![Workflow Version 6](./resources/Workflow_Version_6.pdf)
+![Workflow Version 7](./resources/Workflow_Version_7.pdf)
 
 ### 1. Concatenate and sort R1 and R2 reads
 ```
@@ -177,7 +177,7 @@ breseq --reference /home/kmsmith/data/MN908947_primer_annotated_prot_clinical.gb
 ### 14. Viral Read Quality Control
 ```
     
-        fastqc sample1/mapped_clean_reads/R1.fastq.gz sample1/mapped_clean_reads/R2.fastq.gz
+        fastqc sample1/mapped_clean_reads/sample1_R1.fastq.gz sample1/mapped_clean_reads/sample1_R2.fastq.gz
 
 ```
 
