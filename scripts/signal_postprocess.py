@@ -4,6 +4,7 @@ import os
 import re
 import sys
 import glob
+import json
 import zipfile
 import contextlib
 import html.parser
@@ -63,6 +64,48 @@ def read_file(filename, allow_missing=True, zname=None):
             with z.open(zname) as f:
                 for line in f:
                     yield line.decode('ascii')
+
+class QUASTParser(html.parser.HTMLParser):
+
+    def __init__(self):
+        html.parser.HTMLParser.__init__(self)
+        self.extracting = False
+        self.quast_data = ""
+
+
+    def handle_starttag(self, tag, attr):
+        if tag == 'div' and attr == [('id', 'total-report-json')]:
+            self.extracting = True
+        else:
+            return
+
+    def handle_data(self, data):
+        if self.extracting == True:
+            self.quast_data += data
+
+    def handle_endtag(self, tag):
+        if tag == 'div' and self.extracting == True:
+            self.extracting = False
+
+    def convert_data_to_json(self):
+        # convert to json and then simplify as each report has only one sample
+        data = json.loads(self.quast_data.strip())
+
+        data = data['report']
+
+        # simplify report by creating metric: metric_value pairs
+        simplified_report = {}
+        for report_group in data:
+            if report_group[1] != []:
+                for metric in report_group[1]:
+                    metric_name = metric['metricName'].strip()
+                    metric_value = metric['values'][0]
+
+                    if metric_name in simplified_report:
+                        print(f"{metric_name} collision in report")
+                    else:
+                        simplified_report[metric_name] = metric_value
+        return simplified_report
 
 
 class TextFileParser:
@@ -184,7 +227,6 @@ class SimpleHTMLTableParser(html.parser.HTMLParser):
             s = self.tables[-1][-1][-1]
             sep = ' ' if (len(s) > 0) else ''
             self.tables[-1][-1][-1] = f"{s}{sep}{data}"
-
 
 def parse_html_tables(html_filename):
     """
@@ -329,28 +371,35 @@ def parse_hostremove_hisat2_log(log_filename, allow_missing=True):
 def parse_quast_report(report_filename, allow_missing=True):
     """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
 
-    t = TextFileParser()
+    # unfortunately only the quast report html contains all the fields
+    # need for summaries, fortunately, it is all encoded in easily extractable
+    # json
+    q = QUASTParser()
+    with open(report_filename) as fh:
+        report = fh.read()
+    q.feed(report)
+    quast_report = q.convert_data_to_json()
 
-    # Note that some fields are "required=False" here.
-    # Sometimes, QUAST doesn't write every field, but I didn't investigate why.
-    t.add_field("genome_length", r'Total length \(>= 0 bp\)\s+(\S+)', dtype=int)
-    t.add_field("genome_fraction", r'Genome fraction \(%\)\s+(\S+)', dtype=float, required=False)   # Note: genome "fraction" is really a percentage
-    t.add_field("genomic_features", r'# genomic features\s+(\S+)', required=False)
-    t.add_field("Ns_per_100_kbp", r"# N's per 100 kbp\s+(\S+)", dtype=float)
-    t.add_field("mismatches", r"# mismatches \s+(\S+)", dtype=float, required=False)
-    t.add_field("mismatches_per_100_kbp", r"# mismatches per 100 kbp\s+(\S+)", dtype=float, required=False)
-    t.add_field("indels", r"# indels \s+(\S+)", dtype=float, required=False)
-    t.add_field("indels_per_100_kbp", r"# indels per 100 kbp\s+(\S+)", dtype=float, required=False)
-
-    ret = t.parse_file(report_filename, allow_missing=True)
+    ret = {}
+    ret['genome_length'] = float(quast_report['Total length (>= 0 bp)'])
+    ret['genome_fraction'] = float(quast_report['Genome fraction (%)'])
+    ret['genomic_features'] = str(quast_report['# genomic features'])
+    ret['Ns_per_100_kbp'] = float(quast_report["# N's per 100 kbp"])
+    ret['mismatches'] = float(quast_report['# mismatches'])
+    ret['mismatches_per_100_kbp'] = float(quast_report['# mismatches per 100 kbp'])
+    ret['indels'] = float(quast_report['# indels'])
+    ret['indels_per_100_kbp'] = float(quast_report['# indels per 100 kbp'])
 
     gfrac = ret['genome_fraction']
     ret['qc_gfrac'] = "PASS" if ((gfrac is not None) and (gfrac >= 90)) else "FAIL"
 
+    indels = ret['indels']
+    ret['qc_indel'] = "PASS" if indels == 0 else "WARN"
+
     return ret
 
 
-def parse_consensus_assembly(fasta_filename, allow_missing=True)e
+def parse_consensus_assembly(fasta_filename, allow_missing=True):
     """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
 
     if file_is_missing(fasta_filename, allow_missing):
@@ -652,6 +701,9 @@ class WriterBase:
 
         key = "Genome Fraction greater than 90%" if self.unabridged else "Genome\nfraction\n>90%"
         self.write_kv_pair(key, s.quast['qc_gfrac'], indent=1, qc=True)
+
+        key = "No indels detected (maximum length 85bp)" if self.unabridged else "No\nindels"
+        self.write_kv_pair(key, s.quast['qc_indel'], indent=1, qc=True)
 
         key = "Depth of coverage >= 2000x" if self.unabridged else "Depth\n>2000"
         self.write_kv_pair(key, s.coverage['qc_meancov'], indent=1, qc=True)
@@ -1074,7 +1126,7 @@ class Sample:
         self.trim_galore = parse_trim_galore_log(f"{name}/adapter_trimmed/{name}_trim_galore.log")
         self.post_trim_qc = parse_fastqc_pair(f"{name}/adapter_trimmed/{name}_R1_val_1_fastqc.zip", f"{name}/adapter_trimmed/{name}_R2_val_2_fastqc.zip")
         self.kraken2 = parse_kraken2_report(f"{name}/kraken2/{name}_kraken2.report")
-        self.quast = parse_quast_report(f"{name}/quast/{name}_quast_report.txt")
+        self.quast = parse_quast_report(f"{name}/quast/{name}_quast_report.html")
         self.consensus = parse_consensus_assembly(f"{name}/core/{name}.consensus.fa")
         self.coverage = parse_coverage(f"{name}/coverage/{name}_depth.txt")
         self.ivar = parse_ivar_variants(f"{name}/core/{name}_ivar_variants.tsv")
