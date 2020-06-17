@@ -337,7 +337,9 @@ def parse_quast_report(report_filename, allow_missing=True):
     t.add_field("genome_fraction", r'Genome fraction \(%\)\s+(\S+)', dtype=float, required=False)   # Note: genome "fraction" is really a percentage
     t.add_field("genomic_features", r'# genomic features\s+(\S+)', required=False)
     t.add_field("Ns_per_100_kbp", r"# N's per 100 kbp\s+(\S+)", dtype=float)
+    t.add_field("mismatches", r"# mismatches \s+(\S+)", dtype=float, required=False)
     t.add_field("mismatches_per_100_kbp", r"# mismatches per 100 kbp\s+(\S+)", dtype=float, required=False)
+    t.add_field("indels", r"# indels \s+(\S+)", dtype=float, required=False)
     t.add_field("indels_per_100_kbp", r"# indels per 100 kbp\s+(\S+)", dtype=float, required=False)
 
     ret = t.parse_file(report_filename, allow_missing=True)
@@ -348,7 +350,7 @@ def parse_quast_report(report_filename, allow_missing=True):
     return ret
 
 
-def parse_consensus_assembly(fasta_filename, allow_missing=True):
+def parse_consensus_assembly(fasta_filename, allow_missing=True)e
     """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
 
     if file_is_missing(fasta_filename, allow_missing):
@@ -700,14 +702,16 @@ class WriterBase:
 
 
     def write_quast(self, s):
-        self.start_kv_pairs("QUAST", link_filenames=[f"quast/{s.name}_report.html"])
+        self.start_kv_pairs("QUAST", link_filenames=[f"quast/{s.name}_quast_report.html"])
         self.write_kv_pair("Genome\nLength\n(bp)", s.quast['genome_length'], indent=1)
         self.write_kv_pair("Genome\nFraction\n(%)", s.quast['genome_fraction'], indent=1)
         self.write_kv_pair("N's per\n100 kbp", s.quast['Ns_per_100_kbp'], indent=1)
 
         if self.unabridged:
             self.write_kv_pair("Genomic Features", s.quast['genomic_features'], indent=1)
+            self.write_kv_pair("Mismatches", s.quast['mismatches'], indent=1)
             self.write_kv_pair("Mismatches per 100 kbp", s.quast['mismatches_per_100_kbp'], indent=1)
+            self.write_kv_pair("Indels", s.quast['indels'], indent=1)
             self.write_kv_pair("Indels per 100 kbp", s.quast['indels_per_100_kbp'], indent=1)
 
         self.write_kv_pair("Average\nDepth of\nCoverage", s.coverage['mean_coverage'], indent=1)
