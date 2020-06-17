@@ -590,7 +590,7 @@ def parse_breseq_output(html_filename, allow_missing=True):
         if float(freq[:-1]) < 90:
             qc_varfreq = 'WARN'
 
-        if "Δ" in mut and "coding" in ann:
+        if ("Δ" in mut or "+" in mut) and "coding" in ann:
             qc_orf_frameshift = 'FAIL'
 
     return { 'variants': variants, 'qc_varfreq': qc_varfreq,
