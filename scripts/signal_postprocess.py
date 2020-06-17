@@ -559,7 +559,7 @@ def parse_breseq_output(html_filename, allow_missing=True):
 
     variants = [ ]
     qc_varfreq = 'PASS'
-    qc_orf_frameshift = 'FAIL'
+    qc_orf_frameshift = 'PASS'
 
     for row in tables[1][2:]:
         assert len(row) == 7
@@ -590,8 +590,34 @@ def parse_breseq_output(html_filename, allow_missing=True):
         if float(freq[:-1]) < 90:
             qc_varfreq = 'WARN'
 
-        if ("Δ" in mut or "+" in mut) and "coding" in ann:
-            qc_orf_frameshift = 'FAIL'
+        # check for deletions i.e. delta and insertions i.e. +TTT in coding regions
+        if "coding" in ann:
+            # +TTTT
+            letter_ins_check = re.search(r"\+([A-Za-z]+)", mut)
+            if letter_ins_check:
+                # check if insertion is %3 in size i.e. not a frameshift and just
+                # a warning
+                if len(letter_ins_check.group(0)) % 3 == 0:
+                    qc_orf_frameshift = 'WARN'
+                else:
+                    qc_orf_frameshift = 'FAIL'
+
+            # +136 bp
+            size_ins_check = re.search(r"\+([0-9]+) bp", mut)
+            if size_ins_check:
+                # check if insertion is %3 in size i.e. whole codon
+                if int(size_ins_check.group(1)) % 3 == 0:
+                    qc_orf_frameshift = 'WARN'
+                else:
+                    qc_orf_frameshift = 'FAIL'
+
+            # Δ22 bp
+            del_check = re.search(r"Δ([0-9]+)", mut)
+            if del_check:
+                if int(del_check.group(1)) % 3 == 0:
+                    qc_orf_frameshift = 'WARN'
+                else:
+                    qc_orf_frameshift = 'FAIL'
 
     return { 'variants': variants, 'qc_varfreq': qc_varfreq,
             'qc_orf_frameshift': qc_orf_frameshift}
