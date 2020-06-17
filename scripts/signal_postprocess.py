@@ -559,6 +559,7 @@ def parse_breseq_output(html_filename, allow_missing=True):
 
     variants = [ ]
     qc_varfreq = 'PASS'
+    qc_orf_frameshift = 'FAIL'
 
     for row in tables[1][2:]:
         assert len(row) == 7
@@ -589,7 +590,11 @@ def parse_breseq_output(html_filename, allow_missing=True):
         if float(freq[:-1]) < 90:
             qc_varfreq = 'WARN'
 
-    return { 'variants': variants, 'qc_varfreq': qc_varfreq }
+        if "Δ" in mut and "coding" in ann:
+            qc_orf_frameshift = 'FAIL'
+
+    return { 'variants': variants, 'qc_varfreq': qc_varfreq,
+            'qc_orf_frameshift': qc_orf_frameshift}
 
 
 ########  Base classes for writing summary files, see WriterBase docstring for explanation  ########
@@ -710,6 +715,9 @@ class WriterBase:
 
         key = "All variants with at least 90% frequency among reads" if self.unabridged else "Variants\n>90%"
         self.write_kv_pair(key, s.breseq['qc_varfreq'], indent=1, qc=True)
+
+        key = "Frameshifts in SARS-CoV-2 open reading frames" if self.unabridged else "ORF\nFrameshifts"
+        self.write_kv_pair(key, s.breseq['qc_orf_frameshift'], indent=1, qc=True)
 
         key = "Reads per base sequence quality" if self.unabridged else "Fastqc\nquality"
         val = s.post_trim_qc['summary'].get('Per base sequence quality', 'FAIL')
