@@ -57,7 +57,7 @@ The pipeline requires:
 
 3. Configure your `config.yaml` file
 
-Either using the convenience python script (pending) or 
+Either using the convenience python script or 
 through modifying the `example_config.yaml` to suit your system
 
 4. Specify your samples in CSV format (e.g. `sample_table.csv`)
@@ -66,14 +66,14 @@ See the example table `example_sample_table.csv` for an idea of how to organise 
 
 5. Execute pipeline (optionally explicitly specify `--cores`)
 
-      `snakemake -kp --cores=NCORES --use-conda --conda-prefix=$PWD/.snakemake/conda all`
+      `snakemake -kp --configfile config.yaml --cores=NCORES --use-conda --conda-prefix=$PWD/.snakemake/conda all`
    
    If the `--conda-prefix` is not set as this then all envs will be reinstalled for each
    time you change the `results_dir` in the `config.yaml`.
 
 6. Postprocessing analyses:
 
-      `snakemake -p --use-conda --cores=1 postprocess`
+      `snakemake -p --configfile config.yaml --cores=NCORES --use-conda --conda-prefix=$PWD/.snakemake/conda postprocess`
 
 After postprocessing finishes, you'll see the following summary files:
 
@@ -105,27 +105,31 @@ the tree has been specified using `phylo_include_seqs:` in the main signal `conf
 
 Outputs will be written as specified within the `ncov-tools` folder and documentation.
 
-### Docker (pending)
+### Docker
 
 Alternatively, the pipeline can be deployed using Docker (see `resources/Dockerfile_pipeline` for specification).
 To pull from dockerhub:
 
         docker pull finlaymaguire/signal
 
-Download data dependencies:
+Download data dependencies into a data directory that already contains your reads (`data` is this example but whatever name you wish to use):
 
         mkdir -p data && docker run -v $PWD/data:/data finlaymaguire/signal:1.0.0 bash scripts/get_data_dependencies.sh -d /data
 
-Add remaining files (e.g. primers) to your config and sample table in the data directory:
+Generate your `config.yaml`and `sample_table.csv` (with paths to the readsets underneath `/data`) and place them into the data directory:
 
-        cp config.yaml sample_table.csv $PWD/data && \ 
-            docker run -v $PWD/data:/data finlaymaguire/signal:1.0.0 mv data/config.yaml data/sample_table.csv .
+        cp config.yaml sample_table.csv $PWD/data
+
+*WARNING* `result_dir` in `config.yaml` must be within `/data` e.g. `/data/results` to automatically be copied to your host system.  Otherwise they will be automatically deleted when the container finishes running (unless docker is run interactively).
+
 
 Then execute the pipeline:
 
-        docker run -v $PWD/data:/data finlaymaguire/signal:1.0.0 conda run -n snakemake snakemake --use-conda --conda-prefix $HOME/.snakemake --cores 8 -s Snakefile all
+        docker run -v $PWD/data:/data finlaymaguire/signal conda run -n snakemake snakemake --configfile /data/config.yaml --use-conda --conda-prefix /covid-19-signal/.snakemake/conda --cores 8 all
 
 ## Summaries:
+
+  - `postprocessing` and `ncov_tools` as described above generate many summaries including interactive html reports.`
 
   - Generate summaries of BreSeq among many samples, [see](resources/dev_scripts/summaries/README.md)
 
