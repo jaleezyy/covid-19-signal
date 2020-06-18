@@ -1,0 +1,129 @@
+\documentclass[border=10pt]{standalone}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\tikzset{%
+  >={Latex[width=2mm,length=2mm]},
+  % Specifications for style of nodes:
+            base/.style = {rectangle, rounded corners, draw=black,
+                           minimum width=4cm, minimum height=1cm,
+                           text centered, font=\sffamily},
+            base2/.style = {rectangle, rounded corners, draw=white, 
+                           minimum width=4cm, minimum height=1cm,
+                           text centered, font=\sffamily},
+            base3/.style = {circle, rounded corners, draw=white, 
+                           minimum width=4cm, minimum height=1cm,
+                           text centered, font=\sffamily},
+  input/.style = {base, fill=green!30},
+  file/.style = {base, fill=blue!30},
+  core/.style = {base3, fill=orange!15},
+  output/.style = {base, fill=red!30}, 
+  label/.style = {base2, fill=white!30},
+  process/.style = {base, minimum width=2.5cm, fill=orange!15,
+                           font=\ttfamily},
+}
+\title{COVID-19-SIGNAL Workflwo}
+\begin{document}    
+% Drawing part, node distance is 1.5 cm and every node
+% is prefilled with white background
+\begin{tikzpicture}[node distance=5cm,
+    every node/.style={fill=white, font=\sffamily}, align=center]
+  % Specification of nodes (position, etc.)
+    \node (start) [input] {Raw Paired-End\\FASTQ Sample};
+    
+    \node (merge) [process, below of=start] {1. Concatenate\\Pools and Sort};
+    \node (mergedfile) [file, below of=merge] {sample1/combined\_raw\_fastq/sample1\_R1.fastq.gz\\sample1/combined\_raw\_fastq/sample1\_R2.fastq.gz};
+    
+    \node (raw_fastqc) [process, right of=mergedfile, xshift=3cm] {2. Sequencing\\Quality Control};
+    \node (raw_fastqc_report) [output, right of=raw_fastqc, xshift=4cm] {Sequencing QC Report\\sample1/combined\_raw\_fastq/sample1\_R1.fastqc.html\\sample1/combined\_raw\_fastq/sample1\_R2.fastqc.html};
+    
+    \node (human) [process, below of=mergedfile] {3. Human Host Removal}; 
+    \node (humanfile) [output, below of=human] {sample1/host\_removal/sample1\_R1.fastq.gz\\sample1/host\_removal/sample1\_R2.fastq.gz};
+    \node (upload) [process, right of=humanfile, xshift=3cm] {Upload to SRA};
+    
+    \node (trim) [process, below of=humanfile] {4. Adapter \& Quality Trimming};
+    \node (trimmed_reads) [file, below of=trim] {adapter\_trimmed/sample1\_R1\_val\_1.fq.gz\\adapter\_trimmed/sample1\_R2\_val\_1.fq.gz};
+    \node (trim_fastqc_report) [output, right of=trimmed_reads, xshift=3cm] {Trimming QC Report\\sample1/adapter\_trimmed/sample1\_R1\_val\_1\_fastqc.html\\sample1/adapter\_trimmed/sample1\_R2\_val\_1\_fastqc.html};
+    
+    \node (ref_map) [process, below of=trimmed_reads] {5. Map reads to\\viral reference};
+    \node (ref_bam) [file, below of=ref_map] {sample1/core/sample1\_viral\_reference.mapping.bam};
+    
+    \node (primertrim) [process, below of=ref_bam] {6. Amplicon Primer Removal};
+    \node (primerbam) [file, below of=primertrim] {sample1/core/sample1\_viral\_reference.mapping.primertrimmed.bam};
+    
+    \node (clean_reads) [process, below of=primerbam] {7. Get Primer-Free\\Mapping Reads};
+    \node (clean_read_files) [file, below of=clean_reads] {mapped\_clean\_reads/sample1\_R1.fastq.gz\\mapped\_clean\_reads/sample1\_R2.fastq.gz};
+    
+    \node (ivarcon) [process, right of=primerbam, xshift=4cm] {8. Consensus Genome};
+    \node (consensus) [output, right of=ivarcon, xshift=4cm] {sample1/core/sample1.consensus.fa};
+    
+    \node (ivarvar) [process, right of=clean_reads, xshift=4cm] {9. Variant Detection};
+    \node (ivarvar_file) [output, right of=ivarvar, xshift=4cm] {sample1/core/sample1\_ivar\_variants.tsv};
+    
+    \node (breseq) [process, right of=clean_read_files, xshift=4cm] {10. Variant \& Clinical \\Primer Detection};
+    \node (breseqvars) [output, right of=breseq, xshift=4cm] {sample1/breseq/sample1\_output/index.html};
+
+    \node (taxaqc) [process, below of=clean_read_files] {12. Taxonomic Quality Control};
+    \node (krakenreport) [output, below of=taxaqc] {Taxonomic QC Report\\sample1/kraken2/sample1\_kraken2.report};
+    
+    \node (cov) [process, right of=taxaqc, xshift=4cm] {11. Coverage Depth};
+    \node (covdepth) [output, right of=cov, xshift=4cm] {sample1/coverage/sample1\_depth.txt\\sample1/coverage/sample1\_coverage\_plot.png};
+
+    \node (quast) [process, above of=consensus] {13. Assembly Quality Control};
+    \node (quast_report) [output, above of=quast] {Assembly QC Report\\sample1/quast/sample1\_quast\_report.html};
+    
+    
+\node (clean_qc) [process, right of=krakenreport, xshift=4cm] {14. Viral Read\\Quality Control};
+    \node (cleanqcreport) [output, right of=clean_qc, xshift=4cm] {Viral Read QC Report\\sample1/mapped\_clean\_reads/sample1\_R1\_fastqc.html\\sample1/mapped\_clean\_reads/sample1\_R2\_fastqc.html};
+    
+    %legend
+    \node (text) [text, right of=start, xshift=12cm] {Legend};
+    \node (input) [input, below of=text, yshift=4cm] {Input File};
+    \node (process) [process, below of=input, yshift=4cm] {Process};
+    \node (file) [file, below of=process, yshift=4cm] {Intermediate File(s)};
+    \node (output) [output, below of=file, yshift=4cm] {Output};
+
+    
+    \draw[->] (start) --node[text width=4cm]{Example paths for "sample1"} (merge);
+    \draw[->] (merge) -- node[text width=4cm]{GNU sort, cat, gzip}(mergedfile);
+    \draw[->] (mergedfile) -- (raw_fastqc);
+    \draw[->] (raw_fastqc) -- node[text width=2cm]{fastqc}(raw_fastqc_report);
+    \draw[->] (mergedfile) -- (human);
+    \draw[->] (human) -- node[text width=4cm]{BWA-MEM vs GRCh38 \\ Removal if MAPQ\(\ge\)30}(humanfile);
+    \draw[->] (humanfile) -- (upload);
+    
+    \draw[->] (humanfile) -- (trim);
+    \draw[->] (trim) -- node[text width=4cm]{trimgalore}(trimmed_reads);
+    \draw[->] (trim) -- node[text width=4cm]{trimgalore (fastqc)}(trim_fastqc_report);
+     
+    \draw[->] (trimmed_reads) -- (ref_map);
+    \draw[->] (ref_map) -- node[text width=4cm]{BWA-MEM, samtools}(ref_bam);
+     
+     \draw[->] (ref_bam) -- (primertrim);
+     \draw[->] (primertrim) -- node[text width=4cm]{ivar trim -e\\scheme .bed}(primerbam);
+     
+    \draw[->] (primerbam) -- (clean_reads);
+    \draw[->] (clean_reads) -- node[text width=2cm]{samtools\\bedtools}(clean_read_files);
+    
+    \draw[->] (primerbam) -- (ivarcon);
+    \draw[->] (ivarcon) -- node[text width=2cm]{ivar\\consensus}(consensus);
+    
+    \draw[->] (primerbam) -- (ivarvar);
+    \draw[->] (ivarvar) -- node[text width=2cm]{ivar\\variants}(ivarvar_file);
+    
+    \draw[->] (clean_read_files) -- (breseq);
+    \draw[->] (breseq) -- node[text width=2cm]{breseq\\custom gbk}(breseqvars); 
+    
+    \draw[->] (clean_read_files) -- (taxaqc);
+    \draw[->] (taxaqc) -- node[text width=2cm]{kraken2}(krakenreport);
+    
+    \draw[->] (clean_read_files) -- (cov);
+    \draw[->] (cov) -- node[text width=2cm]{bedtools\\genomecov}(covdepth);
+    
+    \draw[->] (consensus) -- (quast);
+    \draw[->] (quast) -- node[text width=2cm]{quast}(quast_report);
+    
+    \draw[->] (clean_read_files) -- (clean_qc);
+    \draw[->] (clean_qc) -- node[text width=2cm]{fastqc}(cleanqcreport);
+    
+  \end{tikzpicture}
+\end{document}
