@@ -392,7 +392,7 @@ rule run_ivar_consensus:
         ivar_freq_threshold = config['ivar_freq_threshold'],
         output_prefix = '{sn}/core/{sn}.consensus'
     shell:
-        '(samtools mpileup -A -d {params.mpileup_depth} -Q0 {input} | '
+        '(samtools mpileup -aa -A -d {params.mpileup_depth} -Q0 {input} | '
         'ivar consensus -t {params.ivar_freq_threshold} '
         '-m {params.ivar_min_coverage_depth} -n N -p {params.output_prefix}) '
         '2>{log}'
@@ -416,7 +416,7 @@ rule run_ivar_variants:
         ivar_min_freq_threshold = config['ivar_min_freq_threshold'],
         ivar_min_variant_quality = config['ivar_min_variant_quality']
     shell:
-        '(samtools mpileup -A -d 0 --reference {input.reference} -B '
+        '(samtools mpileup -aa -A -d 0 --reference {input.reference} -B '
             '-Q 0 {input.read_bam} | '
         'ivar variants -r {input.reference} -m {params.ivar_min_coverage_depth} '
         '-p {params.output_prefix} -q {params.ivar_min_variant_quality} '
