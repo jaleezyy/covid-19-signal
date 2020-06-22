@@ -198,9 +198,10 @@ rule raw_reads_human_reference_bwa_map:
     params:
        human_index = os.path.join(exec_dir, config['human_reference'])
     shell:
-        '(bwa mem -T 30 -t {threads} {params.human_index} '
+        '(bwa mem -t {threads} {params.human_index} '
         '{input.raw_r1} {input.raw_r2} | '
-        'samtools view -bS | samtools sort -n -@{threads} -o {output}) 2> {log}'
+        'samtools view -q 30 -bS | samtools sort -n -@{threads} -o {output}) 2> {log}'
+        # filter all reads <30 MAPQ
 
 rule get_host_removed_reads:
     conda: 'conda_envs/snp_mapping.yaml'
