@@ -382,19 +382,37 @@ def parse_quast_report(report_filename, allow_missing=True):
 
     ret = {}
     ret['genome_length'] = float(quast_report['Total length (>= 0 bp)'])
-    ret['genome_fraction'] = float(quast_report['Genome fraction (%)'])
-    ret['genomic_features'] = str(quast_report['# genomic features'])
     ret['Ns_per_100_kbp'] = float(quast_report["# N's per 100 kbp"])
-    ret['mismatches'] = float(quast_report['# mismatches'])
-    ret['mismatches_per_100_kbp'] = float(quast_report['# mismatches per 100 kbp'])
-    ret['indels'] = float(quast_report['# indels'])
-    ret['indels_per_100_kbp'] = float(quast_report['# indels per 100 kbp'])
+
+    # if genome fails to align to reference these all fail thus the try/except
+    try:
+        ret['genomic_features'] = str(quast_report['# genomic features'])
+        ret['mismatches'] = float(quast_report['# mismatches'])
+        ret['mismatches_per_100_kbp'] = float(quast_report['# mismatches per 100 kbp'])
+        ret['indels'] = float(quast_report['# indels'])
+        ret['indels_per_100_kbp'] = float(quast_report['# indels per 100 kbp'])
+        ret['genome_fraction'] = float(quast_report['Genome fraction (%)'])
+    except KeyError:
+        ret['genomic_features'] = "Failure to align to reference"
+        ret['mismatches'] = "Failure to align to reference"
+        ret['mismatches_per_100_kbp'] = "Failure to align to reference"
+        ret['indels'] = "Failure to align to reference"
+        ret['indels_per_100_kbp'] = "Failure to align to reference"
+        ret['genome_fraction'] = 0.0
 
     gfrac = ret['genome_fraction']
     ret['qc_gfrac'] = "PASS" if ((gfrac is not None) and (gfrac >= 90)) else "FAIL"
 
+    # to add a failure mode if the reference fails to align
     indels = ret['indels']
-    ret['qc_indel'] = "PASS" if indels == 0 else "WARN"
+    if indels == 0:
+        ret['qc_indel'] = "PASS"
+    elif type(indels) == float:
+        if indels > 0:
+            ret['qc_indel'] = "WARN"
+    else:
+        ret['qc_indel'] = "FAIL"
+
 
     return ret
 
