@@ -187,7 +187,8 @@ rule raw_reads_human_reference_bwa_map:
     conda: 
         'conda_envs/snp_mapping.yaml'
     output:
-        '{sn}/host_removal/{sn}_human_mapping_reads.bam'
+        non_map_bam = '{sn}/host_removal/{sn}_human_non_mapping_reads.bam',
+        mapped_bam = '{sn}/host_removal/{sn}_human_mapping_reads.bam'
     input:
         raw_r1 = '{sn}/combined_raw_fastq/{sn}_R1.fastq.gz',
         raw_r2 = '{sn}/combined_raw_fastq/{sn}_R2.fastq.gz'
@@ -200,24 +201,25 @@ rule raw_reads_human_reference_bwa_map:
     shell:
         '(bwa mem -t {threads} {params.human_index} '
         '{input.raw_r1} {input.raw_r2} | '
-        'samtools view -q 30 -bS | samtools sort -n -@{threads} -o {output}) 2> {log}'
+        'samtools view -bS -q 30 -U {output.non_map_bam} -o {output.mapped_bam}) 2> {log} '
         # filter all reads <30 MAPQ
 
 rule get_host_removed_reads:
+    threads: 2
     conda: 'conda_envs/snp_mapping.yaml'
     output:
         r1 = '{sn}/host_removal/{sn}_R1.fastq',
         r2 = '{sn}/host_removal/{sn}_R2.fastq',
         bam = '{sn}/host_removal/{sn}_human_mapping_reads_filtered_sorted.bam'
     input:
-        '{sn}/host_removal/{sn}_human_mapping_reads.bam'
+        '{sn}/host_removal/{sn}_human_non_mapping_reads.bam'
     benchmark:
         "{sn}/benchmarks/{sn}_get_host_removed_reads.benchmark.tsv"
     log:
         '{sn}/host_removal/{sn}_bamtofastq.log'
     shell:
         """
-        samtools view -b -f4 {input} | samtools sort -n > {output.bam} 2> {log}
+        samtools view -b {input} | samtools sort -n -@{threads} > {output.bam} 2> {log}
         bedtools bamtofastq -i {output.bam} -fq {output.r1} -fq2 {output.r2} 2>> {log} 
         """
 
