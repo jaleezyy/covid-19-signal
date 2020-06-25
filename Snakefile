@@ -182,27 +182,26 @@ rule run_raw_fastqc:
         """
 
 ########################## Human Host Removal ################################
-rule raw_reads_human_reference_bwa_map:
+rule raw_reads_composite_reference_bwa_map:
     threads: 2
     conda: 
         'conda_envs/snp_mapping.yaml'
     output:
-        non_map_bam = '{sn}/host_removal/{sn}_human_non_mapping_reads.bam',
-        mapped_bam = '{sn}/host_removal/{sn}_human_mapping_reads.bam'
+        '{sn}/host_removal/{sn}_viral_and_nonmapping_reads.bam',
     input:
         raw_r1 = '{sn}/combined_raw_fastq/{sn}_R1.fastq.gz',
         raw_r2 = '{sn}/combined_raw_fastq/{sn}_R2.fastq.gz'
     benchmark:
-        "{sn}/benchmarks/{sn}_human_reference_bwa_map.benchmark.tsv"
+        "{sn}/benchmarks/{sn}_composite_reference_bwa_map.benchmark.tsv"
     log:
         '{sn}/host_removal/{sn}_human_read_mapping.log'
     params:
-       human_index = os.path.join(exec_dir, config['human_reference'])
+       composite_index = os.path.join(exec_dir, config['composite_reference']),
+       script_path = os.path.join(exec_dir, "scripts", "filter_non_human_reads.py")
     shell:
-        '(bwa mem -t {threads} {params.human_index} '
+        '(bwa mem -t {threads} {params.composite_index} '
         '{input.raw_r1} {input.raw_r2} | '
-        'samtools view -bS -q 30 -U {output.non_map_bam} -o {output.mapped_bam}) 2> {log} '
-        # filter all reads <30 MAPQ
+        '{params.script_path} > {output}) 2> {log}'
 
 rule get_host_removed_reads:
     threads: 2
@@ -210,9 +209,9 @@ rule get_host_removed_reads:
     output:
         r1 = '{sn}/host_removal/{sn}_R1.fastq',
         r2 = '{sn}/host_removal/{sn}_R2.fastq',
-        bam = '{sn}/host_removal/{sn}_human_mapping_reads_filtered_sorted.bam'
+        bam = '{sn}/host_removal/{sn}_viral_and_nonmapping_reads_filtered_sorted.bam'
     input:
-        '{sn}/host_removal/{sn}_human_non_mapping_reads.bam'
+        '{sn}/host_removal/{sn}_viral_and_nonmapping_reads.bam',
     benchmark:
         "{sn}/benchmarks/{sn}_get_host_removed_reads.benchmark.tsv"
     log:
