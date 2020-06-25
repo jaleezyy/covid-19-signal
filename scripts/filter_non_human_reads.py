@@ -25,17 +25,18 @@ def filter_reads(contig_name, input_sam_fp, output_bam_fp):
     # iterate over input from BWA
     for read in input_sam:
         # only look at primary alignments
-        if not read.is_supplementary
-            if not read.is_secondary:
-                if read.reference_name == contig_name:
-                    output_bam.write(read)
-                    viral_reads += 1
-                elif read.is_unmapped:
-                    output_bam.write(read)
-                    unmapped_reads +=1
-                else:
-                    human_reads += 1
+        if not read.is_supplementary and not read.is_secondary:
+            if read.reference_name == contig_name:
+                output_bam.write(read)
+                viral_reads += 1
+            elif read.is_unmapped:
+                output_bam.write(read)
+                unmapped_reads +=1
+            else:
+                human_reads += 1
+
     total_reads = viral_reads + human_reads + unmapped_reads
+
     print(f"viral read count = {viral_reads} "
             f"({viral_reads/total_reads * 100:.2f}%)", file=sys.stderr)
     print(f"human read count = {human_reads} "
