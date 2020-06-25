@@ -14,11 +14,12 @@ min_len: 20
 scheme_bed: 'resources/primer_schemes/nCoV-2019_v3_fixed.bed'
 
 # path from snakemake dir to bwa indexed human reference genome
-human_reference: 'data/GCA_000001405.15_GRCh38_no_alt_plus_hs38d1_analysis_set.fna'
+composite_reference: 'data/composite_human_viral_reference.fna'
 
 # Used as bwa reference genome when removing host sequences.
 # Also used as 'ivar' reference genome in variant detection + consensus.
 # Used as -r,-g arguments to 'quast'
+viral_reference_contig_name: 'MN908947.3'
 viral_reference_genome: 'data/MN908947.3.fasta'
 viral_reference_feature_coords: 'data/MN908947.3.gff3'
 

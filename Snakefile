@@ -197,18 +197,20 @@ rule raw_reads_composite_reference_bwa_map:
         '{sn}/host_removal/{sn}_human_read_mapping.log'
     params:
        composite_index = os.path.join(exec_dir, config['composite_reference']),
-       script_path = os.path.join(exec_dir, "scripts", "filter_non_human_reads.py")
+       script_path = os.path.join(exec_dir, "scripts", "filter_non_human_reads.py"),
+       viral_contig_name = config['viral_reference_contig_name']
     shell:
         '(bwa mem -t {threads} {params.composite_index} '
         '{input.raw_r1} {input.raw_r2} | '
-        '{params.script_path} > {output}) 2> {log}'
+        '{params.script_path} -c {params.viral_contig_name} > {output}) 2> {log}'
 
 rule get_host_removed_reads:
     threads: 2
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        r1 = '{sn}/host_removal/{sn}_R1.fastq',
-        r2 = '{sn}/host_removal/{sn}_R2.fastq',
+        r1 = '{sn}/host_removal/{sn}_R1.fastq.gz',
+        r2 = '{sn}/host_removal/{sn}_R2.fastq.gz',
+        s = '{sn}/host_removal/{sn}_singletons.fastq.gz',
         bam = '{sn}/host_removal/{sn}_viral_and_nonmapping_reads_filtered_sorted.bam'
     input:
         '{sn}/host_removal/{sn}_viral_and_nonmapping_reads.bam',
@@ -219,19 +221,7 @@ rule get_host_removed_reads:
     shell:
         """
         samtools view -b {input} | samtools sort -n -@{threads} > {output.bam} 2> {log}
-        bedtools bamtofastq -i {output.bam} -fq {output.r1} -fq2 {output.r2} 2>> {log} 
-        """
-
-rule gzip_host_removed_reads:
-    output:
-        '{sn}/host_removal/{sn}_R1.fastq.gz',
-        '{sn}/host_removal/{sn}_R2.fastq.gz',
-    input:
-        '{sn}/host_removal/{sn}_R1.fastq',
-        '{sn}/host_removal/{sn}_R2.fastq',
-    shell:
-        """
-        gzip {input}
+        samtools fastq -1 {output.r1} -2 {output.r2} -s {output.s} {output.bam} 2>> {log} 
         """
 
 ###### Based on github.com/connor-lab/ncov2019-artic-nf/blob/master/modules/illumina.nf#L124 ######
@@ -350,8 +340,9 @@ rule get_mapping_reads:
     priority: 2
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        r1 = '{sn}/mapped_clean_reads/{sn}_R1.fastq',
-        r2 = '{sn}/mapped_clean_reads/{sn}_R2.fastq',
+        r1 = '{sn}/mapped_clean_reads/{sn}_R1.fastq.gz',
+        r2 = '{sn}/mapped_clean_reads/{sn}_R2.fastq.gz',
+        s = '{sn}/mapped_clean_reads/{sn}_singletons.fastq.gz',
         bam = '{sn}/mapped_clean_reads/{sn}_sorted_clean.bam'
     input:
         "{sn}/core/{sn}_viral_reference.mapping.primertrimmed.bam",
@@ -362,20 +353,8 @@ rule get_mapping_reads:
     shell:
         """
         samtools sort -n {input} -o {output.bam} 2> {log}
-        bedtools bamtofastq -i {output.bam} -fq {output.r1} -fq2 {output.r2} 2>> {log} 
+        samtools fastq -1 {output.r1} -2 {output.r2} -s {output.s} {output.bam} 2>> {log} 
         """
-
-rule clean_reads_gzip:
-    priority: 2
-    output:
-        '{sn}/mapped_clean_reads/{sn}_R{r}.fastq.gz'
-    input:
-        '{sn}/mapped_clean_reads/{sn}_R{r}.fastq'
-    benchmark:
-        "{sn}/benchmarks/{sn}_clean_reads_gzip_{r}.benchmark.tsv"
-    shell:
-        'gzip {input}'
-
 
 rule run_ivar_consensus:
     conda: 
