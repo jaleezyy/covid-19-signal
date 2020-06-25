@@ -4,7 +4,8 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - bwa=0.7.17=hed695b0_7
+  - bwa=0.7.17
   - samtools=1.7=2
   - bedtools=2.26.0=0
-  - breseq=0.35.0=h8b12597_0
+  - breseq=0.35.0
+  - pysam
