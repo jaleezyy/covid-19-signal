@@ -371,13 +371,28 @@ rule run_ivar_consensus:
         mpileup_depth = config['mpileup_depth'],
         ivar_min_coverage_depth = config['ivar_min_coverage_depth'],
         ivar_freq_threshold = config['ivar_freq_threshold'],
-        output_prefix = '{sn}/core/{sn}.consensus'
+        output_prefix = '{sn}/core/{sn}.consensus',
     shell:
         '(samtools mpileup -aa -A -d {params.mpileup_depth} -Q0 {input} | '
         'ivar consensus -t {params.ivar_freq_threshold} '
         '-m {params.ivar_min_coverage_depth} -n N -p {params.output_prefix}) '
         '2>{log}'
 
+rule index_viral_reference:
+    # from @jts both mpileup and ivar need a reference .fai file and will create 
+    # it when it doesn't exist. 
+    # When they're run in a pipe like mpileup | ivar there's a race condition 
+    # that causes the error
+    conda: 
+        'conda_envs/ivar.yaml'
+    output:
+        os.path.join(exec_dir, config['viral_reference_genome']) + ".fai"
+    input:
+        os.path.join(exec_dir, config['viral_reference_genome']),
+    shell:
+        'samtools faidx {input}'
+
+    
 rule run_ivar_variants:
     conda: 
         'conda_envs/ivar.yaml'
@@ -385,6 +400,7 @@ rule run_ivar_variants:
         '{sn}/core/{sn}_ivar_variants.tsv'
     input:
         reference = os.path.join(exec_dir, config['viral_reference_genome']),
+        indexed_reference = os.path.join(exec_dir, config['viral_reference_genome']) + ".fai",
         read_bam = "{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam",
         viral_reference_gff = os.path.join(exec_dir, config['viral_reference_feature_coords'])
     log:
@@ -395,7 +411,7 @@ rule run_ivar_variants:
         output_prefix = '{sn}/core/{sn}_ivar_variants',
         ivar_min_coverage_depth = config['ivar_min_coverage_depth'],
         ivar_min_freq_threshold = config['ivar_min_freq_threshold'],
-        ivar_min_variant_quality = config['ivar_min_variant_quality']
+        ivar_min_variant_quality = config['ivar_min_variant_quality'],
     shell:
         '(samtools mpileup -aa -A -d 0 --reference {input.reference} -B '
             '-Q 0 {input.read_bam} | '
