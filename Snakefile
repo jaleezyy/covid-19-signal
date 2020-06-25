@@ -217,7 +217,7 @@ rule get_host_removed_reads:
     benchmark:
         "{sn}/benchmarks/{sn}_get_host_removed_reads.benchmark.tsv"
     log:
-        '{sn}/host_removal/{sn}_bamtofastq.log'
+        '{sn}/host_removal/{sn}_samtools_fastq.log'
     shell:
         """
         samtools view -b {input} | samtools sort -n -@{threads} > {output.bam} 2> {log}
@@ -349,7 +349,7 @@ rule get_mapping_reads:
     benchmark:
         "{sn}/benchmarks/{sn}_get_mapping_reads.benchmark.tsv"
     log:
-        '{sn}/mapped_clean_reads/{sn}_bamtofastq.log'
+        '{sn}/mapped_clean_reads/{sn}_samtools_fastq.log'
     shell:
         """
         samtools sort -n {input} -o {output.bam} 2> {log}
@@ -425,7 +425,7 @@ rule run_breseq:
         labelled_output_dir = '{sn}/breseq/{sn}_output'
     shell:
         """
-        breseq --reference {params.ref} --num-processors {threads} --polymorphism-prediction --brief-html-output --output {params.outdir} {input} >{log} 2>&1
+        breseq --reference {params.ref} --num-processors {threads} --polymorphism-prediction --brief-html-output --output {params.outdir} {input} > {log} 2>&1
         mv -T {params.unlabelled_output_dir} {params.labelled_output_dir}
         """
 
