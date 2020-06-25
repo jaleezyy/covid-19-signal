@@ -1,6 +1,9 @@
 # This file contains a high-level summary of pipeline configuration and inputs.
 # It is ingested by the Snakefile, and also intended to be human-readable.
 
+# Sample table (can be created using example_sample_table.csv)
+samples: "sample_table.csv"
+
 # Folder to place all results (can be relative or absolute path)
 result_dir: "results_dir"
 
@@ -10,15 +13,17 @@ min_qual: 20
 # Minimum read length to retain after trimming, used in 'trim_galore' and 'ivar trim'
 min_len: 20
 
-# path from snakemake dir to .bed file defining amplicon primer scheme
+# Path from snakemake dir to .bed file defining amplicon primer scheme
 scheme_bed: 'resources/primer_schemes/nCoV-2019_v3_fixed.bed'
 
-# path from snakemake dir to bwa indexed human reference genome
-human_reference: 'data/GCA_000001405.15_GRCh38_no_alt_plus_hs38d1_analysis_set.fna'
+# Path from snakemake dir to bwa indexed human + viral reference genome
+composite_reference: 'data/composite_human_viral_reference.fna'
 
 # Used as bwa reference genome when removing host sequences.
 # Also used as 'ivar' reference genome in variant detection + consensus.
 # Used as -r,-g arguments to 'quast'
+# contig needed for hostremoval filtering script
+viral_reference_contig_name: 'MN908947.3'
 viral_reference_genome: 'data/MN908947.3.fasta'
 viral_reference_feature_coords: 'data/MN908947.3.gff3'
 
@@ -38,8 +43,6 @@ ivar_min_coverage_depth: 10
 ivar_min_freq_threshold: 0.25
 # iVar minimum mapQ to call variant (ivar variants: -q)
 ivar_min_variant_quality: 20
-
-samples: "sample_table.csv"
 
 # fasta of sequences to include with phylo
 phylo_include_seqs: "data/gisaid_hcov-19_2020_05_25_23.fasta"
