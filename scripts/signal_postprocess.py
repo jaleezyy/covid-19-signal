@@ -564,7 +564,7 @@ def parse_breseq_output(html_filename, allow_missing=True):
     """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
 
     if file_is_missing(html_filename, allow_missing):
-        return { 'variants': [], 'qc_varfreq': 'FAIL' }
+        return { 'variants': [], 'qc_varfreq': 'FAIL', 'qc_orf_frameshift': 'FAIL'}
 
     tables = parse_html_tables(html_filename)
 
