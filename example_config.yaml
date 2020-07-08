@@ -16,10 +16,6 @@ min_len: 20
 # Path from snakemake dir to .bed file defining amplicon primer scheme
 scheme_bed: 'resources/primer_schemes/nCoV-2019_v3_fixed.bed'
 
-# Path from snakemake dir to .bed file defining the actual amplicon locations not the primers
-# don't have so using the primer scheme for now for testing
-amplicon_loc_bed: 'resources/primer_schemes/nCoV-2019_v3_fixed.bed'
-
 # Path from snakemake dir to bwa indexed human + viral reference genome
 composite_reference: 'data/composite_human_viral_reference.fna'
 
@@ -48,5 +44,9 @@ ivar_min_freq_threshold: 0.25
 # iVar minimum mapQ to call variant (ivar variants: -q)
 ivar_min_variant_quality: 20
 
-# fasta of sequences to include with phylo
+# ONLY NEEDED IF USING NCOV-TOOLS SUMMARIES
+# Path from snakemake dir to .bed file defining the actual amplicon locations not the primers
+amplicon_loc_bed: 'resources/primer_schemes/nCoV-2019_v3.distinct_regions.bed'
+
+# fasta of sequences to include with pangolin phylogeny
 phylo_include_seqs: "data/gisaid_hcov-19_2020_05_25_23.fasta"
