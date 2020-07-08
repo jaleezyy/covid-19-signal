@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import os
 import shutil
 import subprocess
@@ -8,21 +6,27 @@ import fileinput
 def set_up():
     print("Writing config for ncov to ncov-tools/config.yaml")
 
-    data_root = os.path.abspath('ncov-tools/data')
+    exec_dir = snakemake.params['exec_dir']
+
+    data_root = os.path.abspath(os.path.join(exec_dir, 'ncov-tools', 'data'))
     if os.path.exists(data_root):
         shutil.rmtree(data_root)
     os.mkdir(data_root)
 
+    snakemake_dir = os.path.join(exec_dir, 'ncov-tools', '.snakemake')
+    if os.path.exists(snakemake_dir):
+        shutil.rmtree(snakemake_dir)
+
     config = {'data_root': f"'{data_root}'",
-              'amplicon_bed': f"'{os.path.abspath(snakemake.config['scheme_bed'])}'", #grab from signal snakemake config
-              'reference_genome': f"'{os.path.abspath(snakemake.config['viral_reference_genome'])}'", #grab from signal snakemake config
+              'amplicon_bed': f"'{snakemake.params['amplicon_bed']}'", #grab from signal snakemake config
+              'reference_genome': f"'{snakemake.params['viral_reference_genome']}'", #grab from signal snakemake config
               'bam_pattern': "'{data_root}/{sample}.bam'", # symlink files following this
               'consensus_pattern': "'{data_root}/{sample}.consensus.fasta'", # symlink files following this
-              'tree_include_consensus': f"'{os.path.abspath(snakemake.config['phylo_include_seqs'])}'",
+              'tree_include_consensus': f"'{snakemake.params['phylo_include_seqs']}'",
               #'metadata': snakemake.config['samples'], # causes error get example
               'assign_lineages': 'true'}
 
-    with open('ncov-tools/config.yaml', 'w') as fh:
+    with open(os.path.join(exec_dir, 'ncov-tools', 'config.yaml'), 'w') as fh:
         for key, value in config.items():
             fh.write(f"{key}: {value}\n")
 
@@ -46,11 +50,10 @@ def set_up():
             else:
                 print(line, end='\n')
 
-    os.chdir('ncov-tools')
+    os.chdir(os.path.join(exec_dir, 'ncov-tools'))
 
 def run_all_qc_sequencing():
-    subprocess.run(f"snakemake -s qc/Snakefile --cores {snakemake.threads} all_qc_sequencing",
-                    shell=True)
+    os.system(f"snakemake -s qc/Snakefile --cores {snakemake.threads} all_qc_sequencing")
 
 def run_all_qc_analysis():
     os.system(f"snakemake -s qc/Snakefile --cores {snakemake.threads} all_qc_analysis")

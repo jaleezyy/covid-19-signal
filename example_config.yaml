@@ -16,6 +16,10 @@ min_len: 20
 # Path from snakemake dir to .bed file defining amplicon primer scheme
 scheme_bed: 'resources/primer_schemes/nCoV-2019_v3_fixed.bed'
 
+# Path from snakemake dir to .bed file defining the actual amplicon locations not the primers
+# don't have so using the primer scheme for now for testing
+amplicon_loc_bed: 'resources/primer_schemes/nCoV-2019_v3_fixed.bed'
+
 # Path from snakemake dir to bwa indexed human + viral reference genome
 composite_reference: 'data/composite_human_viral_reference.fna'
 
