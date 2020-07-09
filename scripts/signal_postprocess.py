@@ -471,7 +471,7 @@ def parse_coverage(depth_filename, allow_missing=True):
     for line in open(depth_filename):
         t = line.split('\t')
         assert len(t) == 3
-        coverage.append(int(t[2]))
+        coverage.append(int(float(t[2].rsplit("\n",1)[0])))
 
     coverage = np.array(coverage)
     bin_assignments = np.searchsorted(np.array(delims), coverage, side='left')
