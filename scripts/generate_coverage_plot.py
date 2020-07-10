@@ -13,7 +13,7 @@ def write_coverage_plot(depth_file, coverage_plot_name):
         for line in open(depth_file):
             t = line.split('\t')
             assert len(t) == 3
-            coverage.append(int(float(t[2].rsplit("\n",1)[0])))
+            coverage.append(int(float(t[2].strip("\n"))))
 
         coverage = np.array(coverage)
         assert np.all(coverage >= 0)
