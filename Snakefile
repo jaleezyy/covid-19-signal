@@ -130,6 +130,7 @@ rule ncov_tools:
         'ncov-tools/environment.yml'
     params:
         exec_dir = exec_dir,
+        result_dir = os.path.basename(config['result_dir']),
         amplicon_bed = os.path.join(exec_dir, config['amplicon_loc_bed']),
         viral_reference_genome = os.path.join(exec_dir, config['viral_reference_genome']),
         phylo_include_seqs = os.path.join(exec_dir, config['phylo_include_seqs'])
