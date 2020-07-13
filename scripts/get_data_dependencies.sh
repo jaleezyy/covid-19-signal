@@ -38,7 +38,7 @@ curl -s "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nucleotide
 curl -s "https://www.ncbi.nlm.nih.gov/sviewer/viewer.cgi?db=nuccore&report=gff3&id=${accession}" > $database_dir/$accession.gff3
 curl -s "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nucleotide&id=${accession}&rettype=fasta&retmode=txt" > $database_dir/$accession.fasta
 
-# install and activate env for lmat/kraken to build their databases
+# install and activate env for kraken/bwa to build their databases/index
 CONDA_BASE=$($CONDA_EXE info --base)
 source $CONDA_BASE/etc/profile.d/conda.sh
 conda create -n data_dependencies -c conda-forge -c bioconda -y kraken2=2.0.8 bwa
