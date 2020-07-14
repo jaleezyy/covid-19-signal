@@ -140,3 +140,8 @@ For a step-by-step walkthrough of the pipeline, see [pipeline/README.md](PIPELIN
 A diagram of the workflow is shown below.
 
 ![Workflow Version 7](./resources/Workflow_Version_7.png)
+
+## Possible Artefacts
+
+- @jts: Host derived poly-A reads that sneak through the composite host removal stage can align to the viral poly-A tail giving it enough coverage to be called in the consensus.  Having this poly-A tail in the consensus can mess up the later analyses that require MSA.  If a sample is causing issues, check for host-derived poly-A reads. 
+
