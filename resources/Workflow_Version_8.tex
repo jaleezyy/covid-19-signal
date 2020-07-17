@@ -36,7 +36,7 @@
     \node (raw_fastqc) [process, right of=mergedfile, xshift=3cm] {2. Sequencing\\Quality Control};
     \node (raw_fastqc_report) [output, right of=raw_fastqc, xshift=4cm] {Sequencing QC Report\\sample1/combined\_raw\_fastq/sample1\_R1.fastqc.html\\sample1/combined\_raw\_fastq/sample1\_R2.fastqc.html};
     
-    \node (human) [process, below of=mergedfile] {3. Human Host Removal}; 
+    \node (human) [process, below of=mergedfile] {3. Human Host Removal\\(Competitive Composite Mapping)}; 
     \node (humanfile) [output, below of=human] {sample1/host\_removal/sample1\_R1.fastq.gz\\sample1/host\_removal/sample1\_R2.fastq.gz};
     \node (upload) [process, right of=humanfile, xshift=3cm] {Upload to SRA};
     
@@ -88,7 +88,7 @@
     \draw[->] (mergedfile) -- (raw_fastqc);
     \draw[->] (raw_fastqc) -- node[text width=2cm]{fastqc}(raw_fastqc_report);
     \draw[->] (mergedfile) -- (human);
-    \draw[->] (human) -- node[text width=4cm]{BWA-MEM vs GRCh38 \\ Removal if MAPQ\(\ge\)30}(humanfile);
+    \draw[->] (human) -- node[text width=4cm]{BWA-MEM:\\GRCh38-no-alt + MN908947.3}(humanfile);
     \draw[->] (humanfile) -- (upload);
     
     \draw[->] (humanfile) -- (trim);
