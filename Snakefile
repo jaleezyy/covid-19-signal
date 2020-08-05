@@ -32,12 +32,12 @@ if '--configfile' in sys.argv:
     if not os.path.exists(config_filename):
         print("Invalid filepath for configfile. Looking for default config.yaml")
         configfile: "config.yaml"
-        config_filename = "config.yaml"
+        config_filename = os.path.join(os.getcwd(), "config.yaml")
     else:
         configfile: config_filename
 else:
     configfile: "config.yaml"
-    config_filename = "config.yaml"
+    config_filename = os.path.join(os.getcwd(), "config.yaml")
 
 validate(config, 'resources/config.schema.yaml')
 
