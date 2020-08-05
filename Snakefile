@@ -25,9 +25,9 @@ import os, sys
 # It is ingested by the Snakefile, and also intended to be human-readable.
 # For an example config file, see pipeline/example_config.yaml in the covid-19-sequencing repo.
 
-
+# read and validate config.yaml
 if '--configfile' in sys.argv:
-    config_filename = sys.argv[sys.argv.index('--configfile')+1]
+    config_filename = os.path.abspath(sys.argv[sys.argv.index('--configfile')+1])
     # arguments don't line up
     if not os.path.exists(config_filename):
         print("Invalid filepath for configfile. Looking for default config.yaml")
@@ -39,7 +39,6 @@ else:
     configfile: "config.yaml"
     config_filename = "config.yaml"
 
-# read and validate config.yaml
 validate(config, 'resources/config.schema.yaml')
 
 # read and validate sample table specified in config.schema.yaml
