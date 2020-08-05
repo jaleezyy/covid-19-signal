@@ -19,14 +19,27 @@
 
 from snakemake.utils import validate
 import pandas as pd
-import os
+import os, sys
 
 # The config file contains a high-level summary of pipeline configuration and inputs.
 # It is ingested by the Snakefile, and also intended to be human-readable.
 # For an example config file, see pipeline/example_config.yaml in the covid-19-sequencing repo.
 
+
+if '--configfile' in sys.argv:
+    config_filename = sys.argv[sys.argv.index('--configfile')+1]
+    # arguments don't line up
+    if not os.path.exists(config_filename):
+        print("Invalid filepath for configfile. Looking for default config.yaml")
+        configfile: "config.yaml"
+        config_filename = "config.yaml"
+    else:
+        configfile: config_filename
+else:
+    configfile: "config.yaml"
+    config_filename = "config.yaml"
+
 # read and validate config.yaml
-configfile: "config.yaml"
 validate(config, 'resources/config.schema.yaml')
 
 # read and validate sample table specified in config.schema.yaml
@@ -93,7 +106,7 @@ rule quast:
 
 rule config_sample_log:
     input: 
-        "config.yaml", 
+        config_filename,
         config['samples']
 
 
@@ -143,10 +156,10 @@ rule ncov_tools:
 ################################# Copy config and sample table to output folder ##################
 rule copy_config_sample_log:
     output: 
-        config="config.yaml", 
+        config = os.path.basename(config_filename),
         sample_table=config["samples"]
     input:
-        origin_config = os.path.join(exec_dir, 'config.yaml'),
+        origin_config = os.path.join(exec_dir, os.path.relpath(config_filename, exec_dir)),
         origin_sample_table = os.path.join(exec_dir, config['samples'])
     shell:
         """
@@ -441,7 +454,7 @@ rule run_breseq:
         "{sn}/benchmarks/{sn}_run_breseq.benchmark.tsv"
     params:
         ref = os.path.join(exec_dir, config['breseq_reference']),
-    	outdir = '{sn}/breseq',
+        outdir = '{sn}/breseq',
         unlabelled_output_dir = '{sn}/breseq/output',
         labelled_output_dir = '{sn}/breseq/{sn}_output'
     shell:
@@ -492,22 +505,22 @@ rule run_kraken2:
         "{sn}/benchmarks/{sn}_run_kraken2.benchmark.tsv"
     params:
         outdir = '{sn}/kraken2',
-	    db = os.path.join(exec_dir, config['kraken2_db']),
+        db = os.path.join(exec_dir, config['kraken2_db']),
         labelled_output = '{sn}_kraken2.out',
         labelled_report = '{sn}_kraken2.report',
         labelled_unclassified_reads = '{sn}_kraken2_unclassified_reads#',
         labelled_classified_reads = '{sn}_kraken2_classified_reads#'
     shell:
         'cd {params.outdir} '
-	    '&& kraken2'
-	        ' --db {params.db}'
-	        ' --threads {threads}'
-	        ' --quick --unclassified-out {params.labelled_unclassified_reads}'
+        '&& kraken2'
+            ' --db {params.db}'
+            ' --threads {threads}'
+            ' --quick --unclassified-out {params.labelled_unclassified_reads}'
             ' --classified-out {params.labelled_classified_reads}'
-	        ' --output {params.labelled_output}'
-	        ' --paired --gzip-compressed'
-	        ' ../../{input[0]} ../../{input[1]}'
-	        ' --report {params.labelled_report}'
+            ' --output {params.labelled_output}'
+            ' --paired --gzip-compressed'
+            ' ../../{input[0]} ../../{input[1]}'
+            ' --report {params.labelled_report}'
             ' 2>../../{log}'
 
 
