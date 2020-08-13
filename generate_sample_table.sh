@@ -2,6 +2,7 @@
 
 set -e # exit if pipeline returns non-zero status
 set -o pipefail # return value of last command to exit with non-zero status
+shopt -s extglob
 
 database_dir=0
 name="sample_table.csv"
@@ -48,7 +49,7 @@ else
 	fi
 fi
 
-for file in $database_dir/*.{fastq,fq}*; do
+for file in $database_dir/*.f?(ast)q*; do
 	sample=$(basename $file | cut -d_ -f 1)
 	r1=$(ls $database_dir/$(basename $file | cut -d_ -f1)*R1* | grep /${sample}_)
 	r2=$(ls $database_dir/$(basename $file | cut -d_ -f1)*R2* | grep /${sample}_)
