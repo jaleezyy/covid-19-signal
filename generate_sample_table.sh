@@ -48,7 +48,7 @@ else
 	fi
 fi
 
-for file in $database_dir/*.fastq*; do
+for file in $database_dir/*.{fastq,fq}*; do
 	sample=$(basename $file | cut -d_ -f 1)
 	r1=$(ls $database_dir/$(basename $file | cut -d_ -f1)*R1* | grep /${sample}_)
 	r2=$(ls $database_dir/$(basename $file | cut -d_ -f1)*R2* | grep /${sample}_)
