@@ -5,8 +5,8 @@ channels:
   - defaults
 dependencies:
   - bwa=0.7.17
-  - samtools=1.7=2
-  - bedtools=2.26.0=0
+  - samtools=1.7
+  - bedtools=2.26.0
   - breseq=0.35.0
   - pysam
   - python=3.6.5

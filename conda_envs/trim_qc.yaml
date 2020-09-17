@@ -4,6 +4,6 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - fastqc=0.11.9=0
-  - trim-galore=0.6.5=0
-  - kraken2=2.0.9beta=pl526hc9558a2_0
+  - fastqc=0.11.9
+  - trim-galore=0.6.5
+  - kraken2=2.0.9beta

@@ -3,4 +3,4 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - quast=5.0.2=py36pl526ha92aebf_0
+  - quast=5.0.2
