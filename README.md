@@ -39,7 +39,7 @@ Additional software dependencies are managed directly by `snakemake` using conda
   - samtools 1.7/1.9 ([docs](http://www.htslib.org/))
   - bedtools 2.26.0 ([docs](https://bedtools.readthedocs.io/en/latest/))
   - breseq 0.35.0 ([docs](https://barricklab.org/twiki/bin/view/Lab/ToolsBacterialGenomeResequencing))
-  - ivar 1.2 ([docs](https://github.com/andersen-lab/ivar))
+  - ivar 1.2.3 ([docs](https://github.com/andersen-lab/ivar))
   - ncov-tools postprocessing scripts require additional dependencies (see [file](conda_envs/ncov-tools.yaml)).
 
 2. Download necessary database files
