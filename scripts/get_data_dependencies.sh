@@ -4,6 +4,11 @@ set -e # exit if pipeline returns non-zero status
 set -o pipefail # return value of last command to exit with non-zero status
 source ~/.bashrc
 
+if [ -z "$CONDA_EXEC" ] ; then
+  echo "This script requires conda but it looks like you don't have conda activated" >&2
+  exit 1
+fi
+
 database_dir=0
 accession="MN908947.3"
 
