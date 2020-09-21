@@ -68,7 +68,8 @@ rule sort:
     input: expand('{sn}/combined_raw_fastq/{sn}_R{r}_fastqc.html', sn=sample_names, r=[1,2])
 
 rule remove_adapters:
-    input: expand('{sn}/adapter_trimmed/{sn}_R{r}_val_{r}.fq.gz', sn=sample_names, r=[1,2])
+    input: expand('{sn}/adapter_trimmed/{sn}_R{r}_val_{r}.fq.gz', sn=sample_names, r=[1,2]),
+           expand('{sn}/adapter_trimmed/{sn}_R{r}_val_{r}_posttrim_filter.fq.gz', sn=sample_names, r=[1,2]),
 
 rule host_removed_raw_reads:
     input: expand('{sn}/host_removal/{sn}_R{r}.fastq.gz', sn=sample_names, r=[1,2]),
@@ -269,6 +270,24 @@ rule run_trimgalore:
         ' -o {params.output_prefix} --cores {threads} --fastqc '
         '--paired {input.raw_r1} {input.raw_r2} 2> {log}'
 
+rule run_filtering_of_residual_adapters:
+    threads: 2
+    priority: 2
+    conda: 
+        'conda_envs/snp_mapping.yaml'
+    input:
+        r1 = '{sn}/adapter_trimmed/{sn}_R1_val_1.fq.gz',
+        r2 = '{sn}/adapter_trimmed/{sn}_R2_val_2.fq.gz'
+    output:
+        '{sn}/adapter_trimmed/{sn}_R1_val_1_posttrim_filter.fq.gz',
+        '{sn}/adapter_trimmed/{sn}_R2_val_2_posttrim_filter.fq.gz'
+    params:
+        script_path = os.path.join(exec_dir, "scripts", "filter_residual_adapters.py")
+    shell:
+        """
+        python {params.script_path} --input_R1 {input.r1} --input_R2 {input.r2}
+        """
+       
 rule viral_reference_bwa_build:
     conda: 
         'conda_envs/snp_mapping.yaml'
@@ -293,8 +312,8 @@ rule viral_reference_bwa_map:
     output:
         '{sn}/core/{sn}_viral_reference.bam'
     input:
-        r1  = '{sn}/adapter_trimmed/{sn}_R1_val_1.fq.gz',
-        r2  = '{sn}/adapter_trimmed/{sn}_R2_val_2.fq.gz',
+        r1 = '{sn}/adapter_trimmed/{sn}_R1_val_1_posttrim_filter.fq.gz',
+        r2 = '{sn}/adapter_trimmed/{sn}_R2_val_2_posttrim_filter.fq.gz',
         ref = '{sn}/core/viral_reference.bwt'
     benchmark:
         "{sn}/benchmarks/{sn}_viral_reference_bwa_map.benchmark.tsv"
@@ -497,7 +516,8 @@ rule run_kraken2:
     output:
         '{sn}/kraken2/{sn}_kraken2.out'
     input:
-        expand('{{sn}}/adapter_trimmed/{{sn}}_R{r}_val_{r}.fq.gz', r=[1,2])
+        r1 = '{sn}/adapter_trimmed/{sn}_R1_val_1_posttrim_filter.fq.gz',
+        r2 = '{sn}/adapter_trimmed/{sn}_R2_val_2_posttrim_filter.fq.gz'
     log:
         '{sn}/kraken2/{sn}_kraken2.log'
     benchmark:
@@ -514,11 +534,11 @@ rule run_kraken2:
         '&& kraken2'
             ' --db {params.db}'
             ' --threads {threads}'
-            ' --quick --unclassified-out {params.labelled_unclassified_reads}'
-            ' --classified-out {params.labelled_classified_reads}'
+            ' --quick --unclassified-out "{params.labelled_unclassified_reads}"'
+            ' --classified-out "{params.labelled_classified_reads}"'
             ' --output {params.labelled_output}'
             ' --paired --gzip-compressed'
-            ' ../../{input[0]} ../../{input[1]}'
+            ' ../../{input.r1} ../../{input.r2}'
             ' --report {params.labelled_report}'
             ' 2>../../{log}'
 
