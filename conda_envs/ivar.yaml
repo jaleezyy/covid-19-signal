@@ -5,4 +5,4 @@ channels:
   - defaults
 dependencies:
   - ivar=1.2.3
-  - samtools=1.9
+  - samtools=1.19
