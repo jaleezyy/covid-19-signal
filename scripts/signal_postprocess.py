@@ -375,11 +375,17 @@ def parse_quast_report(report_filename, allow_missing=True):
     # need for summaries, fortunately, it is all encoded in easily extractable
     # json
     q = QUASTParser()
-    with open(report_filename) as fh:
-        report = fh.read()
-    q.feed(report)
-    quast_report = q.convert_data_to_json()
-
+    try:
+        with open(report_filename) as fh:
+            report = fh.read()
+        q.feed(report)
+        quast_report = q.convert_data_to_json()
+    except FileNotFoundError:
+        print("Warning: file %s does not exist" %(report_filename))
+        report = None
+        quast_report ={'Total length (>= 0 bp)': 0, "# N's per 100 kbp": 0}
+        
+    
     ret = {}
     ret['genome_length'] = float(quast_report['Total length (>= 0 bp)'])
     ret['Ns_per_100_kbp'] = float(quast_report["# N's per 100 kbp"])
