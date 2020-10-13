@@ -354,7 +354,12 @@ def parse_kraken2_report(report_filename, allow_missing=True):
 
     t = TextFileParser()
     t.add_field('sars_cov2_percentage', r'\s*([\d\.]*)\s+.*Severe acute respiratory syndrome coronavirus 2', dtype=float)
-    return t.parse_file(report_filename, allow_missing)
+    try:
+        t_dict = t.parse_file(report_filename, allow_missing)
+    except RuntimeError:
+        t_dict = {'sars_cov2_percentage': 0}
+    return t_dict
+    #return t.parse_file(report_filename, allow_missing)
 
 
 def parse_hostremove_hisat2_log(log_filename, allow_missing=True):
