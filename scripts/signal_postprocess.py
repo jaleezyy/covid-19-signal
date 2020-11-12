@@ -389,8 +389,8 @@ def parse_quast_report(report_filename, allow_missing=True):
         print("Warning: file %s does not exist" %(report_filename))
         report = None
         quast_report ={'Total length (>= 0 bp)': 0, "# N's per 100 kbp": 0}
-        
-    
+
+
     ret = {}
     ret['genome_length'] = float(quast_report['Total length (>= 0 bp)'])
     ret['Ns_per_100_kbp'] = float(quast_report["# N's per 100 kbp"])
@@ -1001,7 +1001,8 @@ class SampleHTMLWriter(HTMLWriterBase):
         print(f'<td style="vertical-align: top"><img src="coverage/{s.name}_coverage_plot.png"></td>', file=self.f)
 
         # Breseq iframe
-        print(f'<iframe src="breseq/{s.name}_output/index.html" width="100%" height="800px" style="border: 0px"></iframe>', file=self.f)
+        if os.path.exists("breseq/{s.name}_output/index.html"):
+            print(f'<iframe src="breseq/{s.name}_output/index.html" width="100%" height="800px" style="border: 0px"></iframe>', file=self.f)
 
 
 class SummaryHTMLWriter(HTMLWriterBase):

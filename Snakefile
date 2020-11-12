@@ -115,21 +115,37 @@ rule config_sample_log:
         config['samples']
 
 
-rule all:
-    input:
-        rules.raw_read_data_symlinks.input,
-        rules.host_removed_raw_reads.input,
-        rules.remove_adapters.input,
-        rules.fastqc.input,
-        rules.clean_reads.input,
-        rules.consensus.input,
-        rules.ivar_variants.input,
-        rules.breseq.input,
-        rules.coverage.input,
-        rules.coverage_plot.input,
-        rules.kraken2.input,
-        rules.quast.input,
-        rules.config_sample_log.input
+if config['run_breseq']:
+    rule all:
+        input:
+            rules.raw_read_data_symlinks.input,
+            rules.host_removed_raw_reads.input,
+            rules.remove_adapters.input,
+            rules.fastqc.input,
+            rules.clean_reads.input,
+            rules.consensus.input,
+            rules.ivar_variants.input,
+            rules.coverage.input,
+            rules.coverage_plot.input,
+            rules.kraken2.input,
+            rules.quast.input,
+            rules.config_sample_log.input,
+            rules.breseq.input
+else:
+    rule all:
+        input:
+            rules.raw_read_data_symlinks.input,
+            rules.host_removed_raw_reads.input,
+            rules.remove_adapters.input,
+            rules.fastqc.input,
+            rules.clean_reads.input,
+            rules.consensus.input,
+            rules.ivar_variants.input,
+            rules.coverage.input,
+            rules.coverage_plot.input,
+            rules.kraken2.input,
+            rules.quast.input,
+            rules.config_sample_log.input,
 
 
 rule postprocess:
