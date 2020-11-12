@@ -49,23 +49,27 @@ validate(samples, 'resources/sample.schema.yaml')
 exec_dir = os.getcwd()
 workdir: os.path.abspath(config['result_dir'])
 
+# throw error if duplicate sample names in table
+if samples['sample'].duplicated().any():
+    print("Duplicate sample names in sample table, please fix and restart")
+    exit(1)
+
 # get sample names 
 sample_names = sorted(samples['sample'].drop_duplicates().values)
 
 def get_input_fastq_files(sample_name, r):
     sample_fastqs = samples[samples['sample'] == sample_name]
     if r == '1':
-        relpaths = sample_fastqs['r1_path'].values
+        relpath = sample_fastqs['r1_path'].values[0]
     elif r == '2':
-        relpaths = sample_fastqs['r2_path'].values
+        relpath = sample_fastqs['r2_path'].values[0]
 
-    return [ os.path.abspath(os.path.join(exec_dir, r)) for r in relpaths ]
+    return os.path.abspath(os.path.join(exec_dir, relpath))
 
 
 ######################################   High-level targets   ######################################
-
-rule sort:
-    input: expand('{sn}/combined_raw_fastq/{sn}_R{r}_fastqc.html', sn=sample_names, r=[1,2])
+rule raw_read_data_symlinks:
+    input: expand('{sn}/raw_fastq/{sn}_R{r}.fastq.gz', sn=sample_names, r=[1,2])
 
 rule remove_adapters:
     input: expand('{sn}/adapter_trimmed/{sn}_R{r}_val_{r}.fq.gz', sn=sample_names, r=[1,2]),
@@ -75,7 +79,8 @@ rule host_removed_raw_reads:
     input: expand('{sn}/host_removal/{sn}_R{r}.fastq.gz', sn=sample_names, r=[1,2]),
 
 rule fastqc:
-    input: expand('{sn}/adapter_trimmed/{sn}_R{r}_val_{r}_fastqc.html', sn=sample_names, r=[1,2]),
+    input: expand('{sn}/raw_fastq/{sn}_R{r}_fastqc.html', sn=sample_names, r=[1,2]),
+           expand('{sn}/adapter_trimmed/{sn}_R{r}_val_{r}_fastqc.html', sn=sample_names, r=[1,2]),
            expand('{sn}/mapped_clean_reads/{sn}_R{r}_fastqc.html', sn=sample_names, r=[1,2])
 
 rule clean_reads:
@@ -112,7 +117,7 @@ rule config_sample_log:
 
 rule all:
     input:
-        rules.sort.input,
+        rules.raw_read_data_symlinks.input,
         rules.host_removed_raw_reads.input,
         rules.remove_adapters.input,
         rules.fastqc.input,
@@ -168,32 +173,30 @@ rule copy_config_sample_log:
         """
 
 #################################   Based on scripts/assemble.sh   #################################
-rule concat_and_sort:
+rule link_raw_data:
     priority: 4
     output:
-        '{sn}/combined_raw_fastq/{sn}_R{r}.fastq.gz'
+        '{sn}/raw_fastq/{sn}_R{r}.fastq.gz'
     input:
         lambda wildcards: get_input_fastq_files(wildcards.sn, wildcards.r)
-    benchmark:
-        "{sn}/benchmarks/{sn}_concat_and_sort_R{r}.benchmark.tsv"
     shell:
-        'zcat -f {input} | paste - - - - | sort -k1,1 -t " " | tr "\\t" "\\n" | gzip > {output}'
+        'ln -s {input} {output}'
 
 rule run_raw_fastqc:
     conda: 
         'conda_envs/trim_qc.yaml'
     output:
-        r1_fastqc = '{sn}/combined_raw_fastq/{sn}_R1_fastqc.html',
-        r2_fastqc = '{sn}/combined_raw_fastq/{sn}_R2_fastqc.html'
+        r1_fastqc = '{sn}/raw_fastq/{sn}_R1_fastqc.html',
+        r2_fastqc = '{sn}/raw_fastq/{sn}_R2_fastqc.html'
     input:
-        r1 = '{sn}/combined_raw_fastq/{sn}_R1.fastq.gz',
-        r2 = '{sn}/combined_raw_fastq/{sn}_R2.fastq.gz'
+        r1 = '{sn}/raw_fastq/{sn}_R1.fastq.gz',
+        r2 = '{sn}/raw_fastq/{sn}_R2.fastq.gz'
     benchmark:
         '{sn}/benchmarks/{sn}_raw_fastqc.benchmark.tsv'
     params:
-        output_prefix = '{sn}/combined_raw_fastq'
+        output_prefix = '{sn}/raw_fastq'
     log:
-        '{sn}/combined_raw_fastq/{sn}_fastqc.log'
+        '{sn}/raw_fastq/{sn}_fastqc.log'
     shell:
         """
         fastqc -o {params.output_prefix} {input} 2> {log}
@@ -207,8 +210,8 @@ rule raw_reads_composite_reference_bwa_map:
     output:
         '{sn}/host_removal/{sn}_viral_and_nonmapping_reads.bam',
     input:
-        raw_r1 = '{sn}/combined_raw_fastq/{sn}_R1.fastq.gz',
-        raw_r2 = '{sn}/combined_raw_fastq/{sn}_R2.fastq.gz'
+        raw_r1 = '{sn}/raw_fastq/{sn}_R1.fastq.gz',
+        raw_r2 = '{sn}/raw_fastq/{sn}_R2.fastq.gz'
     benchmark:
         "{sn}/benchmarks/{sn}_composite_reference_bwa_map.benchmark.tsv"
     log:
