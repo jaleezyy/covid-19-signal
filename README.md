@@ -1,13 +1,24 @@
 # SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL) 
 
-This snakemake pipeline is compatible with the [illumina artic nf pipeline](https://github.com/connor-lab/ncov2019-artic-nf).
-It performs the same consensus and variant calling procedure using `ivar`.
-In addition it adds screening with Kraken2/LMAT, enhanced contamination removal, and additional breseq mutation detection.
-By default the SARS-CoV2 reference genome: MN908947.3 is used throughout the analysis. This can be changed in the data dependencies download script (`script/get_data_dependencies.sh`) and updating the `config.yaml` accordingly.  Similarly, the default sequencing primer and trimming settings can easily be added and adjusted in the `config.yaml`.
-See below for full details.
+This is a complete standardized workflow the assembly and subsequent analysis for short-read viral sequencing.
+This core workflow is compatible with the [illumina artic nf pipeline](https://github.com/connor-lab/ncov2019-artic-nf) and produces the same consensus and variants using `ivar` (1.3) [Grubaugh, 2019](https://doi.org/10.1186/s13059-018-1618-7).
+However, it performs far more extensive quality control and visualisation of results including an interactive HTML summary of run results.
 
-Future enhancements are intended to aid/automate metadata management in accordance with PHA4GE guidelines, and manage upload to GISAID and INDSC compatible BioSamples.
+Briefly, raw reads undergo qc using `fastqc` [Andrews](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) before removal of host-related reads by competitive mapping against a composite host and human reference with `BWA-MEM` (0.7.5) [Li, 2013](https://arxiv.org/abs/1303.3997), `samtools` (1.9) [Li, 2009](https://academic.oup.com/bioinformatics/article/25/16/2078/204688), and a [custom script](scripts/filter_non_human_reads.py).
+This is to ensure raw as data as possible can be deposited in central databases.
+After this, reads undergo adapter trimming and further qc with `trim-galore` (0.6.5) [Martin](https://doi.org/10.14806/ej.17.1.200).
+Residual truseq sequencing adapters are then removed through another [custom script](scripts/filter_residual_adapters.py).
+Reads are then mapped to the viral reference with `BWA-MEM`, and amplicon primer sequences trimmed using `ivar` (1.3) [Grubaugh, 2019](https://doi.org/10.1186/s13059-018-1618-7).
+Fastqc is then used to perform a QC check on the reads that map to the viral reference.
+After this, `ivar` is used to generate a consensus genome and variants are called using both `ivar variants` and `breseq` (0.35) [Deatherage, 2014](https://link.springer.com/protocol/10.1007/978-1-4939-0554-6_12).
+Coverage statistics are calculated using bedtools before a final QC via `quast` and a `kraken2` taxonomic classification of mapped reads.
+Finally, data from all samples are collated via a [post-processing script](scripts/signal_postprocess.py) into an interactive summary for exploration of results and quality control.
+Optionally, users can run [ncov-tools](https://github.com/jts/ncov-tools/) to generate additional quality control and summary plots and statistics.
 
+If you use this software please [cite](https://doi.org/10.3390/v12080895):
+
+    Nasir, Jalees A., Robert A. Kozak, Patryk Aftanas, Amogelang R. Raphenya, Kendrick M. Smith, Finlay Maguire, Hassaan Maan et al. "A Comparison of Whole Genome Sequencing of SARS-CoV-2 Using Amplicon-Based Sequencing, Random Hexamers, and Bait Capture." Viruses 12, no. 8 (2020): 895.
+    https://doi.org/10.3390/v12080895
 
 ## Setup/Execution
 
@@ -20,7 +31,7 @@ Future enhancements are intended to aid/automate metadata management in accordan
         wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
         bash Miniconda3-latest-Linux-x86_64.sh # follow instructions
         source $(conda info --base)/etc/profile.d/conda.sh
-        conda create -n signal -c conda-forge -c bioconda -c defaults snakemake=5.11 pandas
+        conda create -n signal -c conda-forge -c bioconda -c defaults snakemake pandas
         conda activate signal 
 
 There are some issues with `conda` failing to install newer versions of snakemake
@@ -39,8 +50,8 @@ Additional software dependencies are managed directly by `snakemake` using conda
   - samtools 1.7/1.9 ([docs](http://www.htslib.org/))
   - bedtools 2.26.0 ([docs](https://bedtools.readthedocs.io/en/latest/))
   - breseq 0.35.0 ([docs](https://barricklab.org/twiki/bin/view/Lab/ToolsBacterialGenomeResequencing))
-  - ivar 1.2.3 ([docs](https://github.com/andersen-lab/ivar))
-  - ncov-tools postprocessing scripts require additional dependencies (see [file](conda_envs/ncov-tools.yaml)).
+  - ivar 1.3 ([docs](https://github.com/andersen-lab/ivar))
+  - ncov-tools postprocessing scripts require additional dependencies (see [file](ncov-tools/workflow/envs/environment.yml)).
 
 2. Download necessary database files
 
@@ -51,7 +62,7 @@ The pipeline requires:
  - SARS-CoV2 reference gbk 
  - SARS-CoV2 reference gff3
  - kraken2 viral database
- - Human GRCh38 BWA indexed reference
+ - Human GRCh38 reference fasta (for composite human-viral BWA index)
 
         bash scripts/get_data_dependencies.sh -d data -a MN908947.3
 
@@ -132,6 +143,7 @@ Then execute the pipeline:
   - `postprocessing` and `ncov_tools` as described above generate many summaries including interactive html reports.`
 
   - Generate summaries of BreSeq among many samples, [see](resources/dev_scripts/summaries/README.md)
+
 
 ## Pipeline details:
 
