@@ -161,16 +161,19 @@ rule postprocess:
 rule ncov_tools:
     # can't use the one in the ncov-tool dir as it has to include snakemake
     conda:
-        'ncov-tools/environment.yml'
+        'ncov-tools/workflow/envs/environment.yml'
     params:
         exec_dir = exec_dir,
         result_dir = os.path.basename(config['result_dir']),
         amplicon_bed = os.path.join(exec_dir, config['amplicon_loc_bed']),
+        primer_bed = os.path.join(exec_dir, config['scheme_bed']),
         viral_reference_genome = os.path.join(exec_dir, config['viral_reference_genome']),
         phylo_include_seqs = os.path.join(exec_dir, config['phylo_include_seqs'])
     input:
         consensus = expand('{sn}/core/{sn}.consensus.fa', sn=sample_names),
-        bams = expand("{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam", sn=sample_names)
+        primertrimmed_bams = expand("{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam", sn=sample_names),
+        bams = expand("{sn}/core/{sn}_viral_reference.mapping.bam", sn=sample_names),
+        variants = expand("{sn}/core/{sn}_ivar_variants.tsv", sn=sample_names)
     script: "scripts/ncov-tools.py"
         
         
