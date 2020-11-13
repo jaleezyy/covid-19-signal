@@ -4,5 +4,5 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - ivar=1.2.3
+  - ivar=1.3
   - samtools=1.10

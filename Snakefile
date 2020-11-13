@@ -329,6 +329,8 @@ rule viral_reference_bwa_map:
         '{input.r1} {input.r2} | '
         'samtools view -bS | samtools sort -@{threads} -o {output}) 2> {log}'
 
+
+
 rule run_bed_primer_trim:
     conda: 
         'conda_envs/ivar.yaml'
@@ -347,14 +349,17 @@ rule run_bed_primer_trim:
         ivar_output_prefix = "{sn}/core/{sn}_viral_reference.mapping.primertrimmed",
         min_len = config['min_len'],
         min_qual = config['min_qual'],
+        primer_pairs = config['primer_pairs_tsv']
     shell:
         'samtools view -F4 -o {output.mapped_bam} {input}; '
         'samtools index {output.mapped_bam}; '
         'ivar trim -e -i {output.mapped_bam} -b {params.scheme_bed} '
         '-m {params.min_len} -q {params.min_qual} '
+        '{params.primer_pairs} '
         '-p {params.ivar_output_prefix} 2> {log}; '
         'samtools sort -o {output.sorted_trimmed_mapped_bam} '
         '{output.trimmed_mapped_bam}'
+
 
 rule run_fastqc_on_mapped_reads:
     conda: 'conda_envs/trim_qc.yaml'
