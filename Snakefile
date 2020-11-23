@@ -49,23 +49,27 @@ validate(samples, 'resources/sample.schema.yaml')
 exec_dir = os.getcwd()
 workdir: os.path.abspath(config['result_dir'])
 
+# throw error if duplicate sample names in table
+if samples['sample'].duplicated().any():
+    print("Duplicate sample names in sample table, please fix and restart")
+    exit(1)
+
 # get sample names 
 sample_names = sorted(samples['sample'].drop_duplicates().values)
 
 def get_input_fastq_files(sample_name, r):
     sample_fastqs = samples[samples['sample'] == sample_name]
     if r == '1':
-        relpaths = sample_fastqs['r1_path'].values
+        relpath = sample_fastqs['r1_path'].values[0]
     elif r == '2':
-        relpaths = sample_fastqs['r2_path'].values
+        relpath = sample_fastqs['r2_path'].values[0]
 
-    return [ os.path.abspath(os.path.join(exec_dir, r)) for r in relpaths ]
+    return os.path.abspath(os.path.join(exec_dir, relpath))
 
 
 ######################################   High-level targets   ######################################
-
-rule sort:
-    input: expand('{sn}/combined_raw_fastq/{sn}_R{r}_fastqc.html', sn=sample_names, r=[1,2])
+rule raw_read_data_symlinks:
+    input: expand('{sn}/raw_fastq/{sn}_R{r}.fastq.gz', sn=sample_names, r=[1,2])
 
 rule remove_adapters:
     input: expand('{sn}/adapter_trimmed/{sn}_R{r}_val_{r}.fq.gz', sn=sample_names, r=[1,2]),
@@ -75,7 +79,8 @@ rule host_removed_raw_reads:
     input: expand('{sn}/host_removal/{sn}_R{r}.fastq.gz', sn=sample_names, r=[1,2]),
 
 rule fastqc:
-    input: expand('{sn}/adapter_trimmed/{sn}_R{r}_val_{r}_fastqc.html', sn=sample_names, r=[1,2]),
+    input: expand('{sn}/raw_fastq/{sn}_R{r}_fastqc.html', sn=sample_names, r=[1,2]),
+           expand('{sn}/adapter_trimmed/{sn}_R{r}_val_{r}_fastqc.html', sn=sample_names, r=[1,2]),
            expand('{sn}/mapped_clean_reads/{sn}_R{r}_fastqc.html', sn=sample_names, r=[1,2])
 
 rule clean_reads:
@@ -110,21 +115,37 @@ rule config_sample_log:
         config['samples']
 
 
-rule all:
-    input:
-        rules.sort.input,
-        rules.host_removed_raw_reads.input,
-        rules.remove_adapters.input,
-        rules.fastqc.input,
-        rules.clean_reads.input,
-        rules.consensus.input,
-        rules.ivar_variants.input,
-        rules.breseq.input,
-        rules.coverage.input,
-        rules.coverage_plot.input,
-        rules.kraken2.input,
-        rules.quast.input,
-        rules.config_sample_log.input
+if config['run_breseq']:
+    rule all:
+        input:
+            rules.raw_read_data_symlinks.input,
+            rules.host_removed_raw_reads.input,
+            rules.remove_adapters.input,
+            rules.fastqc.input,
+            rules.clean_reads.input,
+            rules.consensus.input,
+            rules.ivar_variants.input,
+            rules.coverage.input,
+            rules.coverage_plot.input,
+            rules.kraken2.input,
+            rules.quast.input,
+            rules.config_sample_log.input,
+            rules.breseq.input
+else:
+    rule all:
+        input:
+            rules.raw_read_data_symlinks.input,
+            rules.host_removed_raw_reads.input,
+            rules.remove_adapters.input,
+            rules.fastqc.input,
+            rules.clean_reads.input,
+            rules.consensus.input,
+            rules.ivar_variants.input,
+            rules.coverage.input,
+            rules.coverage_plot.input,
+            rules.kraken2.input,
+            rules.quast.input,
+            rules.config_sample_log.input,
 
 
 rule postprocess:
@@ -140,16 +161,19 @@ rule postprocess:
 rule ncov_tools:
     # can't use the one in the ncov-tool dir as it has to include snakemake
     conda:
-        'ncov-tools/environment.yml'
+        'ncov-tools/workflow/envs/environment.yml'
     params:
         exec_dir = exec_dir,
         result_dir = os.path.basename(config['result_dir']),
         amplicon_bed = os.path.join(exec_dir, config['amplicon_loc_bed']),
+        primer_bed = os.path.join(exec_dir, config['scheme_bed']),
         viral_reference_genome = os.path.join(exec_dir, config['viral_reference_genome']),
         phylo_include_seqs = os.path.join(exec_dir, config['phylo_include_seqs'])
     input:
         consensus = expand('{sn}/core/{sn}.consensus.fa', sn=sample_names),
-        bams = expand("{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam", sn=sample_names)
+        primertrimmed_bams = expand("{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam", sn=sample_names),
+        bams = expand("{sn}/core/{sn}_viral_reference.mapping.bam", sn=sample_names),
+        variants = expand("{sn}/core/{sn}_ivar_variants.tsv", sn=sample_names)
     script: "scripts/ncov-tools.py"
         
         
@@ -168,32 +192,30 @@ rule copy_config_sample_log:
         """
 
 #################################   Based on scripts/assemble.sh   #################################
-rule concat_and_sort:
+rule link_raw_data:
     priority: 4
     output:
-        '{sn}/combined_raw_fastq/{sn}_R{r}.fastq.gz'
+        '{sn}/raw_fastq/{sn}_R{r}.fastq.gz'
     input:
         lambda wildcards: get_input_fastq_files(wildcards.sn, wildcards.r)
-    benchmark:
-        "{sn}/benchmarks/{sn}_concat_and_sort_R{r}.benchmark.tsv"
     shell:
-        'zcat -f {input} | paste - - - - | sort -k1,1 -t " " | tr "\\t" "\\n" | gzip > {output}'
+        'ln -s {input} {output}'
 
 rule run_raw_fastqc:
     conda: 
         'conda_envs/trim_qc.yaml'
     output:
-        r1_fastqc = '{sn}/combined_raw_fastq/{sn}_R1_fastqc.html',
-        r2_fastqc = '{sn}/combined_raw_fastq/{sn}_R2_fastqc.html'
+        r1_fastqc = '{sn}/raw_fastq/{sn}_R1_fastqc.html',
+        r2_fastqc = '{sn}/raw_fastq/{sn}_R2_fastqc.html'
     input:
-        r1 = '{sn}/combined_raw_fastq/{sn}_R1.fastq.gz',
-        r2 = '{sn}/combined_raw_fastq/{sn}_R2.fastq.gz'
+        r1 = '{sn}/raw_fastq/{sn}_R1.fastq.gz',
+        r2 = '{sn}/raw_fastq/{sn}_R2.fastq.gz'
     benchmark:
         '{sn}/benchmarks/{sn}_raw_fastqc.benchmark.tsv'
     params:
-        output_prefix = '{sn}/combined_raw_fastq'
+        output_prefix = '{sn}/raw_fastq'
     log:
-        '{sn}/combined_raw_fastq/{sn}_fastqc.log'
+        '{sn}/raw_fastq/{sn}_fastqc.log'
     shell:
         """
         fastqc -o {params.output_prefix} {input} 2> {log}
@@ -207,8 +229,8 @@ rule raw_reads_composite_reference_bwa_map:
     output:
         '{sn}/host_removal/{sn}_viral_and_nonmapping_reads.bam',
     input:
-        raw_r1 = '{sn}/combined_raw_fastq/{sn}_R1.fastq.gz',
-        raw_r2 = '{sn}/combined_raw_fastq/{sn}_R2.fastq.gz'
+        raw_r1 = '{sn}/raw_fastq/{sn}_R1.fastq.gz',
+        raw_r2 = '{sn}/raw_fastq/{sn}_R2.fastq.gz'
     benchmark:
         "{sn}/benchmarks/{sn}_composite_reference_bwa_map.benchmark.tsv"
     log:
@@ -326,6 +348,8 @@ rule viral_reference_bwa_map:
         '{input.r1} {input.r2} | '
         'samtools view -bS | samtools sort -@{threads} -o {output}) 2> {log}'
 
+
+
 rule run_bed_primer_trim:
     conda: 
         'conda_envs/ivar.yaml'
@@ -344,14 +368,17 @@ rule run_bed_primer_trim:
         ivar_output_prefix = "{sn}/core/{sn}_viral_reference.mapping.primertrimmed",
         min_len = config['min_len'],
         min_qual = config['min_qual'],
+        primer_pairs = config['primer_pairs_tsv']
     shell:
         'samtools view -F4 -o {output.mapped_bam} {input}; '
         'samtools index {output.mapped_bam}; '
         'ivar trim -e -i {output.mapped_bam} -b {params.scheme_bed} '
         '-m {params.min_len} -q {params.min_qual} '
+        '{params.primer_pairs} '
         '-p {params.ivar_output_prefix} 2> {log}; '
         'samtools sort -o {output.sorted_trimmed_mapped_bam} '
         '{output.trimmed_mapped_bam}'
+
 
 rule run_fastqc_on_mapped_reads:
     conda: 'conda_envs/trim_qc.yaml'
