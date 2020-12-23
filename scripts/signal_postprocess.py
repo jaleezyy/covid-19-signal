@@ -1040,7 +1040,7 @@ class SummaryHTMLWriter(HTMLWriterBase):
         qc_true = { 'PASS': ('#7ca37c', '#8fbc8f'),
                     'WARN': ('#ddba00', '#ffd700'),
                     'FAIL': ('#dd2a2a', '#ff3030'),
-					'MISSING': ('##808080', '#ffffff') }
+                    'MISSING': ('#808080', '#ffffff') }
 
         odd = (self.num_rows_written % 2)
         color = qc_true[val][odd] if qc else qc_false[odd]
