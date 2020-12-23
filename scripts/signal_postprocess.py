@@ -575,7 +575,7 @@ def parse_breseq_output(html_filename, allow_missing=True):
     """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
 
     if file_is_missing(html_filename, allow_missing):
-        return { 'variants': [], 'qc_varfreq': 'FAIL', 'qc_orf_frameshift': 'FAIL'}
+        return { 'variants': [], 'qc_varfreq': 'MISSING', 'qc_orf_frameshift': 'MISSING'}
 
     tables = parse_html_tables(html_filename)
 
@@ -767,10 +767,10 @@ class WriterBase:
 
         key = "Depth of coverage >= 2000x" if self.unabridged else "Depth\n>2000"
         self.write_kv_pair(key, s.coverage['qc_meancov'], indent=1, qc=True)
-
+        
         key = "All variants with at least 90% frequency among reads" if self.unabridged else "Variants\n>90%"
         self.write_kv_pair(key, s.breseq['qc_varfreq'], indent=1, qc=True)
-
+        
         key = "Frameshifts in SARS-CoV-2 open reading frames" if self.unabridged else "ORF\nFrameshifts"
         self.write_kv_pair(key, s.breseq['qc_orf_frameshift'], indent=1, qc=True)
 
@@ -1039,7 +1039,8 @@ class SummaryHTMLWriter(HTMLWriterBase):
         qc_false = ('#dddddd', '#ffffff')
         qc_true = { 'PASS': ('#7ca37c', '#8fbc8f'),
                     'WARN': ('#ddba00', '#ffd700'),
-                    'FAIL': ('#dd2a2a', '#ff3030') }
+                    'FAIL': ('#dd2a2a', '#ff3030'),
+					'MISSING': ('##808080', '#ffffff') }
 
         odd = (self.num_rows_written % 2)
         color = qc_true[val][odd] if qc else qc_false[odd]
