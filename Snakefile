@@ -49,11 +49,6 @@ validate(samples, 'resources/sample.schema.yaml')
 exec_dir = os.getcwd()
 workdir: os.path.abspath(config['result_dir'])
 
-# throw error if duplicate sample names in table
-if samples['sample'].duplicated().any():
-    print("Duplicate sample names in sample table, please fix and restart")
-    exit(1)
-
 # get sample names 
 sample_names = sorted(samples['sample'].drop_duplicates().values)
 
@@ -65,6 +60,16 @@ def get_input_fastq_files(sample_name, r):
         relpath = sample_fastqs['r2_path'].values[0]
 
     return os.path.abspath(os.path.join(exec_dir, relpath))
+
+# determine raw FASTQ handling (concat_and_sort)
+if config['pooled']:
+    ruleorder: concat_and_sort > link_raw_data
+else:
+    ruleorder: link_raw_data > concat_and_sort
+    # throw error if duplicate sample names in table
+    if samples['sample'].duplicated().any():
+        print("Duplicate sample names in sample table, please fix and restart")
+        exit(1)
 
 
 ######################################   High-level targets   ######################################
@@ -145,7 +150,7 @@ else:
             rules.coverage_plot.input,
             rules.kraken2.input,
             rules.quast.input,
-            rules.config_sample_log.input,
+            rules.config_sample_log.input
 
 
 rule postprocess:
@@ -200,6 +205,17 @@ rule link_raw_data:
         lambda wildcards: get_input_fastq_files(wildcards.sn, wildcards.r)
     shell:
         'ln -s {input} {output}'
+
+rule concat_and_sort:
+    priority: 4
+    output:
+        '{sn}/raw_fastq/{sn}_R{r}.fastq.gz'
+    input:
+        lambda wildcards: get_input_fastq_files(wildcards.sn, wildcards.r)
+    benchmark:
+        "{sn}/benchmarks/{sn}_concat_and_sort_R{r}.benchmark.tsv"
+    shell:
+        'zcat -f {input} | paste - - - - | sort -k1,1 -t " " | tr "\\t" "\\n" | gzip > {output}'
 
 rule run_raw_fastqc:
     conda: 
