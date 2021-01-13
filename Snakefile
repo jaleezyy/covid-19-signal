@@ -61,6 +61,15 @@ def get_input_fastq_files(sample_name, r):
 
     return os.path.abspath(os.path.join(exec_dir, relpath))
 
+def get_pooled_fastq_files(sample_name, r):
+    sample_fastqs = samples[samples['sample'] == sample_name]
+    if r == '1':
+        relpath = sample_fastqs['r1_path'].values
+    elif r == '2':
+        relpath = sample_fastqs['r2_path'].values
+
+    return [ os.path.abspath(os.path.join(exec_dir, r)) for r in relpath ]
+
 # determine raw FASTQ handling (concat_and_sort)
 if config['pooled']:
     ruleorder: concat_and_sort > link_raw_data
@@ -211,7 +220,7 @@ rule concat_and_sort:
     output:
         '{sn}/raw_fastq/{sn}_R{r}.fastq.gz'
     input:
-        lambda wildcards: get_input_fastq_files(wildcards.sn, wildcards.r)
+        lambda wildcards: get_pooled_fastq_files(wildcards.sn, wildcards.r)
     benchmark:
         "{sn}/benchmarks/{sn}_concat_and_sort_R{r}.benchmark.tsv"
     shell:
