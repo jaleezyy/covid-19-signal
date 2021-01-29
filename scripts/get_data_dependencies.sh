@@ -4,7 +4,7 @@ set -e # exit if pipeline returns non-zero status
 set -o pipefail # return value of last command to exit with non-zero status
 source ~/.bashrc
 
-if [ -z "$CONDA_EXEC" ] ; then
+if [ -z "$CONDA_EXE" ] ; then
   echo "This script requires conda but it looks like you don't have conda activated" >&2
   exit 1
 fi
@@ -48,13 +48,13 @@ CONDA_BASE=$($CONDA_EXE info --base)
 source $CONDA_BASE/etc/profile.d/conda.sh
 conda create -n data_dependencies -c conda-forge -c bioconda -y kraken2=2.0.8 bwa
 conda activate data_dependencies
-#
+
 # get kraken2, and clean db after building
 kraken2-build --download-taxonomy --db $database_dir/Kraken2/db --threads 10 --use-ftp
 kraken2-build --download-library viral --db $database_dir/Kraken2/db --threads 10 --use-ftp
 kraken2-build --build --threads 10 --db $database_dir/Kraken2/db
 kraken2-build --clean --threads 10 --db $database_dir/Kraken2/db
-#
+
 # get the GRCh38 human genome
 # as per https://lh3.github.io/2017/11/13/which-human-reference-genome-to-use
 curl -s "ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz" > $database_dir/GRC38_no_alt_analysis_set.fna.gz
