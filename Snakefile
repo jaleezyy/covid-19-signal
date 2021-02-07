@@ -68,6 +68,13 @@ def get_pooled_fastq_files(sample_name, r):
     elif r == '2':
         relpath = sample_fastqs['r2_path'].values
 
+    #input_files = [ os.path.abspath(os.path.join(exec_dir, r)) for r in relpath ]
+    #bash_array = ""
+    #for i in input_files:
+    #    bash_array = bash_array + str(i) + " "
+    #bash_array = bash_array.strip(" ")
+    #return bash_array
+
     return [ os.path.abspath(os.path.join(exec_dir, r)) for r in relpath ]
 
 # determine raw FASTQ handling (concat_and_sort)
@@ -224,7 +231,7 @@ rule concat_and_sort:
     benchmark:
         "{sn}/benchmarks/{sn}_concat_and_sort_R{r}.benchmark.tsv"
     shell:
-        'zcat -f {input} | paste - - - - | sort -k1,1 -t " " | tr "\\t" "\\n" | gzip > {output}'
+        'if [ $(echo {input} | wc -w) -gt 1 ]; then zcat -f {input} | paste - - - - | sort -k1,1 -t " " | tr "\\t" "\\n" | gzip > {output}; else ln -s {input} {output}; fi'
 
 rule run_raw_fastqc:
     conda: 
