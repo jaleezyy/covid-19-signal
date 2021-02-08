@@ -4,7 +4,7 @@
 # Sample table (can be created using example_sample_table.csv)
 samples: "example_sample_table"
 
-# Raw FASTQ data divided into individual "pools" (i.e., two R1s and two R2s for the sample sample identifier)
+# Raw FASTQ data divided into individual "pools" (i.e., two R1s and two R2s for the same sample identifier)
 pooled: False
 
 # Folder to place all results (can be relative or absolute path)
