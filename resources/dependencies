@@ -2,7 +2,6 @@ rule all:
     input:
         "assembly_qc",
         "ivar",
-        "lmat",
         "snp_mapping",
         "trim_qc",
         "postprocessing"
