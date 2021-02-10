@@ -125,7 +125,7 @@ To pull from dockerhub:
 
 Download data dependencies into a data directory that already contains your reads (`data` is this example but whatever name you wish to use):
 
-        mkdir -p data && docker run -v $PWD/data:/data finlaymaguire/signal:1.0.0 bash scripts/get_data_dependencies.sh -d /data
+        mkdir -p data && docker run -v $PWD/data:/data finlaymaguire/signal:latest bash scripts/get_data_dependencies.sh -d /data
 
 Generate your `config.yaml`and `sample_table.csv` (with paths to the readsets underneath `/data`) and place them into the data directory:
 
