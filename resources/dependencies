@@ -30,7 +30,7 @@ rule trim_qc:
 
 rule postprocessing:
     conda: "../conda_envs/postprocessing.yaml"
-    output: "trim_qc"
+    output: "postprocessing"
     shell: "touch {output}"
 
 
