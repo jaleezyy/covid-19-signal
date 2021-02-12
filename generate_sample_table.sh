@@ -44,9 +44,10 @@ if [ $existing = 0 ] ; then
 	echo -e "Creating new sample table called ${name}\n"
  	echo "sample,r1_path,r2_path" > ${name} && echo "sample,r1_path,r2_path"
 else
-	name=$(basename $existing)
+	filename=$(basename $existing)
 	if [ -f ""$existing"" ] ; then
-		echo -e "Using existing sample table called ${name}\n"
+		echo -e "Using existing sample table called ${filename}\n"
+		name=$existing
 	else
 		echo -e "Sample table does not exist. Check that sample table exists or create a new sample table."
 		echo "$HELP"
