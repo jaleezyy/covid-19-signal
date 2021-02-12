@@ -17,7 +17,7 @@ Flags:
     -d  :  Path to directory containing individual sample fastq(.gz) (Absolute paths preferred for consistency, but can use relative paths)
     -p  :  Path to directory containing pooled samples (i.e., 4 FASTQs per sample: L001_R1, L001_R2, L002_R1, L002_R2)
     -n  :  Name of final sample table (with extension) (default: 'sample_table.csv') - will overwrite if file exists
-    -e  :  Name of an existing sample table - will append to the end of the provided table
+    -e  :  File path to an existing sample table - will append to the end of the provided table
 
 Select one of '-n' (new sample table) or '-e' (existing sample table). 
 If neither provided, a new sample table called 'sample_table.csv' will be created (or overwritten) by default. 
