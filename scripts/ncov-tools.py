@@ -27,18 +27,21 @@ def set_up():
                 shutil.rmtree(snakemake_dir)
 
         config = {'data_root': f"'{data_root}'",
-                  #'run_name': f"'{result_dir}'", # name ncov-tools output files with name of SIGNAL results directory (default: "default")
-                   'amplicon_bed': f"'{snakemake.params['amplicon_bed']}'", #grab from signal snakemake config
-                   'reference_genome': f"'{snakemake.params['viral_reference_genome']}'", #grab from signal snakemake config
-                   'platform': 'illumina',
-                   'primer_bed': f"'{snakemake.params['primer_bed']}'",
-                   "bed_type": "unique_amplicons",
-                   "offset": 0,
-                   "completeness_threshold": 0.75,
-                   'bam_pattern': "'{data_root}/{sample}.bam'", # symlink files following this
-                   'consensus_pattern': "'{data_root}/{sample}.consensus.fasta'", # symlink files following this
-                   'variants_pattern': "'{data_root}/{sample}.variants.tsv'",
-                   'assign_lineages': 'true'}
+                  'run_name': f"'{result_dir}'", # name ncov-tools output files with name of SIGNAL results directory (default: "default")
+                  'amplicon_bed': f"'{snakemake.params['amplicon_loc_bed']}'", #grab from signal snakemake config
+                  'reference_genome': f"'{snakemake.params['viral_reference_genome']}'", #grab from signal snakemake config
+                  'platform': 'illumina',
+                  'primer_bed': f"'{snakemake.params['scheme_bed']}'",
+                  "bed_type": "unique_amplicons",
+                  "offset": 0,
+                  "completeness_threshold": 0.75,
+                  'bam_pattern': "'{data_root}/{sample}.bam'", # symlink files following this
+                  'consensus_pattern': "'{data_root}/{sample}.consensus.fasta'", # symlink files following this
+                  'variants_pattern': "'{data_root}/{sample}.variants.tsv'",
+                  'assign_lineages': 'true',
+                  'tree_include_consensus': f"'{snakemake.params['phylo_include_seqs']}'",
+                  'negative_control_samples': "[ ]",
+                  'mutation_set': 'spike_mutations'}
 
         with open(os.path.join(exec_dir, 'ncov-tools', 'config.yaml'), 'w') as fh:
                 for key, value in config.items():
