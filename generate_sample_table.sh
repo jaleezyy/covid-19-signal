@@ -47,7 +47,6 @@ else
 	name=$(basename $existing)
 	if [ -f ""$existing"" ] ; then
 		echo -e "Using existing sample table called ${name}\n"
-		#cat $existing > .${name}
 	else
 		echo -e "Sample table does not exist. Check that sample table exists or create a new sample table."
 		echo "$HELP"
@@ -70,7 +69,6 @@ if [ ! $database_dir = 0 ]; then
 	echo -e "\n"
 fi
 
-
 if [ ! $pooled_dir = 0 ]; then
 	samples_pooled=()
 	echo -e "Adding pooled samples"
@@ -87,4 +85,3 @@ if [ ! $pooled_dir = 0 ]; then
 		fi
 	done
 fi
-

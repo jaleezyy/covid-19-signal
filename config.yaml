@@ -2,7 +2,7 @@
 # It is ingested by the Snakefile, and also intended to be human-readable.
 
 # Sample table (can be created using example_sample_table.csv)
-samples: "example_sample_table"
+samples: "example_sample_table.csv"
 
 # Raw FASTQ data divided into individual "pools" (i.e., two R1s and two R2s for the same sample identifier)
 pooled: False
