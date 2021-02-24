@@ -109,6 +109,9 @@ rule kraken2:
 rule quast:
     input: expand('{sn}/quast/{sn}_quast_report.html', sn=sample_names)
 
+rule lineages:
+    input: 'lineage_assignments.tsv'
+
 rule config_sample_log:
     input: 
         config_filename,
@@ -130,7 +133,8 @@ if config['run_breseq']:
             rules.kraken2.input,
             rules.quast.input,
             rules.config_sample_log.input,
-            rules.breseq.input
+            rules.breseq.input,
+            rules.lineages.input
 else:
     rule all:
         input:
@@ -146,6 +150,7 @@ else:
             rules.kraken2.input,
             rules.quast.input,
             rules.config_sample_log.input,
+            rules.lineages.input
 
 
 rule postprocess:
@@ -594,3 +599,16 @@ rule run_quast:
          'quast {input} -r {params.genome} -g {params.fcoords} --output-dir {params.outdir} --threads {threads} >{log} && '
          'for f in {params.unlabelled_reports}; do mv $f ${{f/report/{params.sample_name}}}; done'
 
+
+rule run_lineage_assignment:
+    threads: 4
+    conda: 'conda_envs/assign_lineages.yaml'
+    output:
+        'lineage_assignments.tsv'
+    input:
+        expand('{sn}/core/{sn}.consensus.fa', sn=sample_names)
+    params:
+        assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py')
+    shell:
+        'cat {input} > all_genomes.fa && '
+        '{params.assignment_script_path} -i all_genomes.fa -t {threads} -o {output}'
