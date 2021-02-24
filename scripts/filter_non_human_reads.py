@@ -37,12 +37,15 @@ def filter_reads(contig_name, input_sam_fp, output_bam_fp):
 
     total_reads = viral_reads + human_reads + unmapped_reads
 
-    print(f"viral read count = {viral_reads} "
-            f"({viral_reads/total_reads * 100:.2f}%)", file=sys.stderr)
-    print(f"human read count = {human_reads} "
-            f"({human_reads/total_reads * 100:.2f}%) ", file=sys.stderr)
-    print(f"unmapped read count = {unmapped_reads} "
-            f"({unmapped_reads/total_reads * 100:.2f}%)", file=sys.stderr)
+    if total_reads > 0:
+        print(f"viral read count = {viral_reads} "
+                f"({viral_reads/total_reads * 100:.2f}%)", file=sys.stderr)
+        print(f"human read count = {human_reads} "
+                f"({human_reads/total_reads * 100:.2f}%) ", file=sys.stderr)
+        print(f"unmapped read count = {unmapped_reads} "
+                f"({unmapped_reads/total_reads * 100:.2f}%)", file=sys.stderr)
+    else:
+        print("No reads found during host filtering", file=sys.stderr
 
 if __name__ == '__main__':
 
