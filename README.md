@@ -31,7 +31,7 @@ If you use this software please [cite](https://doi.org/10.3390/v12080895):
         wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
         bash Miniconda3-latest-Linux-x86_64.sh # follow instructions
         source $(conda info --base)/etc/profile.d/conda.sh
-        conda create -n signal -c conda-forge -c bioconda -c defaults snakemake pandas
+        conda create -n signal -c conda-forge -c bioconda -c defaults snakemake pandas conda
         conda activate signal 
 
 There are some issues with `conda` failing to install newer versions of snakemake
@@ -44,7 +44,7 @@ so alternatively install `mamba` and use that (snakemake has beta support for it
 Additional software dependencies are managed directly by `snakemake` using conda environment files:
 
   - trim-galore 0.6.5 ([docs](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/))
-  - kraken2 2.0.7-beta ([docs](https://ccb.jhu.edu/software/kraken2/))
+  - kraken2 2.1.1 ([docs](https://ccb.jhu.edu/software/kraken2/))
   - quast 5.0.2 ([docs](http://quast.sourceforge.net/quast))
   - bwa 0.7.17 ([docs](http://bio-bwa.sourceforge.net/))
   - samtools 1.7/1.9 ([docs](http://www.htslib.org/))
@@ -125,7 +125,7 @@ To pull from dockerhub:
 
 Download data dependencies into a data directory that already contains your reads (`data` is this example but whatever name you wish to use):
 
-        mkdir -p data && docker run -v $PWD/data:/data finlaymaguire/signal:1.0.0 bash scripts/get_data_dependencies.sh -d /data
+        mkdir -p data && docker run -v $PWD/data:/data finlaymaguire/signal:latest bash scripts/get_data_dependencies.sh -d /data
 
 Generate your `config.yaml`and `sample_table.csv` (with paths to the readsets underneath `/data`) and place them into the data directory:
 

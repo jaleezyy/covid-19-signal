@@ -5,7 +5,7 @@ FROM continuumio/miniconda3
 LABEL base.image="miniconda3"
 LABEL version="1"
 LABEL software="SARS-CoV2 Illumina GeNome Assembly Line (SIGNAL)"
-LABEL software.version="1.0.0"
+LABEL software.version="1.1.0"
 LABEL description="SARS-CoV2 Genome Analysis Workflow"
 LABEL website="https://github.com/jaleezyy/covid-19-signal"
 LABEL documentation="https://github.com/jaleezyy/covid-19-signal/README.md"

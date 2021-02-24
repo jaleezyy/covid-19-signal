@@ -1,11 +1,10 @@
 rule all:
     input:
         "assembly_qc",
-        "assembly",
         "ivar",
-        "lmat",
         "snp_mapping",
-        "trim_qc"
+        "trim_qc",
+        "postprocessing"
     shell: "rm {input}"
 
 rule assembly_qc:
@@ -13,19 +12,9 @@ rule assembly_qc:
     output: "assembly_qc"
     shell: "touch {output}"
 
-rule assembly:
-    conda: "../conda_envs/assembly.yaml"
-    output: "assembly"
-    shell: "touch {output}"
-
 rule ivar:
     conda: "../conda_envs/ivar.yaml"
     output: "ivar"
-    shell: "touch {output}"
-
-rule lmat:
-    conda: "../conda_envs/lmat.yaml"
-    output: "lmat"
     shell: "touch {output}"
 
 rule snp_mapping:
@@ -37,3 +26,11 @@ rule trim_qc:
     conda: "../conda_envs/trim_qc.yaml"
     output: "trim_qc"
     shell: "touch {output}"
+
+rule postprocessing:
+    conda: "../conda_envs/postprocessing.yaml"
+    output: "postprocessing"
+    shell: "touch {output}"
+
+
+
