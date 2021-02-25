@@ -163,13 +163,8 @@ else:
             rules.coverage_plot.input,
             rules.kraken2.input,
             rules.quast.input,
-<<<<<<< HEAD
-            rules.config_sample_log.input
-=======
             rules.config_sample_log.input,
             rules.lineages.input
->>>>>>> master
-
 
 rule postprocess:
     conda: 
