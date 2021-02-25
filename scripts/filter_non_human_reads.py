@@ -45,7 +45,7 @@ def filter_reads(contig_name, input_sam_fp, output_bam_fp):
         print(f"unmapped read count = {unmapped_reads} "
                 f"({unmapped_reads/total_reads * 100:.2f}%)", file=sys.stderr)
     else:
-        print("No reads found during host filtering", file=sys.stderr
+        print("No reads found during host filtering", file=sys.stderr)
 
 if __name__ == '__main__':
 
