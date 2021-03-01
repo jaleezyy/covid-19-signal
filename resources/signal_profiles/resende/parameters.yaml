@@ -53,7 +53,7 @@ ivar_min_variant_quality: 20
 phylo_include_seqs: "data/gisaid_hcov-19_2020_05_25_23.fasta"
 
 # Path from snakemake dir to .bed file defining amplicon primer scheme
-scheme_bed: 'resources/primer_schemes/2kb_resende_v2/nCoV-2019.bed'
+scheme_bed: 'resources/primer_schemes/2kb_resende/nCoV-2019.bed'
 
 # ONLY NEEDED IF USING NCOV-TOOLS SUMMARIES
 # Path from snakemake dir to .bed file defining the actual amplicon locations not the primers
