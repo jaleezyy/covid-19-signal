@@ -6,7 +6,6 @@ shopt -s extglob
 
 
 database_dir=0
-pooled_dir=0
 name="sample_table.csv"
 existing=0
 
@@ -30,8 +29,8 @@ while getopts ":d:n:e:" option; do
     esac
 done
 
-if [ $database_dir = 0 ] && [ $pooled_dir = 0 ] ; then
-    echo "You must specify a data directory containing fastq(.gz) reads (either -d or -p)."
+if [ $database_dir = 0 ] ; then
+    echo "You must specify a data directory containing fastq(.gz) reads."
     echo "$HELP"
     exit 1
 fi
