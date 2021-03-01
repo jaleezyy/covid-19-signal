@@ -1,0 +1,5 @@
+# Conda envs
+.snakemake
+
+# Large datasets
+data/
