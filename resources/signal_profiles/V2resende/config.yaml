@@ -1,0 +1,4 @@
+keep-going: True
+printshellcmds: True
+show-failed-logs: True
+use-conda: True
