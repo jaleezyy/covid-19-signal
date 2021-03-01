@@ -57,4 +57,4 @@ scheme_bed: 'resources/primer_schemes/2kb_resende/nCoV-2019.bed'
 
 # ONLY NEEDED IF USING NCOV-TOOLS SUMMARIES
 # Path from snakemake dir to .bed file defining the actual amplicon locations not the primers
-amplicon_loc_bed: 'resources/primer_schemes/Resende.distinct_regions.bed'
+amplicon_loc_bed: 'resources/primer_schemes/ncov-qc_resende.scheme.bed'

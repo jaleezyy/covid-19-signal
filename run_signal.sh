@@ -21,6 +21,7 @@ Flags:
     -p      :  Specify input data primer scheme
                 Available Primer Schemes: articV3, freed, resende, V2resende
     -s      :  Path to signal directory
+    "
         exit 0
         ;;
     f)
@@ -113,16 +114,13 @@ root_path=$PWD
 # Get always current ncov-tools with clone and copy resources as we write to the config
 echo "Setting up files in $PWD"
 git clone --depth 1 https://github.com/jts/ncov-tools
-cp -r $PWD/ncov-tools_files/* ./ncov-tools/
+# Copy the ncov-tools config as we will write data to it later
+cp -r $SIGNAL_DIR/resources/ncov-tools_files/* ./ncov-tools/
 
 # Softlinking signal data and our automation scripts to run them but also to save space
 ln -s $SIGNAL_DIR/* .
-#echo "signal dir = $SIGNAL_DIR"
-#ln -s ../covid-analysis-resources/ .
-#ln -s ../../signal_profiles signal_profiles
 
 # Generate the sample_list.csv
-#echo "here: $PWD"
 bash $SIGNAL_DIR/generate_sample_table.sh -d $fastq_dir_path
 ### END FILE SETUP ###
 
@@ -136,15 +134,15 @@ echo "config: $SIGNAL_CONFIG"
 echo "profile: $SIGNAL_PROFILE"
 
 # Run signal and postprocessing
-snakemake -s $SIGNAL_DIR/Snakefile --configfile $SIGNAL_CONFIG --profile $SIGNAL_PROFILE --cores=4 --conda-prefix=.snakemake/conda all
-snakemake -s $SIGNAL_DIR/Snakefile --configfile $SIGNAL_CONFIG --profile $SIGNAL_PROFILE --cores=4 --conda-prefix=.snakemake/conda postprocess"
+snakemake -s $SIGNAL_DIR/Snakefile --configfile $SIGNAL_CONFIG --profile $SIGNAL_PROFILE --cores=4 --conda-prefix=$SIGNAL_DIR/.snakemake/conda all
+snakemake -s $SIGNAL_DIR/Snakefile --configfile $SIGNAL_CONFIG --profile $SIGNAL_PROFILE --cores=4 --conda-prefix=$SIGNAL_DIR/.snakemake/conda postprocess
 
 # Setup and run NCOV-TOOLS
-bash $SIGNAL_DIR/nml_automation/run_ncov-tools.sh $PRIMER_SCHEME $root_path $run_name
+bash $SIGNAL_DIR/nml_automation/run_ncov-tools.sh $PRIMER_SCHEME $root_path
 
 # Post NCOV-TOOLS run processing and uploads of data
 # We are back in the root dir. Need the ncov-tools data along with the signal data for final output table
 # individual data to the ./summary_csvs directory made by script
-bash $SIGNAL_DIR/nml_automation/final_cleanup.sh
+# bash $SIGNAL_DIR/nml_automation/final_cleanup.sh
 
 ### END RUNNING ###

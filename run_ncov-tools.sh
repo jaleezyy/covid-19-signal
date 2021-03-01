@@ -6,13 +6,12 @@ scheme=$1
 # Need the working directory to properly do stuff
 work_dir=$2
 
-# Name to watch on sq
-run_name=$3
-
 # Activate env
 eval "$(conda shell.bash hook)"
 
-conda activate ncov-tools
+# Default name is ncov-qc from https://github.com/jts/ncov-tools/blob/master/workflow/envs/environment.yml
+# May have to switch to a container or something similar later to make it easier
+conda activate ncov-qc
 
 # Path to scheme bed files
 if [ "$scheme" == "articV3" ]
@@ -22,13 +21,13 @@ then
 
 elif [ "$scheme" == "freed" ]
 then
-    echo "amplicon_bed: $work_dir/resources/primer_schemes/Freed.distinct_regions.bed" >> ./ncov-tools/config.yaml
-    echo "primer_bed: $work_dir/resources/primer_schemes/Freed_signal.bed" >> ./ncov-tools/config.yaml
+    echo "amplicon_bed: $work_dir/resources/primer_schemes/freed/ncov-qc_freed.scheme.bed" >> ./ncov-tools/config.yaml
+    echo "primer_bed: $work_dir/resources/primer_schemes/freed/nCoV-2019.bed" >> ./ncov-tools/config.yaml
 
 elif [ "$scheme" == "resende" ]
 then
-    echo "amplicon_bed: $work_dir/resources/primer_schemes/Resende.distinct_regions.bed" >> ./ncov-tools/config.yaml
-    echo "primer_bed: $work_dir/resources/primer_schemes/signal_resende_fixed.bed" >> ./ncov-tools/config.yaml
+    echo "amplicon_bed: $work_dir/resources/primer_schemes/2kb_resende/ncov-qc_resende.scheme.bed" >> ./ncov-tools/config.yaml
+    echo "primer_bed: $work_dir/resources/primer_schemes/2kb_resende/nCoV-2019.bed" >> ./ncov-tools/config.yaml
 
 elif [ "$scheme" == "V2resende" ]
 then
@@ -56,16 +55,15 @@ find ./signal_results/ -type f -name *.consensus.fa -exec cp {} ncov-tools/files
 find ./signal_results/ -type f -name *.sorted.bam* -exec cp {} ncov-tools/files/ \;
 find ./signal_results/ -type f -name *variants.tsv -exec cp {} ncov-tools/files/ \;
 
-# Now hopefully we don't need to re-name and if we do it will be below...
-# Needed to rename :(
+# Rename files to give consistent structure that is easier to work with
 cd ./ncov-tools/files
-scripts/prename "s/_viral_reference././" *.sorted.bam
-scripts/prename "s/_ivar_/./" *_variants.tsv
+../scripts/prename "s/_viral_reference././" *.sorted.bam
+../scripts/prename "s/_ivar_/./" *_variants.tsv
+# Remove extra header info
 sed -i 's|.consensus_threshold_0.75_quality_20||' *.consensus.fa
 
-# And then finally run it!!!!!
-# back to ncov-tools root directory
+# Back to ncov-tools root directory to run it
 cd ../
-snakemake -kp -s workflow/Snakefile all --cores 12
+snakemake -kp -s workflow/Snakefile all --cores 3
 snakemake -s workflow/Snakefile --cores 1 build_snpeff_db
 snakemake -s workflow/Snakefile --cores 2 all_qc_annotation

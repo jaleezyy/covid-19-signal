@@ -1,0 +1,63 @@
+# path to the top-level directory containing the analysis results
+data_root: files
+
+# optionally the plots can have a "run name" prefix. If this is not defined the prefix will be "default"
+run_name: nml
+
+# path to the file containing the amplicon regions (not the primer sites, the actual amplicons)
+# amplicon_bed: echo'd in at the bottom
+
+# path to the BED file containing the primers, this should follow the format downloaded from
+# the ARTIC primer
+# primer_bed: echo'd in at the bottom
+
+# list the type of amplicon BED file that will be created from the "primer_bed".  This can include:
+# full -- amplicons including primers and overlaps listed in the primer BED file
+# no_primers -- amplicons including overlaps but with primers removed
+# unique_amplicons -- distinct amplicons regions with primers and overlapping regions removed
+bed_type: unique_amplicons
+
+# offset for the amplicons and primers
+offset: 0
+
+# Pattern of primer trimmed bam file
+primer_trimmed_bam_pattern: "{data_root}/{sample}.mapping.primertrimmed.sorted.bam"
+
+# path to the nCov reference genome
+reference_genome: nCoV-2019.reference.fasta
+
+# the naming convention for the bam files
+# this can use the variables {data_root} (as above) and {sample}
+# As per the example above, this will expand to run_200430/sampleA.sorted.bam for sampleA
+bam_pattern: "{data_root}/{sample}.mapping.primertrimmed.sorted.bam"
+
+# the naming convention for the consensus sequences
+consensus_pattern: "{data_root}/{sample}.consensus.fa"
+
+# the naming convention for the variants file, NF illumina runs typically use
+# "{data_root}/{sample}.variants.tsv and oxford nanopore runs use "{data_root}/{sample}.pass.vcf.gz"
+variants_pattern: "{data_root}/{sample}.variants.tsv"
+
+# when building a tree of the consensus genomes you can optionally include other sequences
+# in the tree by providing a fasta file here
+#tree_include_consensus: some_genomes_from_gisaid.fasta
+
+# some plots can by annotated with external metadata. this
+# file contains the metadata in simple tab-delimited format
+# one column must be 'sample'
+#metadata: metadata.tsv
+
+#
+# set this flag to true to include lineage assignments with pangolin in the output plots
+#
+assign_lineages: true
+
+#
+# this flag should identify the sequencing platform used, valid options are:
+# `illumina` or `oxford-nanopore`
+#
+platform: illumina
+
+# minimum completeness threshold for inclusion to the SNP tree plot, if no entry
+# is provided the default is set to 0.75
+completeness_threshold: 0.80
