@@ -35,6 +35,7 @@ if [ $database_dir = 0 ] ; then
     exit 1
 fi
 
+echo -e "Adding samples\n"
 if [ $existing = 0 ] ; then
 	echo -e "Creating new sample table: ${name}\n"
  	echo "sample,r1_path,r2_path" > ${name} && echo "sample,r1_path,r2_path"
@@ -52,19 +53,27 @@ fi
 
 if [ ! $database_dir = 0 ]; then
 	samples_dir=()
-	echo -e "Adding samples"
+	samples_fail=()
 	for file in $database_dir/*.f?(ast)q*; do
 		sample=$(basename $file | cut -d_ -f 1)
-		count=$(($(ls $database_dir/${sample}*_L00*_R{1,2}*.f?(ast)q* | wc -l)/2)) # estimate # of files
-		if [[ ! " ${samples_dir[@]} " =~ " ${sample} " ]]; then
+		if [[ ! " ${samples_dir[@]} " =~ " ${sample} " ]] && [[ ! " ${samples_fail[@]} " =~ " ${sample} " ]]; then
+			count=$(($(ls $database_dir/${sample}*_L00*_R{1,2}*.f?(ast)q* 2>/dev/null | wc -l)/2)) || samples_fail+=("${sample}") # estimate # of files; sample fails if file(s) missing
 			for (( i=1; i<=$count; i++ )); do
-				r1=$(ls $database_dir/${sample}*_L00${i}_R1* | grep /${sample}_)
-				r2=$(ls $database_dir/${sample}*_L00${i}_R2* | grep /${sample}_)
+				r1=$(ls $database_dir/${sample}*_L00${i}_R1* | grep /${sample}_) 
+				r2=$(ls $database_dir/${sample}*_L00${i}_R2* | grep /${sample}_) || samples_fail+=("${sample}")
 				echo ${sample},${r1},${r2} >> ${name} && echo ${sample},${r1},${r2}
 			done
-			samples_dir+=("${sample}")
+			samples_dir+=("${sample}") # sample passed
 		fi
 	done
 	echo -e "\n"
 fi
 
+if [ ${#samples_fail[@]} -gt 0 ]; then 
+	echo -e "Samples that failed to be added to sample table:"
+	for failed in "${samples_fail[@]}"; do
+		echo -e $failed
+	done
+else
+	echo -e "Success!"
+fi
