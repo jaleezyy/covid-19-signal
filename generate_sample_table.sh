@@ -14,8 +14,8 @@ ASSUMES FASTQ FILES ARE NAMED AS <sample_name>_L00#_R{1,2}*.fastq(.gz)
 
 Flags:
     -d  :  Path to directory containing sample fastq(.gz) files (Absolute paths preferred for consistency, but can use relative paths)
-    -n  :  Name of final sample table (with extension) (default: 'sample_table.csv') - will overwrite if file exists
-    -e  :  File path to an existing sample table - will append to the end of the provided table
+    -n  :  Name or file path for final sample table (with extension) (default: 'sample_table.csv') - will overwrite if file exists
+    -e  :  Name or file path for an existing sample table - will append to the end of the provided table
 
 Select one of '-n' (new sample table) or '-e' (existing sample table). 
 If neither provided, a new sample table called 'sample_table.csv' will be created (or overwritten) by default. 
