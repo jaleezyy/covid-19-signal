@@ -70,16 +70,13 @@ def get_pooled_fastq_files(sample_name, r):
 
     return [ os.path.abspath(os.path.join(exec_dir, r)) for r in relpath ]
 
-# determine raw FASTQ handling (concat_and_sort)
-if config['pooled']:
+# determine raw FASTQ handling
+# if duplicate sample names in table, run legacy concat_and_sort
+if samples['sample'].duplicated().any():
+    print("Duplicate sample names in sample table. Assuming multi-lane samples exist")
     ruleorder: concat_and_sort > link_raw_data
 else:
     ruleorder: link_raw_data > concat_and_sort
-    # throw error if duplicate sample names in table
-    if samples['sample'].duplicated().any():
-        print("Duplicate sample names in sample table, please fix and restart")
-        exit(1)
-
 
 ######################################   High-level targets   ######################################
 rule raw_read_data_symlinks:
