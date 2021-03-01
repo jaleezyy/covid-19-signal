@@ -59,8 +59,8 @@ find ./signal_results/ -type f -name *variants.tsv -exec cp {} ncov-tools/files/
 # Now hopefully we don't need to re-name and if we do it will be below...
 # Needed to rename :(
 cd ./ncov-tools/files
-#/Drives/T/phil/prename "s/_viral_reference././" *.sorted.bam
-#/Drives/T/phil/prename "s/_ivar_/./" *_variants.tsv
+scripts/prename "s/_viral_reference././" *.sorted.bam
+scripts/prename "s/_ivar_/./" *_variants.tsv
 sed -i 's|.consensus_threshold_0.75_quality_20||' *.consensus.fa
 
 # And then finally run it!!!!!
