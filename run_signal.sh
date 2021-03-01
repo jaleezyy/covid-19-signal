@@ -121,7 +121,7 @@ cp -r $SIGNAL_DIR/resources/ncov-tools_files/* ./ncov-tools/
 ln -s $SIGNAL_DIR/* .
 
 # Generate the sample_list.csv
-bash $SIGNAL_DIR/generate_sample_table.sh -d $fastq_dir_path
+bash generate_sample_table.sh -d $fastq_dir_path
 ### END FILE SETUP ###
 
 ### RUN SIGNAL AND QC ###
@@ -134,11 +134,11 @@ echo "config: $SIGNAL_CONFIG"
 echo "profile: $SIGNAL_PROFILE"
 
 # Run signal and postprocessing
-snakemake -s $SIGNAL_DIR/Snakefile --configfile $SIGNAL_CONFIG --profile $SIGNAL_PROFILE --cores=4 --conda-prefix=$SIGNAL_DIR/.snakemake/conda all
-snakemake -s $SIGNAL_DIR/Snakefile --configfile $SIGNAL_CONFIG --profile $SIGNAL_PROFILE --cores=4 --conda-prefix=$SIGNAL_DIR/.snakemake/conda postprocess
+snakemake -s Snakefile --configfile $SIGNAL_CONFIG --profile $SIGNAL_PROFILE --cores=3 --conda-prefix=$SIGNAL_DIR/.snakemake/conda all
+snakemake -s Snakefile --configfile $SIGNAL_CONFIG --profile $SIGNAL_PROFILE --cores=3 --conda-prefix=$SIGNAL_DIR/.snakemake/conda postprocess
 
 # Setup and run NCOV-TOOLS
-bash $SIGNAL_DIR/nml_automation/run_ncov-tools.sh $PRIMER_SCHEME $root_path
+bash nml_automation/run_ncov-tools.sh $PRIMER_SCHEME $root_path
 
 # Post NCOV-TOOLS run processing and uploads of data
 # We are back in the root dir. Need the ncov-tools data along with the signal data for final output table
