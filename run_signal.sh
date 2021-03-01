@@ -3,24 +3,41 @@
 ### Settings ###
 set -e # exit if pipeline returns non-zero status
 set -o pipefail # return value of last command to exit with non-zero status
+SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )" # Get script location which will be the signal base dir
 
+# Function to check if element is in an array
+containsElement () {
+    local e match="$1"
+    shift
+    for e; do [[ "$e" == "$match" ]] && return 0; done
+    return 1
+}
+
+# Allowed values #
+schemeArray=('articV3' 'freed' 'resende' 'V2resende')
+
+# Base Parameters
 FASTQ_PAIRS=""
 PRIMER_SCHEME=""
-SIGNAL_DIR=""
+SIGNAL_DIR="$SCRIPTPATH"
+THREADS="3"
+### END SETTINGS ###
 
-
-while getopts ":hf:p:s:n:" opt; do
+### SET INPUTS ###
+##################
+while getopts ":hf:p:s:t:" opt; do
   case ${opt} in
     h )
       echo "Usage:"
-      echo "    run_prov_signal.sh -h                      Display this help message."
-      echo "    run_prov_signal.sh -f <directory> -p <name> -s <directory> -n <directory>      USAGE: run_prov_signal.sh -f PATH_TO_PAIRED_FASTQ_DIR -p PRIMER_SCHEME -s PATH_TO_SIGNAL_DIRECTORY
+      echo "    bash run_signal.sh -h                      Display this help message."
+      echo "    bash $SCRIPTPATH/run_signal.sh -f PATH_TO_PAIRED_FASTQ_DIR -p PRIMER_SCHEME -s PATH_TO_SIGNAL_DIRECTORY
     
 Flags:
     -f      :  Path to paired fastq file directory
     -p      :  Specify input data primer scheme
                 Available Primer Schemes: articV3, freed, resende, V2resende
-    -s      :  Path to signal directory
+    -s      :  (OPTIONAL) Path to wanted base Signal Directory. Default is $SCRIPTPATH
+    -t      :  (OPTIONAL) Number of Threads to use in Signal. Default is 3
     "
         exit 0
         ;;
@@ -29,18 +46,36 @@ Flags:
             if [ -d "$FASTQ_PAIRS" ]; then
                 echo "Directory '$FASTQ_PAIRS' exists"
             else
-                echo "Directory '$FASTQ_PAIRS' does not exists"
+                echo "ERROR: Directory '$FASTQ_PAIRS' does not exist"
+                exit 1
             fi       
         ;;
     p)
         PRIMER_SCHEME=$OPTARG
+            if containsElement "$PRIMER_SCHEME" "${schemeArray[@]}"; then
+                echo "Using primer scheme $PRIMER_SCHEME"
+            else
+                echo "ERROR: $PRIMER_SCHEME unavailable"
+                echo "Primer schemes available are ${schemeArray[@]}"
+                exit 1
+            fi
         ;;
     s) 
         SIGNAL_DIR=${OPTARG%/}
-        if [ -d "$SIGNAL_DIR" ]; then
+            if [ -d "$SIGNAL_DIR" ]; then
                 echo "Directory '$SIGNAL_DIR' exists"
             else
-                echo "Directory '$SIGNAL_DIR' does not exists"
+                echo "ERROR: Directory '$SIGNAL_DIR' does not exist"
+                exit 1
+            fi
+        ;;
+    t)
+        THREADS=$OPTARG
+            if [[ $THREADS == +([0-9]) ]]; then
+                echo "Using $THREADS"
+            else
+                echo "ERROR: Threads input (-t) not an integer"
+                exit 1
             fi
         ;;
    \? )
@@ -49,44 +84,19 @@ Flags:
      ;;
   esac
 done
+### END INPUTS ###
 
-
+### CHECK and CREATE PATHS ###
+##############################
 pushd $SIGNAL_DIR
 SIGNAL_DIR=$PWD
 popd
 
-SIGNAL_PROFILE=""
-SIGNAL_CONFIG=""
-if [ "$PRIMER_SCHEME" == "articV3" ];
-then
-    SIGNAL_PROFILE=$SIGNAL_DIR/resources/signal_profiles/articV3
-    SIGNAL_CONFIG=$SIGNAL_DIR/resources/signal_profiles/articV3/parameters.yaml
-elif [ "$PRIMER_SCHEME" == "freed" ];
-then
-    SIGNAL_PROFILE=$SIGNAL_DIR/resources/signal_profiles/freed
-    SIGNAL_CONFIG=$SIGNAL_DIR/resources/signal_profiles/freed/parameters.yaml
-elif [ "$PRIMER_SCHEME" == "resende" ];
-then
-    SIGNAL_PROFILE=$SIGNAL_DIR/resources/signal_profiles/resende
-    SIGNAL_CONFIG=$SIGNAL_DIR/signal_profiles/resende/parameters.yaml
-elif [ "$PRIMER_SCHEME" == "V2resende" ];
-then
-    SIGNAL_PROFILE=$SIGNAL_DIR/resources/signal_profiles/V2resende
-    SIGNAL_CONFIG=$SIGNAL_DIR/resources/signal_profiles/V2resende/parameters.yaml
-else
-    echo "ERROR: $PRIMER_SCHEME is an invalid Primer Scheme"
-    echo "$HELP"
+# If we cannot find the data directory, we will fail out and let user know it isn't there
+if [ ! -d "$SIGNAL_DIR/data/" ]; then
+    echo "data/ directory not found in $SIGNAL_DIR"
+    echo "Please run bash $SIGNAL_DIR/scripts/get_data_dependencies.sh -d data -a MN908947.3 to make this folder"
     exit 1
-fi
-
-### Set Up Paths and File Structure ###
-#######################################
-# Define our path to signal directory #
-if [ "$SIGNAL_DIR" = "" ];
-then
-	echo "$SIGNAL_DIR : ERROR: signal directory does not exist"
-	echo "$HELP"
-	exit 1
 fi
 
 # Set name for output and full path to reads #
@@ -94,7 +104,6 @@ pushd $FASTQ_PAIRS
 run_name=${PWD##*/}
 fastq_dir_path=$PWD
 popd
-
 
 # Setup Output Folder structure #
 timestamp=`date +%b%d_%H%M`
@@ -108,6 +117,34 @@ cd $root
 
 # Get output root full path for later parts to the root directory #
 root_path=$PWD
+
+# Set PROFILE and CONFIG
+SIGNAL_PROFILE="$SCRIPTPATH/resources/profile"
+cp "$SCRIPTPATH/resources/profile/parameters.yaml" .
+SIGNAL_CONFIG="parameters.yaml"
+
+# Echo in correct data locations to parameters config
+# Done as for the primer pairs to work we need the full path
+if [ "$PRIMER_SCHEME" == "articV3" ]; then
+    echo "scheme_bed: 'resources/primer_schemes/artic_v3/nCoV-2019.primer.bed'" >> $SIGNAL_CONFIG
+    echo "amplicon_loc_bed: 'resources/primer_schemes/artic_v3/ncov-qc_V3.scheme.bed'" >> $SIGNAL_CONFIG
+    echo "primer_pairs_tsv: '-f $SCRIPTPATH/resources/primer_pairs/articV3_primer_pairs.tsv'" >> $SIGNAL_CONFIG
+
+elif [ "$PRIMER_SCHEME" == "freed" ]; then
+    echo "scheme_bed: 'resources/primer_schemes/freed/nCoV-2019.primer.bed'" >> $SIGNAL_CONFIG
+    echo "amplicon_loc_bed: 'resources/primer_schemes/freed/ncov-qc_freed.scheme.bed'" >> $SIGNAL_CONFIG
+    echo "primer_pairs_tsv: '-f $SCRIPTPATH/resources/primer_pairs/freed_primer_pairs.tsv'" >> $SIGNAL_CONFIG
+
+elif [ "$PRIMER_SCHEME" == "resende" ]; then
+    echo "scheme_bed: 'resources/primer_schemes/2kb_resende/nCoV-2019.primer.bed'" >> $SIGNAL_CONFIG
+    echo "amplicon_loc_bed: 'resources/primer_schemes/2kb_resende/ncov-qc_V3.scheme.bed'" >> $SIGNAL_CONFIG
+    echo "primer_pairs_tsv: '-f $SCRIPTPATH/resources/primer_pairs/resende_primer_pairs.tsv'" >> $SIGNAL_CONFIG
+
+elif [ "$PRIMER_SCHEME" == "V2resende" ]; then
+    echo "scheme_bed: 'resources/primer_schemes/2kb_resende_v2/nCoV-2019.primer.bed'" >> $SIGNAL_CONFIG
+    echo "amplicon_loc_bed: 'resources/primer_schemes/2kb_resende_v2/ncov-qc_V3.scheme.bed'" >> $SIGNAL_CONFIG
+    echo "primer_pairs_tsv: '-f $SCRIPTPATH/resources/primer_pairs/resende_primer_pairs.tsv'" >> $SIGNAL_CONFIG
+fi
 
 ### GET INPUT FILES ###
 #######################
