@@ -47,10 +47,6 @@ result_dir:
     type: string
     default: "results"
     description: "Path to output results"
-pooled:
-    type: boolean
-    default: False
-    description: "boolean indicating (at least some) samples are divided into multiple R1 and R2 files"
 required:
     - min_len
     - min_qual
