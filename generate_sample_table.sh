@@ -36,7 +36,7 @@ if [ $database_dir = 0 ] ; then
 fi
 
 if [ $existing = 0 ] ; then
-	echo -e "Creating new sample table called ${name}\n"
+	echo -e "Creating new sample table: ${name}\n"
  	echo "sample,r1_path,r2_path" > ${name} && echo "sample,r1_path,r2_path"
 else
 	filename=$(basename $existing)
