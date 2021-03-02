@@ -10,32 +10,35 @@ def set_up():
         exec_dir = snakemake.params['exec_dir']
         result_dir = snakemake.params['result_dir'] # basename of SIGNAL result directory
 
-        result_root = os.path.abspath(os.path.join(exec_dir, result_dir, "ncov-tools-results"))
-        if os.path.exists(result_root):
-                shutil.rmtree(result_root)
-        ncov_output = ["plots", "lineages", "qc_analysis"]
-        for dir in ncov_output:
-                os.makedirs(os.path.join(result_root, dir))
+        # result_root = os.path.abspath(os.path.join(exec_dir, result_dir, "ncov-tools-results"))
+        # if os.path.exists(result_root):
+                # shutil.rmtree(result_root)
+        # ncov_output = ["plots", "lineages", "qc_analysis"]
+        # for dir in ncov_output:
+                # os.makedirs(os.path.join(result_root, dir))
 
-        data_root = os.path.abspath(os.path.join(exec_dir, 'ncov-tools', 'data'))
+### Create data directory within ncov-tools
+        data_root = os.path.abspath(os.path.join(exec_dir, 'ncov-tools', 'result_dir'))
         if os.path.exists(data_root):
                 shutil.rmtree(data_root)
         os.mkdir(data_root)
 
-        snakemake_dir = os.path.join(exec_dir, 'ncov-tools', '.snakemake')
-        if os.path.exists(snakemake_dir):
-                shutil.rmtree(snakemake_dir)
+        # snakemake_dir = os.path.join(exec_dir, 'ncov-tools', '.snakemake')
+        # if os.path.exists(snakemake_dir):
+                # shutil.rmtree(snakemake_dir)
 
+### config.yaml parameters
         config = {'data_root': f"'{data_root}'",
                   'run_name': f"'{result_dir}'", # name ncov-tools output files with name of SIGNAL results directory (default: "default")
-                  'amplicon_bed': f"'{snakemake.params['amplicon_loc_bed']}'", #grab from signal snakemake config
+                  'amplicon_bed': f"'{snakemake.params['amplicon_bed']}'", #grab from signal snakemake config
                   'reference_genome': f"'{snakemake.params['viral_reference_genome']}'", #grab from signal snakemake config
                   'platform': 'illumina',
                   'primer_bed': f"'{snakemake.params['scheme_bed']}'",
                   "bed_type": "unique_amplicons",
                   "offset": 0,
-                  "completeness_threshold": 0.75,
+                  "completeness_threshold": 0.9,
                   'bam_pattern': "'{data_root}/{sample}.bam'", # symlink files following this
+                  'primer_trimmed_bam_pattern': "'{data_root}/{sample}.mapped.primertrimmed.sorted.bam'",
                   'consensus_pattern': "'{data_root}/{sample}.consensus.fasta'", # symlink files following this
                   'variants_pattern': "'{data_root}/{sample}.variants.tsv'",
                   'assign_lineages': 'true',
@@ -80,7 +83,7 @@ def set_up():
                         else:
                                 print(line, end='\n')
 
-        os.chdir(os.path.join(exec_dir, 'ncov-tools'))
+        # os.chdir(os.path.join(exec_dir, 'ncov-tools'))
         return exec_dir, result_root, result_dir
 
 def run_all():
