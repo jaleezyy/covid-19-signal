@@ -18,7 +18,7 @@ def set_up():
                 # os.makedirs(os.path.join(result_root, dir))
 
 ### Create data directory within ncov-tools
-        data_root = os.path.abspath(os.path.join(exec_dir, 'ncov-tools', 'result_dir'))
+        data_root = os.path.abspath(os.path.join(exec_dir, 'ncov-tools', "%s" %(result_dir)))
         if os.path.exists(data_root):
                 shutil.rmtree(data_root)
         os.mkdir(data_root)
@@ -84,7 +84,8 @@ def set_up():
                                 print(line, end='\n')
 
         # os.chdir(os.path.join(exec_dir, 'ncov-tools'))
-        return exec_dir, result_root, result_dir
+        #return exec_dir, result_root, result_dir
+        return exec_dir, result_dir
 
 def run_all():
         os.system(f"snakemake -s workflow/Snakefile --cores {snakemake.threads} all")
@@ -123,6 +124,8 @@ def move(cwd, dest, prefix):
                 print("Missing ncov-tools 'qc_analysis' directory")
 
 if __name__ == '__main__':
-        exec_dir, result_root, result_dir = set_up()
+        exec_dir, result_dir = set_up()
+        print("Don't forget to update the config.yaml file prior to running ncov-tools.")
+        #exec_dir, result_root, result_dir = set_up()
         #run_all()
         #move(exec_dir, result_root, result_dir)
