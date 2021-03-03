@@ -18,31 +18,30 @@ containsElement () {
     return 1
 }
 
-# Allowed scheme values #
+# Values to Check #
 schemeArray=('articV3' 'freed' 'resende' 'V2resende')
+envArray=('signal' 'ncov-qc' 'snpdist_signal')
 
 # Base Parameters #
 FASTQ_PAIRS=""
 PRIMER_SCHEME=""
-SIGNAL_DIR="$SCRIPTPATH"
-THREADS="3"
+CORES="3"
 ### END DEFAULTS ###
 
 # INPUTS #
 ##########
-while getopts ":hf:p:s:t:" opt; do
+while getopts ":hf:p:c:" opt; do
   case ${opt} in
     h )
       echo "Usage:"
       echo "    bash run_signal.sh -h                      Display this help message."
-      echo "    bash $SCRIPTPATH/run_signal.sh -f PATH_TO_PAIRED_FASTQ_DIR -p PRIMER_SCHEME -s PATH_TO_SIGNAL_DIRECTORY
+      echo "    bash $SCRIPTPATH/run_signal.sh -f PATH_TO_PAIRED_FASTQ_DIR -p PRIMER_SCHEME
     
 Flags:
     -f      :  Path to paired fastq file directory
     -p      :  Specify input data primer scheme
                 Available Primer Schemes: articV3, freed, resende, V2resende
-    -s      :  (OPTIONAL) Path to wanted base Signal Directory. Default is $SCRIPTPATH
-    -t      :  (OPTIONAL) Number of Threads to use in Signal. Default is 3
+    -c      :  (OPTIONAL) Number of Cores to use in Signal. Default is 3
     "
         exit 0
         ;;
@@ -65,21 +64,12 @@ Flags:
                 exit 1
             fi
         ;;
-    s) 
-        SIGNAL_DIR=${OPTARG%/}
-            if [ -d "$SIGNAL_DIR" ]; then
-                echo "Directory '$SIGNAL_DIR' exists"
-            else
-                echo "ERROR: Directory '$SIGNAL_DIR' does not exist"
-                exit 1
-            fi
-        ;;
     t)
-        THREADS=$OPTARG
-            if [[ $THREADS == +([0-9]) ]]; then
-                echo "Using $THREADS"
+        CORES=$OPTARG
+            if [[ $CORES == +([0-9]) ]]; then
+                echo "Using $CORES"
             else
-                echo "ERROR: Threads input (-t) not an integer"
+                echo "ERROR: Cores input (-c) not an integer"
                 exit 1
             fi
         ;;
@@ -98,9 +88,6 @@ done
 
 # PATHES #
 ##########
-pushd $SIGNAL_DIR
-SIGNAL_DIR=$PWD
-popd
 
 # Set name for output and full path to reads #
 pushd $FASTQ_PAIRS
@@ -109,9 +96,9 @@ fastq_dir_path=$PWD
 popd
 
 # If we cannot find the data directory, we will fail out and let user know it isn't there
-if [ ! -d "$SIGNAL_DIR/data/" ]; then
-    echo "data/ directory not found in $SIGNAL_DIR"
-    echo "Please run bash $SIGNAL_DIR/scripts/get_data_dependencies.sh -d data -a MN908947.3 to make this folder"
+if [ ! -d "$SCRIPTPATH/data/" ]; then
+    echo "data/ directory not found in $SCRIPTPATH"
+    echo "Please run bash $SCRIPTPATH/scripts/get_data_dependencies.sh -d data -a MN908947.3 to make this folder or move an already made data folder here"
     exit 1
 fi
 ### END PATHES ###
@@ -120,8 +107,21 @@ fi
 #########
 eval "$(conda shell.bash hook)"
 
-# Env check
-# Write check for if we have correct conda envs and if not, create them
+# Env Check #
+for ENV in ${envArray[@]}; do
+    if [ $(conda env list | awk '{print $1}' | grep "^$ENV"'$') ]; then
+        echo "$ENV found"
+    else
+        echo "Conda env '$ENV' doesn't exist."
+        # If its the ncov-tools env, need to use mamba
+        if [ $ENV = "ncov-qc" ]; then
+            conda install -y mamba
+            mamba env create -f $SCRIPTPATH/conda_envs/$ENV.yml
+        else
+            conda env create --file $SCRIPTPATH/conda_envs/$ENV.yml
+        fi
+    fi
+done
 ### END CONDA ###
 
 # FINAL OUTPUT LOCATION #
@@ -193,7 +193,7 @@ fi
 
 
 # GET WANTED SIGNAL #
-ln -s $SIGNAL_DIR/* .
+ln -s $SCRIPTPATH/* .
 
 
 ##################
@@ -208,19 +208,19 @@ echo "profile: $SIGNAL_PROFILE"
 
 # Run signal and postprocessing
 bash generate_sample_table.sh -d $fastq_dir_path
-snakemake -s Snakefile --configfile $SIGNAL_CONFIG --profile $SIGNAL_PROFILE --cores=$THREADS --conda-prefix=$SIGNAL_DIR/.snakemake/conda all
-snakemake -s Snakefile --configfile $SIGNAL_CONFIG --profile $SIGNAL_PROFILE --cores=$THREADS --conda-prefix=$SIGNAL_DIR/.snakemake/conda postprocess
+snakemake -s Snakefile --configfile $SIGNAL_CONFIG --profile $SIGNAL_PROFILE --cores=$CORES --conda-prefix=$SCRIPTPATH/.snakemake/conda all
+snakemake -s Snakefile --configfile $SIGNAL_CONFIG --profile $SIGNAL_PROFILE --cores=$CORES --conda-prefix=$SCRIPTPATH/.snakemake/conda postprocess
 
 
 ##################
 ### NCOV-TOOLS ###
 ##################
-# Run NCOV-Tools on separate script at the moment as it won't work on same one? IDK why
-bash nml_automation/run_ncov-tools.sh $PRIMER_SCHEME $THREADS $SCRIPTPATH
+# Run NCOV-Tools on separate script at the moment as it won't work on same one. IDK why the same code won't work here
+bash nml_automation/run_ncov-tools.sh $CORES $SCRIPTPATH
 
 # Post NCOV-TOOLS run processing and uploads of data
 # We are back in the root dir. Need the ncov-tools data along with the signal data for final output table
 # individual data to the ./summary_csvs directory made by script
-# bash $SIGNAL_DIR/nml_automation/final_cleanup.sh
+# bash $SCRIPTPATH/nml_automation/final_cleanup.sh
 
 ### END RUNNING ###

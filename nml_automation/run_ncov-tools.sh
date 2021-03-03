@@ -1,11 +1,9 @@
 #!/bin/bash
 
-# Need scheme to grab the correct files and config
-scheme=$1
-# Threads to use
-THREADS=$2
+# Cores to use
+CORES=$1
 # Path to Prename
-BASE_SCRIPTPATH=$3
+BASE_SCRIPTPATH=$2
 
 # Activate env
 eval "$(conda shell.bash hook)"
@@ -40,6 +38,6 @@ sed -i 's|.consensus_threshold_0.75_quality_20||' *.consensus.fa
 
 # Back to ncov-tools root directory to run it
 cd ../
-snakemake -kp -s workflow/Snakefile all --cores 3
+snakemake -kp -s workflow/Snakefile all --cores $CORES
 snakemake -s workflow/Snakefile --cores 1 build_snpeff_db
 snakemake -s workflow/Snakefile --cores 2 all_qc_annotation
