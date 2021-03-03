@@ -1,0 +1,9 @@
+name: signal
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - snakemake
+  - pandas
+  - mamba
