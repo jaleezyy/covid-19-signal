@@ -33,7 +33,7 @@ def set_up():
                   'amplicon_bed': f"'{snakemake.params['amplicon_bed']}'", #grab from signal snakemake config
                   'reference_genome': f"'{snakemake.params['viral_reference_genome']}'", #grab from signal snakemake config
                   'platform': 'illumina',
-                  'primer_bed': f"'{snakemake.params['scheme_bed']}'",
+                  'primer_bed': f"'{snakemake.params['primer_bed']}'",
                   "bed_type": "unique_amplicons",
                   "offset": 0,
                   "completeness_threshold": 0.9,
