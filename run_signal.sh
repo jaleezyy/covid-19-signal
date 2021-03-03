@@ -20,17 +20,18 @@ containsElement () {
 
 # Values to Check #
 schemeArray=('articV3' 'freed' 'resende' 'V2resende')
-envArray=('signal' 'ncov-qc' 'snpdist_signal')
+envArray=('signal' 'ncov-qc' 'snpdist_signal' 'qc_summary_signal')
 
 # Base Parameters #
 FASTQ_PAIRS=""
 PRIMER_SCHEME=""
 CORES="3"
+RUNNAME="nml"
 ### END DEFAULTS ###
 
 # INPUTS #
 ##########
-while getopts ":hf:p:c:" opt; do
+while getopts ":hf:p:c:n:" opt; do
   case ${opt} in
     h )
       echo "Usage:"
@@ -42,6 +43,7 @@ Flags:
     -p      :  Specify input data primer scheme
                 Available Primer Schemes: articV3, freed, resende, V2resende
     -c      :  (OPTIONAL) Number of Cores to use in Signal. Default is 3
+    -n      :  (OPTIONAL) Run name for final outputs. Default is 'nml'
     "
         exit 0
         ;;
@@ -72,6 +74,9 @@ Flags:
                 echo "ERROR: Cores input (-c) not an integer"
                 exit 1
             fi
+        ;;
+    n)
+        RUNNAME=$OPTARG
         ;;
    \? )
      echo "Invalid Option: -$OPTARG" 1>&2
@@ -189,6 +194,7 @@ elif [ "$PRIMER_SCHEME" == "V2resende" ]; then
     echo "amplicon_bed: $SCRIPTPATH/resources/primer_schemes/2kb_resende_v2/nCoV-2019.bed" >> ./ncov-tools/config.yaml
     echo "primer_bed: $SCRIPTPATH/resources/primer_schemes/2kb_resende_v2/ncov-qc_resende.scheme.bed" >> ./ncov-tools/config.yaml
 fi
+echo "run_name: $RUNNAME" >> ./ncov-tools/config.yaml
 ### END SNAKEMAKE CONFIGS ###
 
 
@@ -218,9 +224,78 @@ snakemake -s Snakefile --configfile $SIGNAL_CONFIG --profile $SIGNAL_PROFILE --c
 # Run NCOV-Tools on separate script at the moment as it won't work on same one. IDK why the same code won't work here
 bash nml_automation/run_ncov-tools.sh $CORES $SCRIPTPATH
 
-# Post NCOV-TOOLS run processing and uploads of data
-# We are back in the root dir. Need the ncov-tools data along with the signal data for final output table
-# individual data to the ./summary_csvs directory made by script
-# bash $SCRIPTPATH/nml_automation/final_cleanup.sh
+
+##################
+### FINAL DATA ###
+##################
+
+# Set Up #
+##########
+cd $root_path
+mkdir -p ./summary_csvs
+
+# Setting up relative paths from the root dir to needed data
+ncov_qc="./ncov-tools/qc_reports/${RUNNAME}_summary_qc.tsv"
+ncov_neg="./ncov-tools/qc_reports/${RUNNAME}_negative_control_report.tsv"
+ref="./data/MN908947.3.fasta"
+pangolin="./ncov-tools/lineages/${RUNNAME}_lineage_report.csv"
+
+# Check to see if we have a negative control. If so do nothing. If not make a "fake" one to not error out
+if [ -f "$ncov_neg" ];
+then
+    echo "Negative contol data found"
+else
+    touch ./ncov-tools/qc_reports/${RUNNAME}_negative_control_report.tsv
+fi
+### END Set Up ###
+
+# QC Summary #
+##############
+conda activate qc_summary_signal
+
+for RESULT in $(ls -d signal_results/*/)
+do
+    # Getting and keeping track of the name
+    found_name="$(basename $RESULT)"
+    relative_sample_path="$RESULT/core/"
+    snpeff="./ncov-tools/qc_annotation/${found_name}_aa_table.tsv"
+    echo "Processing $found_name"
+
+    # Run the python summary
+    python ./nml_automation/qc.py --illumina \
+        --outfile ./summary_csvs/${found_name}.qc.csv \
+        --sample ${found_name} \
+        --ref ${ref} \
+        --bam ${relative_sample_path}${found_name}_viral_reference.mapping.primertrimmed.sorted.bam \
+        --fasta ${relative_sample_path}${found_name}.consensus.fa \
+        --tsv_variants ${relative_sample_path}${found_name}_ivar_variants.tsv \
+        --pangolin ${pangolin} \
+        --ncov_summary ${ncov_qc} \
+        --ncov_negative ${ncov_neg} \
+        --revision v1.2.1 \
+        --script_name covid-19-signal \
+        --sequencing_technology illumina \
+        --scheme $PRIMER_SCHEME \
+        --snpeff_tsv $snpeff \
+        --pcr_bed ./resources/pcr_primers.bed
+done
+
+# Concatenate all summaries
+csvtk concat ./summary_csvs/*.qc.csv > ./summary_csvs/combined.csv
+# Check negative controls
+python ./nml_automation/negative_control_fixes.py --qc_csv ./summary_csvs/combined.csv --output_prefix $RUNNAME
+
+# SNP DISTS #
+#############
+conda deactivate
+conda activate snpdist_signal
+
+if [ -f "./ncov-tools/qc_analysis/${RUNNAME}_aligned.fasta" ];
+then
+    snp-dists ./ncov-tools/qc_analysis/${RUNNAME}_aligned.fasta > matrix.tsv
+else
+    echo "No ./ncov-tools/qc_analysis/${RUNNAME}_aligned.fasta, skipping the snp-dist check"
+fi
+
 
 ### END RUNNING ###

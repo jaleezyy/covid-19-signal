@@ -41,3 +41,5 @@ cd ../
 snakemake -kp -s workflow/Snakefile all --cores $CORES
 snakemake -s workflow/Snakefile --cores 1 build_snpeff_db
 snakemake -s workflow/Snakefile --cores 2 all_qc_annotation
+
+cd ..
