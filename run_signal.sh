@@ -112,7 +112,7 @@ fi
 #########
 eval "$(conda shell.bash hook)"
 
-# Env Check #
+# Conda Env Check #
 for ENV in ${envArray[@]}; do
     if [ $(conda env list | awk '{print $1}' | grep "^$ENV"'$') ]; then
         echo "$ENV found"
@@ -120,7 +120,7 @@ for ENV in ${envArray[@]}; do
         echo "Conda env '$ENV' doesn't exist."
         # If its the ncov-tools env, need to use mamba
         if [ $ENV = "ncov-qc" ]; then
-            conda install -y mamba
+            conda install -y mamba -n base -c conda-forge
             mamba env create -f $SCRIPTPATH/conda_envs/$ENV.yml
         else
             conda env create --file $SCRIPTPATH/conda_envs/$ENV.yml

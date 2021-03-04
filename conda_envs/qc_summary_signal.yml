@@ -5,6 +5,7 @@ channels:
   - defaults
 dependencies:
   - bcftools
+  - csvtk
   - mafft
   - pandas
   - samtools
