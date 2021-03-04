@@ -19,8 +19,8 @@ containsElement () {
 }
 
 # Base Parameters #
-FASTQ_PAIRS=""
-PRIMER_SCHEME=""
+FASTQ_PAIRS=0
+PRIMER_SCHEME=0
 SIGNAL_ENV="signal"
 NCOV_ENV="ncov-qc"
 CORES="3"
@@ -29,71 +29,99 @@ RUNNAME="nml"
 # Values to Check #
 schemeArray=('articV3' 'freed' 'resende' 'V2resende')
 
+HELP="
+USAGE:
+    bash $SCRIPTPATH/run_signal.sh -d PATH_TO_PAIRED_FASTQ_DIR -p PRIMER_SCHEME
+    
+Flags:
+    -d  --directory       :  Path to paired fastq file directory
+    -p  --primer-scheme   :  Specify input data primer scheme
+                Available Primer Schemes: articV3, freed, resende, V2resende
+    -c  --cores           :  (OPTIONAL) Number of Cores to use in Signal. Default is 3
+    -n  --run-name        :  (OPTIONAL) Run name for final ncov-tools outputs. Default is 'nml'
+    --signal-env          :  (OPTIONAL) Name of signal conda env. Default is 'signal'
+    --ncov-tools-env      :  (OPTIONAL) Name of ncov-tools env. Default is 'ncov-qc'
+"
 ### END DEFAULTS ###
 
 # INPUTS #
 ##########
-while getopts ":hf:p:c:n:s:t:" opt; do
-  case ${opt} in
-    h )
-      echo "Usage:"
-      echo "    bash run_signal.sh -h                      Display this help message."
-      echo "    bash $SCRIPTPATH/run_signal.sh -f PATH_TO_PAIRED_FASTQ_DIR -p PRIMER_SCHEME
-    
-Flags:
-    -f      :  Path to paired fastq file directory
-    -p      :  Specify input data primer scheme
-                Available Primer Schemes: articV3, freed, resende, V2resende
-    -c      :  (OPTIONAL) Number of Cores to use in Signal. Default is 3
-    -n      :  (OPTIONAL) Run name for final outputs. Default is 'nml'
-    -s      :  (OPTIONAL) Name of signal conda env. Default is 'signal'
-    -t      :  (OPTIONAL) Name of ncov-tools env. Default is 'ncov-qc'
-    "
-        exit 0
-        ;;
-    f)
-        FASTQ_PAIRS=${OPTARG%/}
-            if [ -d "$FASTQ_PAIRS" ]; then
-                echo "Directory '$FASTQ_PAIRS' exists"
-            else
-                echo "ERROR: Directory '$FASTQ_PAIRS' does not exist"
-                exit 1
-            fi       
-        ;;
-    p)
-        PRIMER_SCHEME=$OPTARG
-            if containsElement "$PRIMER_SCHEME" "${schemeArray[@]}"; then
-                echo "Using primer scheme $PRIMER_SCHEME"
-            else
-                echo "ERROR: $PRIMER_SCHEME unavailable"
-                echo "Primer schemes available are ${schemeArray[@]}"
-                exit 1
-            fi
-        ;;
-    c)
-        CORES=$OPTARG
-            if [[ $CORES == +([0-9]) ]]; then
-                echo "Using $CORES"
-            else
-                echo "ERROR: Cores input (-c) not an integer"
-                exit 1
-            fi
-        ;;
-    n)
-        RUNNAME=$OPTARG
-        ;;
-    s)
-        SIGNAL_ENV=$OPTARG
-        ;;
-    t)
-        NCOV_ENV=$OPTARG
-        ;;
-   \? )
-     echo "Invalid Option: -$OPTARG" 1>&2
-     exit 1
-     ;;
-  esac
+
+# Check for Args #
+if [ $# -eq 0 ]; then
+    echo "$HELP"
+    exit 0
+fi
+
+# Set Arguments #
+while [ "$1" = "--directory" -o "$1" = "-d" -o "$1" = "--primer-scheme" -o "$1" = "-p" -o "$1" = "--cores" -o "$1" = "-c" -o "$1" = "--run-name" -o "$1" = "-n" -o "$1" = "--signal-env" -o "$1" = "--ncov-tools-env" ];
+do
+    if [ "$1" = "--directory" -o "$1" = "-d" ]; then
+        shift
+        FASTQ_PAIRS=$1
+        shift
+    elif [ "$1" = "--primer-scheme" -o "$1" = "-p" ]; then
+        shift
+        PRIMER_SCHEME=$1
+        shift
+    elif [ "$1" = "--cores" -o "$1" = "-c" ]; then
+        shift
+        CORES=$1
+        shift
+    elif [ "$1" = "--run-name" -o "$1" = "-n" ]; then
+        shift
+        RUNNAME=$1
+        shift
+    elif [ "$1" = "--signal-env" ]; then
+        shift
+        SIGNAL_ENV=$1
+        shift
+    elif [ "$1" = "--ncov-tools-env" ]; then
+        shift
+        NCOV_ENV=$1
+        shift
+    else
+        shift
+    fi
 done
+
+# CHECK INPUTS #
+################
+
+if [ -d "$FASTQ_PAIRS" ]; then
+    echo "Directory '$FASTQ_PAIRS' exists"
+else
+    if [ $FASTQ_PAIRS = 0 ]; then
+        echo "ERROR: Please input a paired fastq directory with '-d'"
+        echo "$HELP"
+        exit 1
+    else
+        echo "ERROR: Directory '$FASTQ_PAIRS' does not exist"
+        echo "Please input a valid paired fastq directory"
+        exit 1
+    fi
+fi
+
+if containsElement "$PRIMER_SCHEME" "${schemeArray[@]}"; then
+    echo "Using primer scheme $PRIMER_SCHEME"
+else
+    if [ $PRIMER_SCHEME = 0 ]; then
+        echo "ERROR: Please specify a primer scheme"
+        echo "Primer schemes available are ${schemeArray[@]}"
+        exit 1
+    else
+        echo "ERROR: $PRIMER_SCHEME unavailable"
+        echo "Primer schemes available are ${schemeArray[@]}"
+        exit 1
+    fi
+fi
+
+if [[ $CORES == +([0-9]) ]]; then
+    echo "Using $CORES cores for analysis"
+else
+    echo "ERROR: Cores input (-c) not an integer"
+    exit 1
+fi
 
 # Envs needed
 envArray=($SIGNAL_ENV $NCOV_ENV 'snpdist_signal' 'qc_summary_signal')
