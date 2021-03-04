@@ -119,7 +119,7 @@ for ENV in ${envArray[@]}; do
     else
         echo "Conda env '$ENV' doesn't exist. Making environment"
         # If its the ncov-tools env, need to use mamba
-        if [ $ENV = "ncov-qc_signal" ]; then
+        if [ $ENV = "ncov-qc" ]; then
             conda install -y mamba -n base -c conda-forge
             mamba env create -f $SCRIPTPATH/conda_envs/$ENV.yaml
         else
