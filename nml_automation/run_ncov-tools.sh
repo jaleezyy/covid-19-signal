@@ -4,13 +4,15 @@
 CORES=$1
 # Path to Prename
 BASE_SCRIPTPATH=$2
+# Ncov-tools env name
+NCOV_ENV=$3
 
 # Activate env
 eval "$(conda shell.bash hook)"
 
 # Default name is ncov-qc from https://github.com/jts/ncov-tools/blob/master/workflow/envs/environment.yml
 # May have to switch to a container or something similar later to make it easier
-conda activate ncov-qc
+conda activate $NCOV_ENV
 
 # If we have a matching negative control, we modify the config to make sure its gotten
 # If we don't find any, then no negative controls are added

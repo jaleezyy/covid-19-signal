@@ -18,20 +18,22 @@ containsElement () {
     return 1
 }
 
-# Values to Check #
-schemeArray=('articV3' 'freed' 'resende' 'V2resende')
-envArray=('signal' 'ncov-qc' 'snpdist_signal' 'qc_summary_signal')
-
 # Base Parameters #
 FASTQ_PAIRS=""
 PRIMER_SCHEME=""
+SIGNAL_ENV="signal"
+NCOV_ENV="ncov-qc"
 CORES="3"
 RUNNAME="nml"
+
+# Values to Check #
+schemeArray=('articV3' 'freed' 'resende' 'V2resende')
+
 ### END DEFAULTS ###
 
 # INPUTS #
 ##########
-while getopts ":hf:p:c:n:" opt; do
+while getopts ":hf:p:c:n:s:t:" opt; do
   case ${opt} in
     h )
       echo "Usage:"
@@ -44,6 +46,8 @@ Flags:
                 Available Primer Schemes: articV3, freed, resende, V2resende
     -c      :  (OPTIONAL) Number of Cores to use in Signal. Default is 3
     -n      :  (OPTIONAL) Run name for final outputs. Default is 'nml'
+    -s      :  (OPTIONAL) Name of signal conda env. Default is 'signal'
+    -t      :  (OPTIONAL) Name of ncov-tools env. Default is 'ncov-qc'
     "
         exit 0
         ;;
@@ -66,7 +70,7 @@ Flags:
                 exit 1
             fi
         ;;
-    t)
+    c)
         CORES=$OPTARG
             if [[ $CORES == +([0-9]) ]]; then
                 echo "Using $CORES"
@@ -78,12 +82,21 @@ Flags:
     n)
         RUNNAME=$OPTARG
         ;;
+    s)
+        SIGNAL_ENV=$OPTARG
+        ;;
+    t)
+        NCOV_ENV=$OPTARG
+        ;;
    \? )
      echo "Invalid Option: -$OPTARG" 1>&2
      exit 1
      ;;
   esac
 done
+
+# Envs needed
+envArray=($SIGNAL_ENV $NCOV_ENV 'snpdist_signal' 'qc_summary_signal')
 ### END INPUTS ###
 
 
@@ -207,7 +220,7 @@ ln -s $SCRIPTPATH/* .
 ##################
 # Activate env
 # Echo out relevant info to double check it looks ok
-conda activate signal
+conda activate $SIGNAL_ENV
 echo "Running ${run_name} with scheme ${PRIMER_SCHEME}"
 echo "config: $SIGNAL_CONFIG"
 echo "profile: $SIGNAL_PROFILE"
@@ -222,7 +235,7 @@ snakemake -s Snakefile --configfile $SIGNAL_CONFIG --profile $SIGNAL_PROFILE --c
 ### NCOV-TOOLS ###
 ##################
 # Run NCOV-Tools on separate script at the moment as it won't work on same one. IDK why the same code won't work here
-bash nml_automation/run_ncov-tools.sh $CORES $SCRIPTPATH
+bash nml_automation/run_ncov-tools.sh $CORES $SCRIPTPATH $NCOV_ENV
 
 
 ##################
