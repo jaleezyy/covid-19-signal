@@ -117,13 +117,13 @@ for ENV in ${envArray[@]}; do
     if [ $(conda env list | awk '{print $1}' | grep "^$ENV"'$') ]; then
         echo "$ENV found"
     else
-        echo "Conda env '$ENV' doesn't exist."
+        echo "Conda env '$ENV' doesn't exist. Making environment"
         # If its the ncov-tools env, need to use mamba
-        if [ $ENV = "ncov-qc" ]; then
+        if [ $ENV = "ncov-qc_signal" ]; then
             conda install -y mamba -n base -c conda-forge
-            mamba env create -f $SCRIPTPATH/conda_envs/$ENV.yml
+            mamba env create -f $SCRIPTPATH/conda_envs/$ENV.yaml
         else
-            conda env create --file $SCRIPTPATH/conda_envs/$ENV.yml
+            conda env create --file $SCRIPTPATH/conda_envs/$ENV.yaml
         fi
     fi
 done

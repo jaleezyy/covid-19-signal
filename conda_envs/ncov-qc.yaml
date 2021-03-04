@@ -15,7 +15,7 @@ dependencies:
   - r-patchwork=1.0.0
   - r-ggforce=0.3.1
   - bedtools
-  - samtools
+  - samtools=1.11
   - parasail-python
   - newick_utils
   - pip=19.3.1
