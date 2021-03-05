@@ -2,7 +2,7 @@
 data_root: files
 
 # optionally the plots can have a "run name" prefix. If this is not defined the prefix will be "default"
-run_name: nml
+# run_name: echo'd in and can be set by lab, default is nml
 
 # path to the file containing the amplicon regions (not the primer sites, the actual amplicons)
 # amplicon_bed: echo'd in at the bottom

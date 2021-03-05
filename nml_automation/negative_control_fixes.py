@@ -36,7 +36,7 @@ def main():
     df = pd.read_csv(args.qc_csv, sep=',')
 
     # Set the negative control headers which are static based on ncov-tools
-    negative_columns = ['qc', 'genome_covered_bases', 'genome_total_bases', 'genome_covered_fraction', 'amplicons_detected']
+    negative_columns = ['negative_control_qc', 'negative_control_genome_covered_bases', 'negative_control_genome_total_bases', 'negative_control_genome_covered_fraction', 'negative_control_amplicons_detected']
 
     # Place data here as column: [statement(s)] to generate the fill for the columns
     replace_dict = {}

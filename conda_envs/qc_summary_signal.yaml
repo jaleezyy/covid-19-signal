@@ -1,0 +1,14 @@
+name: qc_summary_signal
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - bcftools
+  - csvtk
+  - mafft
+  - pandas
+  - samtools
+  - libxcb
+  - pyvcf
+  - pybedtools

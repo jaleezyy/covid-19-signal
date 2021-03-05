@@ -1,0 +1,7 @@
+name: snpdist_signal
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - snp-dists
