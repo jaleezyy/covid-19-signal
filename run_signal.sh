@@ -9,6 +9,7 @@
 set -e # exit if pipeline returns non-zero status
 set -o pipefail # return value of last command to exit with non-zero status
 SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )" # Get script location which will be the signal base dir
+mkdir -p $SCRIPTPATH/.snakemake
 
 # Function to check if element is in an array
 containsElement () {
@@ -21,10 +22,13 @@ containsElement () {
 # Base Parameters #
 FASTQ_PAIRS=0
 PRIMER_SCHEME=0
-SIGNAL_ENV="signal"
-NCOV_ENV="ncov-qc"
 CORES="3"
 RUNNAME="nml"
+BASE_ENV_PATH="$SCRIPTPATH/.snakemake/conda"
+SIGNAL_ENV="signal"
+USER_SIGNAL=false
+NCOV_ENV="ncov-qc"
+USER_NCOV=false
 
 # Values to Check #
 schemeArray=('articV3' 'freed' 'resende' 'V2resende')
@@ -39,8 +43,10 @@ Flags:
                 Available Primer Schemes: articV3, freed, resende, V2resende
     -c  --cores           :  (OPTIONAL) Number of Cores to use in Signal. Default is 3
     -n  --run-name        :  (OPTIONAL) Run name for final ncov-tools outputs. Default is 'nml'
-    --signal-env          :  (OPTIONAL) Name of signal conda env. Default is 'signal'
-    --ncov-tools-env      :  (OPTIONAL) Name of ncov-tools env. Default is 'ncov-qc'
+    --signal-env          :  (OPTIONAL) Name of signal conda env. Default is '$BASE_ENV_PATH/signal'
+    --ncov-tools-env      :  (OPTIONAL) Name of ncov-tools env. Default is '$BASE_ENV_PATH/ncov-qc'
+                **NOTE** It is highly recommended to let the script generate the environments as it will
+                          only occur once and you won't have to pass the path each time
 "
 ### END DEFAULTS ###
 
@@ -75,10 +81,12 @@ do
     elif [ "$1" = "--signal-env" ]; then
         shift
         SIGNAL_ENV=$1
+        USER_SIGNAL=true
         shift
     elif [ "$1" = "--ncov-tools-env" ]; then
         shift
         NCOV_ENV=$1
+        USER_NCOV=true
         shift
     else
         shift
@@ -153,21 +161,34 @@ fi
 #########
 eval "$(conda shell.bash hook)"
 
+# Make mamba env or activate it
+if [[ $(conda env list | awk '{print $1}' | grep "^mamba-signal"'$') ]]; then
+    conda activate mamba-signal
+else
+    echo "Generating 'mamba-signal' environment to install needed dependencies"
+    conda create --yes -n mamba-signal -c conda-forge -c defaults mamba
+    conda activate mamba-signal
+fi
+
 # Conda Env Check #
 for ENV in ${envArray[@]}; do
-    if [ $(conda env list | awk '{print $1}' | grep "^$ENV"'$') ]; then
-        echo "$ENV found"
+    # If user given, don't add BASE_ENV_PATH to it
+    if [[ "$USER_SIGNAL" = true && "$ENV" = "$SIGNAL_ENV" ]] || [[ "$USER_NCOV" = true && "$ENV" = "$NCOV_ENV" ]]; then
+        FULL_ENV="$ENV"
     else
-        echo "Conda env '$ENV' doesn't exist. Making environment"
-        # If its the ncov-tools env, need to use mamba
-        if [ $ENV = "ncov-qc" ]; then
-            conda install -y mamba -n base -c conda-forge
-            mamba env create -f $SCRIPTPATH/conda_envs/$ENV.yaml
-        else
-            conda env create --file $SCRIPTPATH/conda_envs/$ENV.yaml
-        fi
+        FULL_ENV="$BASE_ENV_PATH/$ENV"
+    fi
+
+    # Check if env exists in user envs. NOTE if it is a env not listed in `conda env list` it will error out
+    if [[ $(conda env list | awk '{print $1}' | grep "^$FULL_ENV"'$') ]]; then
+        echo "$FULL_ENV found"
+    else
+        echo "Conda env '$FULL_ENV' wasn't found in the env list. Attempting to make the environment in $SCRIPTPATH/.snakemake"
+        mamba env create -f=$SCRIPTPATH/conda_envs/$ENV.yaml -p $FULL_ENV
     fi
 done
+# Deactivate mamba, not needed anymore once envs made
+conda deactivate
 ### END CONDA ###
 
 # FINAL OUTPUT LOCATION #
@@ -247,8 +268,13 @@ ln -s $SCRIPTPATH/* .
 ### RUN SIGNAL ###
 ##################
 # Activate env
+if [ "$USER_SIGNAL" = true ]; then
+    conda activate $SIGNAL_ENV
+else
+    conda activate $BASE_ENV_PATH/$SIGNAL_ENV
+fi
+
 # Echo out relevant info to double check it looks ok
-conda activate $SIGNAL_ENV
 echo "Running ${run_name} with scheme ${PRIMER_SCHEME}"
 echo "config: $SIGNAL_CONFIG"
 echo "profile: $SIGNAL_PROFILE"
@@ -263,7 +289,12 @@ snakemake -s Snakefile --configfile $SIGNAL_CONFIG --profile $SIGNAL_PROFILE --c
 ### NCOV-TOOLS ###
 ##################
 # Run NCOV-Tools on separate script at the moment as it won't work on same one. IDK why the same code won't work here
-bash nml_automation/run_ncov-tools.sh $CORES $SCRIPTPATH $NCOV_ENV
+if [ "$USER_NCOV" = true ]; then
+    FULL_NCOV_ENV="$NCOV_ENV"
+else
+    FULL_NCOV_ENV="$BASE_ENV_PATH/$NCOV_ENV"
+fi
+bash nml_automation/run_ncov-tools.sh $CORES $SCRIPTPATH $FULL_NCOV_ENV
 
 
 ##################
@@ -292,7 +323,7 @@ fi
 
 # QC Summary #
 ##############
-conda activate qc_summary_signal
+conda activate $BASE_ENV_PATH/qc_summary_signal
 
 for RESULT in $(ls -d signal_results/*/)
 do
@@ -329,7 +360,7 @@ python ./nml_automation/negative_control_fixes.py --qc_csv ./summary_csvs/combin
 # SNP DISTS #
 #############
 conda deactivate
-conda activate snpdist_signal
+conda activate $BASE_ENV_PATH/snpdist_signal
 
 if [ -f "./ncov-tools/qc_analysis/${RUNNAME}_aligned.fasta" ];
 then
@@ -337,6 +368,5 @@ then
 else
     echo "No ./ncov-tools/qc_analysis/${RUNNAME}_aligned.fasta, skipping the snp-dist check"
 fi
-
 
 ### END RUNNING ###
