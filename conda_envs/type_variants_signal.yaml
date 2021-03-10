@@ -1,0 +1,11 @@
+name: type_variants_signal
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - biopython
+  - mafft
+  - pip=19.3.1
+  - pip:
+      - git+https://github.com/DarianHole/type_variants.git

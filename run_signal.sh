@@ -132,7 +132,7 @@ else
 fi
 
 # Envs needed
-envArray=($SIGNAL_ENV $NCOV_ENV 'snpdist_signal' 'qc_summary_signal')
+envArray=($SIGNAL_ENV $NCOV_ENV 'snpdist_signal' 'qc_summary_signal' 'type_variants_signal')
 ### END INPUTS ###
 
 
@@ -369,4 +369,18 @@ else
     echo "No ./ncov-tools/qc_analysis/${RUNNAME}_aligned.fasta, skipping the snp-dist check"
 fi
 
+# TYPE VARIANTS #
+#################
+conda deactivate
+conda activate $BASE_ENV_PATH/type_variants_signal
+
+cat ./ncov-tools/files/*.fa > all_seq.fasta
+mafft --auto --keeplength --addfragments all_seq.fasta ./ncov-tools/nCoV-2019.reference.fasta > aligned_mafft.fasta
+
+for CSV in $SCRIPTPATH/resources/variant_profile_csvs/*.csv
+do
+    CSV_NAME="$(basename $CSV)"
+
+    type_variants.py --fasta-in aligned_mafft.fasta --variants-config $CSV --reference ./ncov-tools/nCoV-2019.reference.fasta --variants-out $CSV_NAME --append-genotypes
+done
 ### END RUNNING ###
