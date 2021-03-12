@@ -14,7 +14,7 @@ min_qual: 20
 min_len: 20
 
 # Path from snakemake dir to .bed file defining amplicon primer scheme
-scheme_bed: 'resources/primer_schemes/nCoV-2019_v3_fixed.bed'
+scheme_bed: 'resources/primer_schemes/artic_v3/nCoV-2019.bed'
 
 # Path from snakemake dir to bwa indexed human + viral reference genome
 composite_reference: 'data/composite_human_viral_reference.fna'
@@ -24,13 +24,13 @@ composite_reference: 'data/composite_human_viral_reference.fna'
 # Used as -r,-g arguments to 'quast'
 # contig needed for hostremoval filtering script
 viral_reference_contig_name: 'MN908947.3'
-viral_reference_genome: 'data/MN908947_3.fasta'
-viral_reference_feature_coords: 'data/MN908947_3.gff3'
+viral_reference_genome: 'data/MN908947.3.fasta'
+viral_reference_feature_coords: 'data/MN908947.3.gff3'
 
 # breseq_reference must be defined if run_breseq == True
 run_breseq: False
 # Used as --reference argument to 'breseq'
-breseq_reference: 'data/MN908947_3.gbk'
+breseq_reference: 'data/MN908947.3.gbk'
 
 # run freebayes for variant and consensus calling (as well as ivar)
 run_freebayes: True
@@ -57,7 +57,7 @@ var_min_variant_quality: 20
 
 # ONLY NEEDED IF USING NCOV-TOOLS SUMMARIES
 # Path from snakemake dir to .bed file defining the actual amplicon locations not the primers
-amplicon_loc_bed: 'resources/primer_schemes/nCoV-2019_v3.distinct_regions.bed'
+amplicon_loc_bed: 'resources/primer_schemes/artic_v3/ncov-qc_V3.scheme.bed'
 
 # fasta of sequences to include with pangolin phylogeny
 phylo_include_seqs: "data/gisaid_hcov-19_2020_05_25_23.fasta"
