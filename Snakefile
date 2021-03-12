@@ -432,8 +432,8 @@ rule run_ivar_consensus:
         "{sn}/benchmarks/{sn}_ivar_consensus.benchmark.tsv"
     params:
         mpileup_depth = config['mpileup_depth'],
-        ivar_min_coverage_depth = config['ivar_min_coverage_depth'],
-        ivar_freq_threshold = config['ivar_freq_threshold'],
+        ivar_min_coverage_depth = config['var_min_coverage_depth'],
+        ivar_freq_threshold = config['var_freq_threshold'],
         output_prefix = '{sn}/core/{sn}.consensus',
     shell:
         '(samtools mpileup -aa -A -d {params.mpileup_depth} -Q0 {input} | '
@@ -472,9 +472,9 @@ rule run_ivar_variants:
         "{sn}/benchmarks/{sn}_ivar_variants.benchmark.tsv"
     params:
         output_prefix = '{sn}/core/{sn}_ivar_variants',
-        ivar_min_coverage_depth = config['ivar_min_coverage_depth'],
-        ivar_min_freq_threshold = config['ivar_min_freq_threshold'],
-        ivar_min_variant_quality = config['ivar_min_variant_quality'],
+        ivar_min_coverage_depth = config['var_min_coverage_depth'],
+        ivar_min_freq_threshold = config['var_min_freq_threshold'],
+        ivar_min_variant_quality = config['var_min_variant_quality'],
     shell:
         '(samtools mpileup -aa -A -d 0 --reference {input.reference} -B '
             '-Q 0 {input.read_bam} | '

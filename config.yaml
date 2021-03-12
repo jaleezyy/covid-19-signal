@@ -43,14 +43,14 @@ primer_pairs_tsv:
 
 # Consensus and variant calling ivar/samtools params from https://github.com/connor-lab/ncov2019-artic-nf/blob/master/conf/illumina.config
 mpileup_depth: 100000
-# ivar frequency threshold to build consensus
-ivar_freq_threshold: 0.75
+# ivar/freebayes frequency threshold to build consensus
+var_freq_threshold: 0.75
 # Minimum coverage depth to call variant
-ivar_min_coverage_depth: 10
-# iVar frequency threshold to call variant (ivar variants: -t )
-ivar_min_freq_threshold: 0.25
-# iVar minimum mapQ to call variant (ivar variants: -q)
-ivar_min_variant_quality: 20
+var_min_coverage_depth: 10
+# iVar/freebayes frequency threshold to call variant (ivar variants: -t )
+var_min_freq_threshold: 0.25
+# iVar/freebayes minimum mapQ to call variant (ivar variants: -q)
+var_min_variant_quality: 20
 
 # ONLY NEEDED IF USING NCOV-TOOLS SUMMARIES
 # Path from snakemake dir to .bed file defining the actual amplicon locations not the primers
