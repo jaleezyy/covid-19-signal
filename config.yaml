@@ -2,7 +2,7 @@
 # It is ingested by the Snakefile, and also intended to be human-readable.
 
 # Sample table (can be created using example_sample_table.csv)
-samples: "example_sample_table.csv"
+samples: "sample_table.csv"
 
 # Folder to place all results (can be relative or absolute path)
 result_dir: "results_dir"
@@ -31,6 +31,9 @@ viral_reference_feature_coords: 'data/MN908947_3.gff3'
 run_breseq: False
 # Used as --reference argument to 'breseq'
 breseq_reference: 'data/MN908947_3.gbk'
+
+# run freebayes for variant and consensus calling (as well as ivar)
+run_freebayes: True
 
 # Used as --db argument to 'kraken2'
 kraken2_db: 'data/Kraken2/db'
