@@ -158,7 +158,7 @@ else:
         input:
             rules.ivar_variants.input,
             rules.consensus.input
-=======
+
 rule all:
     input:
         rules.raw_read_data_symlinks.input,
