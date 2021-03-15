@@ -158,8 +158,6 @@ else:
         input:
             rules.ivar_variants.input,
             rules.consensus.input
-
-<<<<<<< HEAD
 =======
 rule all:
     input:
@@ -176,7 +174,6 @@ rule all:
         rules.variant_calling.input,
         rules.lineages.input
 
->>>>>>> dev
 rule postprocess:
     conda: 
         'conda_envs/postprocessing.yaml'
