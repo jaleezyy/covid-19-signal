@@ -427,7 +427,7 @@ def parse_quast_report(report_filename, allow_missing=True):
 
     return ret
 
-
+### CURRENTLY ONLY USING IVAR CONSENSUS
 def parse_consensus_assembly(fasta_filename, allow_missing=True):
     """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
 
@@ -567,6 +567,25 @@ def parse_ivar_variants(tsv_filename, allow_missing=True):
 
         if t[3] != '':
             variants.append(f"{t[2]}{t[1]}{t[3]}")
+
+    return { 'variants': variants }
+
+def parse_freebayes_variants(vcf_filename, allow_missing=True):
+    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
+
+    if file_is_missing(vcf_filename, allow_missing):
+        return { 'variants': [] }
+
+    variants = []
+    
+    # Only interpret lines that DO NOT start with "#"
+    for line in open(vcf_filename):
+        if not line.startswith("#"):
+            t = line.split('\t')
+            assert len(t) == 10
+
+            if t[4] != '':
+                variants.append(f"{t[3]}{t[1]}{t[4]}")
 
     return { 'variants': variants }
 
@@ -848,6 +867,9 @@ class WriterBase:
         title = "Variants in Read Alignment (BreSeq)" if self.unabridged else "Variants (BreSeq)"
         self.write_lines(title, s.breseq['variants'])
 
+    def write_freebayes(self, s):
+        title = "Variants in Consensus Genome (Freebayes)" if self.unabridged else "Variants (Freebayes)"
+        self.write_lines(title, s.freebayes['variants'], coalesce=True)
 
     def write_sample(self, s):
         self.start_sample(s)
@@ -857,6 +879,7 @@ class WriterBase:
         self.write_kraken2(s)
         self.write_quast(s)
         self.write_ivar(s)
+        self.write_freebayes(s)
         self.write_breseq(s)
         self.end_sample(s)
 
@@ -1195,6 +1218,7 @@ class Sample:
         self.consensus = parse_consensus_assembly(f"{name}/core/{name}.consensus.fa")
         self.coverage = parse_coverage(f"{name}/coverage/{name}_depth.txt")
         self.ivar = parse_ivar_variants(f"{name}/core/{name}_ivar_variants.tsv")
+        self.freebayes = parse_freebayes_variants(f"{name}/freebayes/{name}.variants.norm.vcf")
         self.breseq = parse_breseq_output(f"{name}/breseq/{name}_output/index.html")
 
 class Pipeline:
