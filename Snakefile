@@ -45,6 +45,15 @@ validate(config, 'resources/config.schema.yaml')
 samples = pd.read_table(config['samples'], sep=',')
 validate(samples, 'resources/sample.schema.yaml')
 
+# manual assignment of breseq reference
+try:
+    if os.path.exists(config['breseq_reference']):
+        breseq_ref = config['breseq_reference']
+    else:
+        breseq_ref = ""
+except TypeError:
+    breseq_ref = ""
+
 # set output directory
 exec_dir = os.getcwd()
 workdir: os.path.abspath(config['result_dir'])
@@ -142,6 +151,9 @@ if config['run_breseq'] and config['run_freebayes']:
             rules.consensus.input,
             rules.freebayes.input
 elif config['run_breseq'] and not config['run_freebayes']:
+    if breseq_ref == "":
+        print("Invalid BreSeq reference (paramter: breseq_reference) in config file. Please double check and restart")
+        exit(1)
     rule variant_calling:
         input:
             rules.breseq.input,
@@ -535,7 +547,7 @@ rule run_breseq:
     benchmark:
         "{sn}/benchmarks/{sn}_run_breseq.benchmark.tsv"
     params:
-        ref = os.path.join(exec_dir, config['breseq_reference']),
+        ref = os.path.join(exec_dir, breseq_ref),
         outdir = '{sn}/breseq',
         unlabelled_output_dir = '{sn}/breseq/output',
         labelled_output_dir = '{sn}/breseq/{sn}_output'
