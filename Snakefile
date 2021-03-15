@@ -107,6 +107,11 @@ rule ivar_variants:
 
 rule breseq:
     input: expand('{sn}/breseq/{sn}_output/index.html', sn=sample_names)
+
+rule freebayes:
+    input: 
+        expand('{sn}/freebayes/{sn}.consensus.fasta', sn=sample_names),
+        expand('{sn}/freebayes/{sn}.variants.norm.vcf', sn=sample_names)
     
 rule coverage:
     input: expand('{sn}/coverage/{sn}_depth.txt', sn=sample_names)
@@ -128,41 +133,50 @@ rule config_sample_log:
         config_filename,
         config['samples']
 
-
-if config['run_breseq']:
-    rule all:
+# to handle different options in variant calling
+if config['run_breseq'] and config['run_freebayes']:
+    rule variant_calling:
         input:
-            rules.raw_read_data_symlinks.input,
-            rules.host_removed_raw_reads.input,
-            rules.remove_adapters.input,
-            rules.fastqc.input,
-            rules.clean_reads.input,
-            rules.consensus.input,
-            rules.ivar_variants.input,
-            rules.coverage.input,
-            rules.coverage_plot.input,
-            rules.kraken2.input,
-            rules.quast.input,
-            rules.config_sample_log.input,
             rules.breseq.input,
-            rules.lineages.input
-else:
-    rule all:
-        input:
-            rules.raw_read_data_symlinks.input,
-            rules.host_removed_raw_reads.input,
-            rules.remove_adapters.input,
-            rules.fastqc.input,
-            rules.clean_reads.input,
-            rules.consensus.input,
             rules.ivar_variants.input,
-            rules.coverage.input,
-            rules.coverage_plot.input,
-            rules.kraken2.input,
-            rules.quast.input,
-            rules.config_sample_log.input,
-            rules.lineages.input
+            rules.consensus.input,
+            rules.freebayes.input
+elif config['run_breseq'] and not config['run_freebayes']:
+    rule variant_calling:
+        input:
+            rules.breseq.input,
+            rules.ivar_variants.input,
+            rules.consensus.input
+elif not config['run_breseq'] and config['run_freebayes']:
+    rule variant_calling:
+        input:
+            rules.freebayes.input,
+            rules.ivar_variants.input,
+            rules.consensus.input
+else:
+    rule variant_calling:
+        input:
+            rules.ivar_variants.input,
+            rules.consensus.input
 
+<<<<<<< HEAD
+=======
+rule all:
+    input:
+        rules.raw_read_data_symlinks.input,
+        rules.host_removed_raw_reads.input,
+        rules.remove_adapters.input,
+        rules.fastqc.input,
+        rules.clean_reads.input,
+        rules.coverage.input,
+        rules.coverage_plot.input,
+        rules.kraken2.input,
+        rules.quast.input,
+        rules.config_sample_log.input,
+        rules.variant_calling.input,
+        rules.lineages.input
+
+>>>>>>> dev
 rule postprocess:
     conda: 
         'conda_envs/postprocessing.yaml'
@@ -458,8 +472,8 @@ rule run_ivar_consensus:
         "{sn}/benchmarks/{sn}_ivar_consensus.benchmark.tsv"
     params:
         mpileup_depth = config['mpileup_depth'],
-        ivar_min_coverage_depth = config['ivar_min_coverage_depth'],
-        ivar_freq_threshold = config['ivar_freq_threshold'],
+        ivar_min_coverage_depth = config['var_min_coverage_depth'],
+        ivar_freq_threshold = config['var_freq_threshold'],
         output_prefix = '{sn}/core/{sn}.consensus',
     shell:
         '(samtools mpileup -aa -A -d {params.mpileup_depth} -Q0 {input} | '
@@ -498,9 +512,9 @@ rule run_ivar_variants:
         "{sn}/benchmarks/{sn}_ivar_variants.benchmark.tsv"
     params:
         output_prefix = '{sn}/core/{sn}_ivar_variants',
-        ivar_min_coverage_depth = config['ivar_min_coverage_depth'],
-        ivar_min_freq_threshold = config['ivar_min_freq_threshold'],
-        ivar_min_variant_quality = config['ivar_min_variant_quality'],
+        ivar_min_coverage_depth = config['var_min_coverage_depth'],
+        ivar_min_freq_threshold = config['var_min_freq_threshold'],
+        ivar_min_variant_quality = config['var_min_variant_quality'],
     shell:
         '(samtools mpileup -aa -A -d 0 --reference {input.reference} -B '
             '-Q 0 {input.read_bam} | '
@@ -532,6 +546,64 @@ rule run_breseq:
         """
         breseq --reference {params.ref} --num-processors {threads} --polymorphism-prediction --brief-html-output --output {params.outdir} {input} > {log} 2>&1
         mv -T {params.unlabelled_output_dir} {params.labelled_output_dir}
+        """
+
+################## Based on https://github.com/jts/ncov2019-artic-nf/blob/be26baedcc6876a798a599071bb25e0973261861/modules/illumina.nf ##################
+
+rule run_freebayes:
+    threads: 1
+    priority: 1
+    conda: 'conda_envs/freebayes.yaml'
+    output:
+        consensus = '{sn}/freebayes/{sn}.consensus.fasta',
+        variants = '{sn}/freebayes/{sn}.variants.norm.vcf'
+    input:
+        reference = os.path.join(exec_dir, config['viral_reference_genome']),
+        read_bam = "{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam"
+    params:
+        out = '{sn}/freebayes/work/{sn}',
+        freebayes_min_coverage_depth = config['var_min_coverage_depth'],
+        freebayes_min_freq_threshold = config['var_min_freq_threshold'],
+        freebayes_min_variant_quality = config['var_min_variant_quality'],
+        freebayes_freq_threshold = config['var_freq_threshold'],
+        script_path = os.path.join(exec_dir, "scripts", "process_gvcf.py")
+    shell:
+        """
+        mkdir -p $(dirname {params.out})
+        # the sed is to fix the header until a release is made with this fix
+        # https://github.com/freebayes/freebayes/pull/549
+        freebayes -p 1 \
+                  -f {input.reference} \
+                  -F 0.2 \
+                  -C 1 \
+                  --pooled-continuous \
+                  --min-coverage {params.freebayes_min_coverage_depth} \
+                  --gvcf --gvcf-dont-use-chunk true {input.read_bam} | sed s/QR,Number=1,Type=Integer/QR,Number=1,Type=Float/ > {params.out}.gvcf
+
+        # make depth mask, split variants into ambiguous/consensus
+        # NB: this has to happen before bcftools norm or else the depth mask misses any bases exposed during normalization
+        python {params.script_path} -d {params.freebayes_min_coverage_depth} \
+                        -l {params.freebayes_min_freq_threshold} \
+                        -u {params.freebayes_freq_threshold} \
+                        -m {params.out}.mask.txt \
+                        -v {params.out}.variants.vcf \
+                        -c {params.out}.consensus.vcf {params.out}.gvcf 
+
+        # normalize variant records into canonical VCF representation
+        bcftools norm -f {input.reference} {params.out}.variants.vcf > {output.variants} 
+        bcftools norm -f {input.reference} {params.out}.consensus.vcf > {params.out}.consensus.norm.vcf
+
+        # split the consensus sites file into a set that should be IUPAC codes and all other bases, using the ConsensusTag in the VCF
+        for vt in "ambiguous" "fixed"; do
+            cat {params.out}.consensus.norm.vcf | awk -v vartag=ConsensusTag=$vt '$0 ~ /^#/ || $0 ~ vartag' > {params.out}.$vt.norm.vcf
+            bgzip -f {params.out}.$vt.norm.vcf  
+            tabix -f -p vcf {params.out}.$vt.norm.vcf.gz 
+        done
+        
+        # apply ambiguous variants first using IUPAC codes. this variant set cannot contain indels or the subsequent step will break
+        bcftools consensus -f {input.reference} -I {params.out}.ambiguous.norm.vcf.gz > {params.out}.ambiguous.fasta 
+        # apply remaninng variants, including indels
+        bcftools consensus -f {params.out}.ambiguous.fasta -m {params.out}.mask.txt {params.out}.fixed.norm.vcf.gz | sed s/MN908947\.3.*/{wildcards.sn}/ > {output.consensus}
         """
 
 
