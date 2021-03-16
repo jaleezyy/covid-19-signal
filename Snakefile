@@ -120,7 +120,10 @@ rule breseq:
 rule freebayes:
     input: 
         expand('{sn}/freebayes/{sn}.consensus.fasta', sn=sample_names),
-        expand('{sn}/freebayes/{sn}.variants.norm.vcf', sn=sample_names)
+        expand('{sn}/freebayes/{sn}.variants.norm.vcf', sn=sample_names),
+        'freebayes_lineage_assignments.tsv',
+        expand('{sn}/freebayes/quast/{sn}_quast_report.html', sn=sample_names)
+
     
 rule coverage:
     input: expand('{sn}/coverage/{sn}_depth.txt', sn=sample_names)
@@ -135,7 +138,8 @@ rule quast:
     input: expand('{sn}/quast/{sn}_quast_report.html', sn=sample_names)
 
 rule lineages:
-    input: 'lineage_assignments.tsv'
+    input: 
+        'lineage_assignments.tsv'
 
 rule config_sample_log:
     input: 
@@ -701,6 +705,27 @@ rule run_quast:
          'quast {input} -r {params.genome} -g {params.fcoords} --output-dir {params.outdir} --threads {threads} >{log} && '
          'for f in {params.unlabelled_reports}; do mv $f ${{f/report/{params.sample_name}}}; done'
 
+rule run_quast_freebayes:
+    threads: 1
+    conda: 'conda_envs/assembly_qc.yaml'
+    output:
+         '{sn}/freebayes/quast/{sn}_quast_report.html'
+    input:
+         '{sn}/freebayes/{sn}.consensus.fasta'
+    log:
+         '{sn}/freebayes/quast/{sn}_quast.log'
+    benchmark:
+        "{sn}/benchmarks/{sn}_run_quast.benchmark.tsv"
+    params:
+         outdir = '{sn}/freebayes/quast',
+         genome = os.path.join(exec_dir, config['viral_reference_genome']),
+         fcoords = os.path.join(exec_dir, config['viral_reference_feature_coords']),
+         sample_name = '{sn}_quast_report',
+         unlabelled_reports = '{sn}/freebayes/quast/report.*'
+    shell:
+         'quast {input} -r {params.genome} -g {params.fcoords} --output-dir {params.outdir} --threads {threads} >{log} && '
+         'for f in {params.unlabelled_reports}; do mv $f ${{f/report/{params.sample_name}}}; done'
+
 
 rule run_lineage_assignment:
     threads: 4
@@ -714,3 +739,17 @@ rule run_lineage_assignment:
     shell:
         'cat {input} > all_genomes.fa && '
         '{params.assignment_script_path} -i all_genomes.fa -t {threads} -o {output}'
+
+
+rule run_lineage_assignment_freebayes:
+    threads: 4
+    conda: 'conda_envs/assign_lineages.yaml'
+    output:
+        'freebayes_lineage_assignments.tsv'
+    input:
+        expand('{sn}/freebayes/{sn}.consensus.fasta', sn=sample_names)
+    params:
+        assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py'),
+    shell:
+        'cat {input} > all_freebayes_genomes.fa && '
+        '{params.assignment_script_path} -i all_freebayes_genomes.fa -t {threads} -o {output}'
