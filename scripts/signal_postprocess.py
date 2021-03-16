@@ -868,7 +868,7 @@ class WriterBase:
         self.write_lines(title, s.breseq['variants'])
 
     def write_freebayes(self, s):
-        title = "Variants in Consensus Genome (Freebayes)" if self.unabridged else "Variants (Freebayes)"
+        title = "Variants in Consensus Genome (FreeBayes)" if self.unabridged else "Variants (FreeBayes)"
         self.write_lines(title, s.freebayes['variants'], coalesce=True)
 
     def write_sample(self, s):
