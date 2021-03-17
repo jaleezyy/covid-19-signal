@@ -1258,6 +1258,7 @@ class Sample:
                 else:
                     variants.append(var + "*")
             self.ivar = { 'variants': variants }
+            if len(self.freebayes['variants']) == 0: self.freebayes['variants'].append("None")
 
         for itemvar, itemfb in zip(self.consensus, self.consensus_freebayes):
             assert itemvar == itemfb
