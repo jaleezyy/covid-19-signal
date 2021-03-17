@@ -1247,21 +1247,22 @@ class Sample:
                 if fb > ivar:
                     self.quast[item] = str(self.quast[item]) + "*" # Ex. WARN*
 
-        variants = []
-        # Check if iVar variant found in FreeBayes: remove from FreeBayes if found, tag if not
-        # Final output should be a list of unique FreeBayes variants and a list of appropriately tagged iVar variants
-        for var in self.ivar['variants']:
-            if var in self.freebayes['variants']:
-                variants.append(var)
-                self.freebayes['variants'].remove(var)
-            else:
-                variants.append(var + "*")
-        self.ivar = { 'variants': variants }
+        if len(self.freebayes['variants']) > 0:
+            variants = []
+            # Check if iVar variant found in FreeBayes: remove from FreeBayes if found, tag if not
+            # Final output should be a list of unique FreeBayes variants and a list of appropriately tagged iVar variants
+            for var in self.ivar['variants']:
+                if var in self.freebayes['variants']:
+                    variants.append(var)
+                    self.freebayes['variants'].remove(var)
+                else:
+                    variants.append(var + "*")
+            self.ivar = { 'variants': variants }
 
         for itemvar, itemfb in zip(self.consensus, self.consensus_freebayes):
             assert itemvar == itemfb
         # Check if # of N's is fewer than in the FreeBayes consensus (assumed less ambiguious)
-            if float(self.consensus_freebayes[itemfb]) < float(self.consensus[itemvar]):
+            if (self.consensus_freebayes[itemfb] is not None) and (float(self.consensus_freebayes[itemfb]) < float(self.consensus[itemvar])):
                 self.consensus[itemvar] = str(self.consensus[itemvar]) + "*"
 
 
