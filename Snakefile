@@ -148,6 +148,9 @@ rule config_sample_log:
 
 # to handle different options in variant calling
 if config['run_breseq'] and config['run_freebayes']:
+    if breseq_ref == "":
+        print("Invalid BreSeq reference (paramter: breseq_reference) in config file. Please double check and restart")
+        exit(1)
     rule variant_calling:
         input:
             rules.breseq.input,
