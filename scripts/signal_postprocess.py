@@ -427,7 +427,6 @@ def parse_quast_report(report_filename, allow_missing=True):
 
     return ret
 
-
 def parse_consensus_assembly(fasta_filename, allow_missing=True):
     """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
 
@@ -435,7 +434,9 @@ def parse_consensus_assembly(fasta_filename, allow_missing=True):
         return { 'N5prime': None, 'N3prime': None }
 
     lines = open(fasta_filename).readlines()
-    assert len(lines) == 2
+    if len(lines) != 2:
+        assert "".join(lines).count(">") == 1
+        lines = [lines[0], "".join(i.strip("\n") for i in lines[1:])]
 
     line = lines[1].rstrip()
     prime5 = prime3 = 0
@@ -570,6 +571,25 @@ def parse_ivar_variants(tsv_filename, allow_missing=True):
 
     return { 'variants': variants }
 
+def parse_freebayes_variants(vcf_filename, allow_missing=True):
+    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
+
+    if file_is_missing(vcf_filename, allow_missing):
+        return { 'variants': [] }
+
+    variants = []
+    
+    # Only interpret lines that DO NOT start with "#"
+    for line in open(vcf_filename):
+        if not line.startswith("#"):
+            t = line.split('\t')
+            assert len(t) == 10
+
+            if t[4] != '':
+                variants.append(f"{t[3]}{t[1]}{t[4]}")
+
+    return { 'variants': variants }
+
 
 def parse_breseq_output(html_filename, allow_missing=True):
     """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
@@ -684,6 +704,7 @@ class WriterBase:
         self.unabridged = unabridged
         self.pipeline_name = f'SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL), version {short_git_id}'
         self.pipeline_url = 'https://github.com/jaleezyy/covid-19-signal'
+        self.pipeline_note = "Note: Asterisks (*) indicates a discrepancy between iVar (default) and FreeBayes (if run)"
 
         self.f = open(filename, 'w')
 
@@ -848,6 +869,9 @@ class WriterBase:
         title = "Variants in Read Alignment (BreSeq)" if self.unabridged else "Variants (BreSeq)"
         self.write_lines(title, s.breseq['variants'])
 
+    def write_freebayes(self, s):
+        title = "Unique Variants in Consensus Genome (FreeBayes)" if self.unabridged else "Unique Variants (FreeBayes)"
+        self.write_lines(title, s.freebayes['variants'], coalesce=True)
 
     def write_sample(self, s):
         self.start_sample(s)
@@ -857,6 +881,7 @@ class WriterBase:
         self.write_kraken2(s)
         self.write_quast(s)
         self.write_ivar(s)
+        self.write_freebayes(s)
         self.write_breseq(s)
         self.end_sample(s)
 
@@ -886,6 +911,7 @@ class HTMLWriterBase(WriterBase):
         print("<body>", file=self.f)
 
         print(f'<h3>{self.pipeline_name}&nbsp;&nbsp;(<a href="{self.pipeline_url}">{self.pipeline_url}</a>)</h3>', file=self.f)
+        print(f'<p>{self.pipeline_note}</p>', file=self.f)
 
     def close(self):
         if self.f is not None:
@@ -906,6 +932,8 @@ class SampleTextWriter(WriterBase):
 
         print(self.pipeline_name, file=self.f)
         print(self.pipeline_url, file=self.f)
+        print("", file=self.f)
+        print(self.pipeline_note, file=self.f)
         print("", file=self.f)
 
     def start_sample(self, s):
@@ -1040,7 +1068,10 @@ class SummaryHTMLWriter(HTMLWriterBase):
         qc_true = { 'PASS': ('#7ca37c', '#8fbc8f'),
                     'WARN': ('#ddba00', '#ffd700'),
                     'FAIL': ('#dd2a2a', '#ff3030'),
-                    'MISSING': ('#808080', '#ffffff') }
+                    'MISSING': ('#808080', '#ffffff'),
+                    'PASS*': ('#7ca37c', '#8fbc8f'),
+                    'WARN*': ('#ddba00', '#ffd700'),
+                    'FAIL*': ('#dd2a2a', '#ff3030') }
 
         odd = (self.num_rows_written % 2)
         color = qc_true[val][odd] if qc else qc_false[odd]
@@ -1192,10 +1223,49 @@ class Sample:
         self.post_trim_qc = parse_fastqc_pair(f"{name}/adapter_trimmed/{name}_R1_val_1_fastqc.zip", f"{name}/adapter_trimmed/{name}_R2_val_2_fastqc.zip")
         self.kraken2 = parse_kraken2_report(f"{name}/kraken2/{name}_kraken2.report")
         self.quast = parse_quast_report(f"{name}/quast/{name}_quast_report.html")
+        self.quast_freebayes = parse_quast_report(f"{name}/freebayes/quast/{name}_quast_report.html")
         self.consensus = parse_consensus_assembly(f"{name}/core/{name}.consensus.fa")
+        self.consensus_freebayes = parse_consensus_assembly(f"{name}/freebayes/{name}.consensus.fasta")
         self.coverage = parse_coverage(f"{name}/coverage/{name}_depth.txt")
         self.ivar = parse_ivar_variants(f"{name}/core/{name}_ivar_variants.tsv")
+        self.freebayes = parse_freebayes_variants(f"{name}/freebayes/{name}.variants.norm.vcf")
         self.breseq = parse_breseq_output(f"{name}/breseq/{name}_output/index.html")
+
+    
+    # Compare sample consensus and variant outputs if both iVar and FreeBayes are present
+    # Only will report iVar but values that differ from FreeBayes will be flagged with an asterisks
+    
+
+   # def quast_compare(self):
+        param = ["qc_gfrac", "qc_indel"]
+        status = ["FAIL", "WARN", "PASS"]
+        for item in param:
+        # If values don't match, compare whether FreeBayes shows improvement (i.e., no indels) by indexing status
+            if self.quast[item] != self.quast_freebayes[item]:
+                ivar = status.index(self.quast[item])
+                fb = status.index(self.quast_freebayes[item])
+                if fb > ivar:
+                    self.quast[item] = str(self.quast[item]) + "*" # Ex. WARN*
+
+        if len(self.freebayes['variants']) > 0:
+            variants = []
+            # Check if iVar variant found in FreeBayes: remove from FreeBayes if found, tag if not
+            # Final output should be a list of unique FreeBayes variants and a list of appropriately tagged iVar variants
+            for var in self.ivar['variants']:
+                if var in self.freebayes['variants']:
+                    variants.append(var)
+                    self.freebayes['variants'].remove(var)
+                else:
+                    variants.append(var + "*")
+            self.ivar = { 'variants': variants }
+            if len(self.freebayes['variants']) == 0: self.freebayes['variants'].append("None")
+
+        for itemvar, itemfb in zip(self.consensus, self.consensus_freebayes):
+            assert itemvar == itemfb
+        # Check if # of N's is fewer than in the FreeBayes consensus (assumed less ambiguious)
+            if (self.consensus_freebayes[itemfb] is not None) and (float(self.consensus_freebayes[itemfb]) < float(self.consensus[itemvar])):
+                self.consensus[itemvar] = str(self.consensus[itemvar]) + "*"
+
 
 class Pipeline:
     """Must be constructed from toplevel pipeline directory."""
