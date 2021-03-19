@@ -223,6 +223,7 @@ rule ncov_tools:
         
         
 ################################# Copy config and sample table to output folder ##################
+
 rule copy_config_sample_log:
     output: 
         config = os.path.basename(config_filename),
@@ -237,6 +238,7 @@ rule copy_config_sample_log:
         """
 
 #################################   Based on scripts/assemble.sh   #################################
+
 rule link_raw_data:
     priority: 4
     output:
@@ -278,6 +280,7 @@ rule run_raw_fastqc:
         """
 
 ########################## Human Host Removal ################################
+
 rule raw_reads_composite_reference_bwa_map:
     threads: 2
     conda: 
@@ -405,7 +408,6 @@ rule viral_reference_bwa_map:
         'samtools view -bS | samtools sort -@{threads} -o {output}) 2> {log}'
 
 
-
 rule run_bed_primer_trim:
     conda: 
         'conda_envs/ivar.yaml'
@@ -511,7 +513,7 @@ rule index_viral_reference:
     shell:
         'samtools faidx {input}'
 
-    
+
 rule run_ivar_variants:
     conda: 
         'conda_envs/ivar.yaml'
@@ -647,7 +649,7 @@ rule generate_coverage_plot:
         script_path = os.path.join(exec_dir, "scripts", "generate_coverage_plot.py")
     shell:
         "python {params.script_path} {input} {output}"
-    
+
 ################################   Based on scripts/kraken2.sh   ###################################
 
 
@@ -729,7 +731,6 @@ rule run_quast_freebayes:
          'quast {input} -r {params.genome} -g {params.fcoords} --output-dir {params.outdir} --threads {threads} >{log} && '
          'for f in {params.unlabelled_reports}; do mv $f ${{f/report/{params.sample_name}}}; done'
 
-
 rule run_lineage_assignment:
     threads: 4
     conda: 'conda_envs/assign_lineages.yaml'
@@ -742,7 +743,6 @@ rule run_lineage_assignment:
     shell:
         'cat {input} > all_genomes.fa && '
         '{params.assignment_script_path} -i all_genomes.fa -t {threads} -o {output}'
-
 
 rule run_lineage_assignment_freebayes:
     threads: 4
