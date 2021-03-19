@@ -1,3 +1,5 @@
 sample,r1_path,r2_path
-sample1,data/NT04_NA12878_10k_R1.fastq.gz,data/NT04_NA12878_10k_R2.fastq.gz
-sample2,data/NT04_NA12878_10k_1_R1.fastq.gz,data/NT04_NA12878_10k_1_R2.fastq.gz
+sample1,data/NT04_NA12878_L001_R1.fastq.gz,data/NT04_NA12878_L001_R2.fastq.gz
+sample1,data/NT04_NA12878_L002_R1.fastq.gz,data/NT04_NA12878_L002_R2.fastq.gz
+sample2,data/NT05_NA12879_L001_R1.fastq.gz,data/NT05_NA12879_L001_R2.fastq.gz
+sample3,data/NT06_NA12880_L001_R1.fastq.gz,data/NT06_NA12880_L001_R2.fastq.gz
