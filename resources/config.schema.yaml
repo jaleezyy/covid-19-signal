@@ -24,19 +24,19 @@ mpileup_depth:
     type: int
     default: 100000
     description: "mpileup depth to use for ivar/samtools consensus and variant calling"
-ivar_freq_threshold:
+var_freq_threshold:
     type: float
     default: 0.75
     description: "ivar frequency threshold to build consensus"
-ivar_min_coverage_depth:
+var_min_coverage_depth:
     type: int
     default: 10
     description: "minimum coverage depth to call variant"
-ivar_min_freq_threshold:
+var_min_freq_threshold:
     type: float
     default: 0.25
     description: "ivar frequency threshold to call variant (ivar variants: -t )"
-ivar_min_variant_quality:
+var_min_variant_quality:
     type: int
     default: 20
     description: "iVar minimum mapQ to call variant (ivar variants: -q)"
@@ -53,7 +53,6 @@ required:
     - scheme_bed
     - viral_reference_genome
     - viral_reference_feature_coords
-    - breseq_reference
     - kraken2_db
     - samples
     - result_dir

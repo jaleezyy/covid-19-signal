@@ -245,7 +245,11 @@ def go(args):
     
     elif args.illumina:
         # Tsv variants from Illumina pipeline
-        variants, variant_locations = get_tsv_variants(args.tsv_variants)
+        if args.tsv_variants:
+            variants, variant_locations = get_tsv_variants(args.tsv_variants)
+        # VCF variants from FREEBAYES
+        else:
+            variants, variant_locations = get_vcf_variants(args.vcf)
 
     # Find any overlap of variants in the pcr primer regions
     primer_statement = find_primer_mutations(args.pcr_bed, variant_locations)
