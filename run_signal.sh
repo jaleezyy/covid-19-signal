@@ -24,6 +24,9 @@ FASTQ_PAIRS=0
 PRIMER_SCHEME=0
 CORES="3"
 RUNNAME="nml"
+METADATA_TSV=0
+
+# Conda Parameters #
 BASE_ENV_PATH="$SCRIPTPATH/.snakemake/conda"
 SIGNAL_ENV="signal"
 USER_SIGNAL=false
@@ -43,6 +46,7 @@ Flags:
                 Available Primer Schemes: articV3, freed, resende, V2resende
     -c  --cores           :  (OPTIONAL) Number of Cores to use in Signal. Default is 3
     -n  --run-name        :  (OPTIONAL) Run name for final ncov-tools outputs. Default is 'nml'
+    -m  --metadata        :  (OPTIONAL) Add metadata to the run. Must be in TSV format with the columns 'sample', 'date', and 'ct'
     --signal-env          :  (OPTIONAL) Name of signal conda env. Default is '$BASE_ENV_PATH/signal'
     --ncov-tools-env      :  (OPTIONAL) Name of ncov-tools env. Default is '$BASE_ENV_PATH/ncov-qc'
                 **NOTE** It is highly recommended to let the script generate the environments as it will
@@ -60,7 +64,7 @@ if [ $# -eq 0 ]; then
 fi
 
 # Set Arguments #
-while [ "$1" = "--directory" -o "$1" = "-d" -o "$1" = "--primer-scheme" -o "$1" = "-p" -o "$1" = "--cores" -o "$1" = "-c" -o "$1" = "--run-name" -o "$1" = "-n" -o "$1" = "--signal-env" -o "$1" = "--ncov-tools-env" ];
+while [ "$1" = "--directory" -o "$1" = "-d" -o "$1" = "--primer-scheme" -o "$1" = "-p" -o "$1" = "--cores" -o "$1" = "-c" -o "$1" = "--run-name" -o "$1" = "-n" -o "$1" = "-m" -o "$1" = "--metadata" -o "$1" = "--signal-env" -o "$1" = "--ncov-tools-env" ];
 do
     if [ "$1" = "--directory" -o "$1" = "-d" ]; then
         shift
@@ -77,6 +81,10 @@ do
     elif [ "$1" = "--run-name" -o "$1" = "-n" ]; then
         shift
         RUNNAME=$1
+        shift
+    elif [ "$1" = "--metadata" -o "$1" = "-m" ]; then
+        shift
+        METADATA_TSV=$1
         shift
     elif [ "$1" = "--signal-env" ]; then
         shift
@@ -128,6 +136,16 @@ if [[ $CORES == +([0-9]) ]]; then
     echo "Using $CORES cores for analysis"
 else
     echo "ERROR: Cores input (-c) not an integer"
+    exit 1
+fi
+
+if [ $METADATA_TSV = 0 ]; then
+    :
+elif [ -f $METADATA_TSV ]; then
+    echo "$METADATA_TSV file found, using it"
+    FULL_PATH_METADATA=$(realpath $METADATA_TSV)
+else
+    echo "ERROR: Metadata input $METADATA_TSV was not found"
     exit 1
 fi
 
@@ -213,6 +231,15 @@ echo "Setting up files in $root_path"
 git clone --depth 1 https://github.com/jts/ncov-tools
 # Copy the ncov-tools config as we will write data to it later
 cp -r $SCRIPTPATH/resources/ncov-tools_files/* ./ncov-tools/
+
+# Metadata #
+if [ $METADATA_TSV = 0 ]; then
+    sed -i -e 's/^metadata/#metadata/' ./ncov-tools/config.yaml
+    cleanup_metadata=""
+else
+    cp $FULL_PATH_METADATA ./ncov-tools/metadata.tsv
+    cleanup_metadata="--sample_sheet $FULL_PATH_METADATA"
+fi
 
 # Echo in correct data locations to parameters config
 # Done as for the primer pairs to work we need the full path
@@ -333,6 +360,9 @@ do
     snpeff="./ncov-tools/qc_annotation/${found_name}_aa_table.tsv"
     echo "Processing $found_name"
 
+    # gzip variants vcf from freebayes to allow it to go into summary pipeline
+    gzip $RESULT/freebayes/${found_name}.variants.norm.vcf
+
     # Run the python summary
     python ./nml_automation/qc.py --illumina \
         --outfile ./summary_csvs/${found_name}.qc.csv \
@@ -340,7 +370,7 @@ do
         --ref ${ref} \
         --bam ${relative_sample_path}${found_name}_viral_reference.mapping.primertrimmed.sorted.bam \
         --fasta ${relative_sample_path}${found_name}.consensus.fa \
-        --tsv_variants ${relative_sample_path}${found_name}_ivar_variants.tsv \
+        --vcf $RESULT/freebayes/${found_name}.variants.norm.vcf.gz \
         --pangolin ${pangolin} \
         --ncov_summary ${ncov_qc} \
         --ncov_negative ${ncov_neg} \
@@ -349,7 +379,8 @@ do
         --sequencing_technology illumina \
         --scheme $PRIMER_SCHEME \
         --snpeff_tsv $snpeff \
-        --pcr_bed ./resources/pcr_primers.bed
+        --pcr_bed ./resources/pcr_primers.bed \
+        $cleanup_metadata
 done
 
 # Concatenate all summaries

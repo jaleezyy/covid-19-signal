@@ -32,6 +32,9 @@ breseq_reference: 'data/MN908947.3.gbk'
 # Used as --db argument to 'kraken2'
 kraken2_db: 'data/Kraken2/db'
 
+# run freebayes for variant and consensus calling (as well as ivar)
+run_freebayes: True
+
 # For Ivar's amplicon filter 
 # https://github.com/andersen-lab/ivar/commit/7027563fd75581c78dabc6040ebffdee2b24abe6
 # must be set to nothing if you are not wanting to use this setting
@@ -40,14 +43,14 @@ kraken2_db: 'data/Kraken2/db'
 
 # Consensus and variant calling ivar/samtools params from https://github.com/connor-lab/ncov2019-artic-nf/blob/master/conf/illumina.config
 mpileup_depth: 100000
-# ivar frequency threshold to build consensus
-ivar_freq_threshold: 0.75
+# ivar/freebayes frequency threshold to build consensus
+var_freq_threshold: 0.75
 # Minimum coverage depth to call variant
-ivar_min_coverage_depth: 10
-# iVar frequency threshold to call variant (ivar variants: -t )
-ivar_min_freq_threshold: 0.25
-# iVar minimum mapQ to call variant (ivar variants: -q)
-ivar_min_variant_quality: 20
+var_min_coverage_depth: 10
+# iVar/freebayes frequency threshold to call variant (ivar variants: -t )
+var_min_freq_threshold: 0.25
+# iVar/freebayes minimum mapQ to call variant (ivar variants: -q)
+var_min_variant_quality: 20
 
 # fasta of sequences to include with pangolin phylogeny
 phylo_include_seqs: "data/gisaid_hcov-19_2020_05_25_23.fasta"
