@@ -10,11 +10,7 @@ name="sample_table.csv"
 existing=0
 
 HELP="""
-<<<<<<< HEAD
 ASSUMES FASTQ FILES ARE NAMED AS <sample_name>_R{1,2}*.fastq(.gz)
-=======
-ASSUMES FASTQ FILES ARE NAMED AS <sample_name>_L00#_R{1,2}*.fastq(.gz)
->>>>>>> c77f400b0546bc033b664165898c04c84120f0c0
 
 Flags:
     -d  :  Path to directory containing sample fastq(.gz) files (Absolute paths preferred for consistency, but can use relative paths)
