@@ -25,6 +25,7 @@ PRIMER_SCHEME=0
 CORES="3"
 RUNNAME="nml"
 METADATA_TSV=0
+PDF=false
 
 # Conda Parameters #
 BASE_ENV_PATH="$SCRIPTPATH/.snakemake/conda"
@@ -47,6 +48,7 @@ Flags:
     -c  --cores           :  (OPTIONAL) Number of Cores to use in Signal. Default is 3
     -n  --run-name        :  (OPTIONAL) Run name for final ncov-tools outputs. Default is 'nml'
     -m  --metadata        :  (OPTIONAL) Add metadata to the run. Must be in TSV format with the columns 'sample', 'date', and 'ct'
+    --pdf                 :  (OPTIONAL) If you have pdflatex installed runs ncov-tools pdf output
     --signal-env          :  (OPTIONAL) Name of signal conda env. Default is '$BASE_ENV_PATH/signal'
     --ncov-tools-env      :  (OPTIONAL) Name of ncov-tools env. Default is '$BASE_ENV_PATH/ncov-qc'
                 **NOTE** It is highly recommended to let the script generate the environments as it will
@@ -64,7 +66,7 @@ if [ $# -eq 0 ]; then
 fi
 
 # Set Arguments #
-while [ "$1" = "--directory" -o "$1" = "-d" -o "$1" = "--primer-scheme" -o "$1" = "-p" -o "$1" = "--cores" -o "$1" = "-c" -o "$1" = "--run-name" -o "$1" = "-n" -o "$1" = "-m" -o "$1" = "--metadata" -o "$1" = "--signal-env" -o "$1" = "--ncov-tools-env" ];
+while [ "$1" = "--directory" -o "$1" = "-d" -o "$1" = "--primer-scheme" -o "$1" = "-p" -o "$1" = "--cores" -o "$1" = "-c" -o "$1" = "--run-name" -o "$1" = "-n" -o "$1" = "-m" -o "$1" = "--metadata" -o "$1" = "--pdf" -o "$1" = "--signal-env" -o "$1" = "--ncov-tools-env" ];
 do
     if [ "$1" = "--directory" -o "$1" = "-d" ]; then
         shift
@@ -85,6 +87,9 @@ do
     elif [ "$1" = "--metadata" -o "$1" = "-m" ]; then
         shift
         METADATA_TSV=$1
+        shift
+    elif [ "$1" = "--pdf" ]; then
+        PDF=true
         shift
     elif [ "$1" = "--signal-env" ]; then
         shift
@@ -150,7 +155,7 @@ else
 fi
 
 # Envs needed
-envArray=($SIGNAL_ENV $NCOV_ENV 'snpdist_signal' 'qc_summary_signal')
+envArray=($SIGNAL_ENV $NCOV_ENV 'snpdist_signal' 'qc_summary_signal' 'type_variants_signal')
 ### END INPUTS ###
 
 
@@ -321,7 +326,7 @@ if [ "$USER_NCOV" = true ]; then
 else
     FULL_NCOV_ENV="$BASE_ENV_PATH/$NCOV_ENV"
 fi
-bash nml_automation/run_ncov-tools.sh $CORES $SCRIPTPATH $FULL_NCOV_ENV
+bash nml_automation/run_ncov-tools.sh $CORES $SCRIPTPATH $FULL_NCOV_ENV $PDF
 
 
 ##################
@@ -400,4 +405,18 @@ else
     echo "No ./ncov-tools/qc_analysis/${RUNNAME}_aligned.fasta, skipping the snp-dist check"
 fi
 
+# TYPE VARIANTS #
+#################
+conda deactivate
+conda activate $BASE_ENV_PATH/type_variants_signal
+
+cat ./ncov-tools/files/*.fasta > all_seq.fasta
+mafft --auto --keeplength --addfragments all_seq.fasta ./ncov-tools/nCoV-2019.reference.fasta > aligned_mafft.fasta
+
+for CSV in $SCRIPTPATH/resources/variant_profile_csvs/*.csv
+do
+    CSV_NAME="$(basename $CSV)"
+
+    type_variants.py --fasta-in aligned_mafft.fasta --variants-config $CSV --reference ./ncov-tools/nCoV-2019.reference.fasta --variants-out $CSV_NAME --append-genotypes
+done
 ### END RUNNING ###

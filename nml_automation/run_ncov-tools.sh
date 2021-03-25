@@ -6,6 +6,8 @@ CORES=$1
 BASE_SCRIPTPATH=$2
 # Ncov-tools env name
 NCOV_ENV=$3
+# Run PDF report
+PDF=$4
 
 # Activate env
 eval "$(conda shell.bash hook)"
@@ -41,6 +43,10 @@ cd ../
 snakemake -s workflow/Snakefile --cores 1 build_snpeff_db
 snakemake -s workflow/Snakefile all --cores $CORES
 snakemake -s workflow/Snakefile --cores 2 all_qc_annotation
+
+if [ "$PDF" = true ]; then
+    snakemake -s workflow/Snakefile all_final_report --cores 1
+fi
 
 conda deactivate
 cd ..
