@@ -32,11 +32,11 @@ reference_genome: nCoV-2019.reference.fasta
 bam_pattern: "{data_root}/{sample}.mapping.primertrimmed.sorted.bam"
 
 # the naming convention for the consensus sequences
-consensus_pattern: "{data_root}/{sample}.consensus.fa"
+consensus_pattern: "{data_root}/{sample}.consensus.fasta"
 
 # the naming convention for the variants file, NF illumina runs typically use
 # "{data_root}/{sample}.variants.tsv and oxford nanopore runs use "{data_root}/{sample}.pass.vcf.gz"
-variants_pattern: "{data_root}/{sample}.variants.tsv"
+variants_pattern: "{data_root}/{sample}.variants.norm.vcf"
 
 # when building a tree of the consensus genomes you can optionally include other sequences
 # in the tree by providing a fasta file here
@@ -45,7 +45,7 @@ variants_pattern: "{data_root}/{sample}.variants.tsv"
 # some plots can by annotated with external metadata. this
 # file contains the metadata in simple tab-delimited format
 # one column must be 'sample'
-#metadata: metadata.tsv
+metadata: metadata.tsv
 
 #
 # set this flag to true to include lineage assignments with pangolin in the output plots
@@ -60,4 +60,4 @@ platform: illumina
 
 # minimum completeness threshold for inclusion to the SNP tree plot, if no entry
 # is provided the default is set to 0.75
-completeness_threshold: 0.80
+completeness_threshold: 0.50

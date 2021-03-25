@@ -105,16 +105,17 @@ processing and postprocessing into 'all' and 'postprocess' targets.
 Related: because pipeline stages can fail, we recommend running 'snakemake all'
 with the -k flag ("Go on with independent jobs if a job fails").
 
-Additionally, you can run @jts' [ncov-tools](https://github.com/jts/ncov-tools)
+Additionally, SIGNAL can prepare output for use with @jts' [ncov-tools](https://github.com/jts/ncov-tools)
 to generate phylogenies and alternative summaries.
 
     snakemake --use-conda --cores 10 ncov_tools
 
-Signal manages installing the dependencies and will invoke `ncov-tools` if 
-it has been cloned as a sub-module and a fasta containing sequences to include in 
-the tree has been specified using `phylo_include_seqs:` in the main signal `config.yaml`.
+SIGNAL manages installing the dependencies and will generate the necessary hard links to required input
+files from SIGNAL for `ncov-tools` if it has been cloned as a sub-module and a fasta containing sequences 
+to include in the tree has been specified using `phylo_include_seqs:` in the main SIGANL`config.yaml`.
 
-Outputs will be written as specified within the `ncov-tools` folder and documentation.
+Outputs will be written as specified within the `ncov-tools` folder and documentation. At present, invoking `ncov-tools` 
+should be done manually as per its documentation. 
 
 ### Docker
 
