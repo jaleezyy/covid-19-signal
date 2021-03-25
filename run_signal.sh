@@ -410,7 +410,7 @@ fi
 conda deactivate
 conda activate $BASE_ENV_PATH/type_variants_signal
 
-cat ./ncov-tools/files/*.fa > all_seq.fasta
+cat ./ncov-tools/files/*.fasta > all_seq.fasta
 mafft --auto --keeplength --addfragments all_seq.fasta ./ncov-tools/nCoV-2019.reference.fasta > aligned_mafft.fasta
 
 for CSV in $SCRIPTPATH/resources/variant_profile_csvs/*.csv

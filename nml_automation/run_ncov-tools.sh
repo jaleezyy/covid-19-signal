@@ -45,7 +45,7 @@ snakemake -s workflow/Snakefile all --cores $CORES
 snakemake -s workflow/Snakefile --cores 2 all_qc_annotation
 
 if [ "$PDF" = true ]; then
-    snakemake -s workflow/Snakefile all_final_report
+    snakemake -s workflow/Snakefile all_final_report --cores 1
 fi
 
 conda deactivate
