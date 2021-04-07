@@ -209,6 +209,7 @@ rule ncov_tools:
         'ncov-tools/workflow/envs/environment.yml'
     params:
         exec_dir = exec_dir,
+        sample_csv_filename = os.path.join(exec_dir, config['samples']),
         result_dir = os.path.basename(config['result_dir']),
         amplicon_bed = os.path.join(exec_dir, config['amplicon_loc_bed']),
         primer_bed = os.path.join(exec_dir, config['scheme_bed']),
