@@ -12,20 +12,20 @@ def set_up():
 
 	# result_root = os.path.abspath(os.path.join(exec_dir, result_dir, "ncov-tools-results"))
 	# if os.path.exists(result_root):
-			# shutil.rmtree(result_root)
+		# shutil.rmtree(result_root)
 	# ncov_output = ["plots", "lineages", "qc_analysis"]
 	# for dir in ncov_output:
-			# os.makedirs(os.path.join(result_root, dir))
+		# os.makedirs(os.path.join(result_root, dir))
 
 ### Create data directory within ncov-tools
 	data_root = os.path.abspath(os.path.join(exec_dir, 'ncov-tools', "%s" %(result_dir)))
 	if os.path.exists(data_root):
-			shutil.rmtree(data_root)
+		shutil.rmtree(data_root)
 	os.mkdir(data_root)
 
 	# snakemake_dir = os.path.join(exec_dir, 'ncov-tools', '.snakemake')
 	# if os.path.exists(snakemake_dir):
-			# shutil.rmtree(snakemake_dir)
+		# shutil.rmtree(snakemake_dir)
 
 ### Pull negative samples (based on common identifiers)
 	neg_names = ("Negative", "NEG", "PCR-NEG", "UTM", "BLANK", "Blank", "blank")
@@ -65,17 +65,17 @@ def set_up():
 
 	print("Linking files to ncov")
 	for bam in snakemake.input['bams']:
-			sample = bam.split('/')[0]
-			ln_path = f"{data_root}/{sample}.bam"
-			if not os.path.exists(ln_path):
-					os.link(bam, ln_path)
+		sample = bam.split('/')[0]
+		ln_path = f"{data_root}/{sample}.bam"
+		if not os.path.exists(ln_path):
+				os.link(bam, ln_path)
 
 
 	for primer_trimmed_bam in snakemake.input['primertrimmed_bams']:
-			sample = primer_trimmed_bam.split('/')[0]
-			ln_path = f"{data_root}/{sample}.mapped.primertrimmed.sorted.bam"
-			if not os.path.exists(ln_path):
-				os.link(primer_trimmed_bam, ln_path)
+		sample = primer_trimmed_bam.split('/')[0]
+		ln_path = f"{data_root}/{sample}.mapped.primertrimmed.sorted.bam"
+		if not os.path.exists(ln_path):
+			os.link(primer_trimmed_bam, ln_path)
 
 	for variants in snakemake.input['variants']:
 		sample = variants.split('/')[0]
@@ -84,17 +84,17 @@ def set_up():
 			os.link(variants, ln_path)
 
 	for consensus in snakemake.input['consensus']:
-			sample = consensus.split('/')[0]
-			ln_path = f"{data_root}/{sample}.consensus.fasta"
-			if not os.path.exists(ln_path):
-					os.link(consensus, ln_path)
-			for line in fileinput.input(ln_path, inplace=True):
-					if line.startswith(">"):
-							new_header = str(">"+sample)
-							new_line = line.replace(line, new_header)
-							print(new_line, end='\n')
-					else:
-							print(line, end='\n')
+		sample = consensus.split('/')[0]
+		ln_path = f"{data_root}/{sample}.consensus.fasta"
+		if not os.path.exists(ln_path):
+				os.link(consensus, ln_path)
+		for line in fileinput.input(ln_path, inplace=True):
+				if line.startswith(">"):
+						new_header = str(">"+sample)
+						new_line = line.replace(line, new_header)
+						print(new_line, end='\n')
+				else:
+						print(line, end='\n')
 
 	# os.chdir(os.path.join(exec_dir, 'ncov-tools'))
 	#return exec_dir, result_root, result_dir
@@ -105,40 +105,40 @@ def run_all():
 
 def move(cwd, dest, prefix):
 	if os.path.exists(os.path.join(cwd, "ncov-tools", "plots")):
-			extensions = ["_amplicon_coverage_heatmap.pdf", "_amplicon_covered_fraction.pdf", "_depth_by_position.pdf", "_tree_snps.pdf"]
-			for ext in extensions:
-					for file in glob.glob(os.path.join(cwd, "ncov-tools", "plots", "default"+ext)):
-							try:
-									shutil.copy(file, os.path.join(dest, "plots", prefix+ext))
-							except IOError:
-									print("Missing file %s" %(prefix+ext))
+		extensions = ["_amplicon_coverage_heatmap.pdf", "_amplicon_covered_fraction.pdf", "_depth_by_position.pdf", "_tree_snps.pdf"]
+		for ext in extensions:
+			for file in glob.glob(os.path.join(cwd, "ncov-tools", "plots", "default"+ext)):
+				try:
+					shutil.copy(file, os.path.join(dest, "plots", prefix+ext))
+				except IOError:
+					print("Missing file %s" %(prefix+ext))
 	else:
-			print("Missing ncov-tools 'plots' directory")
+		print("Missing ncov-tools 'plots' directory")
 
 	if os.path.exists(os.path.join(cwd, "ncov-tools", "lineages")):
-			for file in glob.glob(os.path.join(cwd, "ncov-tools", "lineages", "default_lineage_report.csv")):
-					try:
-							shutil.copy(file, os.path.join(dest, "lineages", prefix+"_lineage_report.csv"))
-					except IOError:
-							print("Missing file %s_lineage_report.csv" %(prefix))
+		for file in glob.glob(os.path.join(cwd, "ncov-tools", "lineages", "default_lineage_report.csv")):
+			try:
+				shutil.copy(file, os.path.join(dest, "lineages", prefix+"_lineage_report.csv"))
+			except IOError:
+				print("Missing file %s_lineage_report.csv" %(prefix))
 	else:
-			print("Missing ncov-tools 'lineages' directory")
+		print("Missing ncov-tools 'lineages' directory")
 
 	if os.path.exists(os.path.join(cwd, "ncov-tools", "qc_analysis")):
-			extensions = ["_aligned-delim.fasta.log", "_aligned-delim.iqtree.log", "_aligned.fasta", "_aligned.fasta.insertions.csv", \
-													"_aligned.fasta.log", "_alleles.tsv", "_tree.nwk", "_tree_raw.nwk", "_consensus.fasta"]
-			for ext in extensions:
-					for file in glob.glob(os.path.join(cwd, "ncov-tools", "qc_analysis", "default"+ext)):
-							try:
-									shutil.copy(file, os.path.join(dest, "qc_analysis", prefix+ext))
-							except IOError:
-									print("Missing file %s" %(prefix+ext))
+		extensions = ["_aligned-delim.fasta.log", "_aligned-delim.iqtree.log", "_aligned.fasta", "_aligned.fasta.insertions.csv", \
+					"_aligned.fasta.log", "_alleles.tsv", "_tree.nwk", "_tree_raw.nwk", "_consensus.fasta"]
+		for ext in extensions:
+			for file in glob.glob(os.path.join(cwd, "ncov-tools", "qc_analysis", "default"+ext)):
+				try:
+					shutil.copy(file, os.path.join(dest, "qc_analysis", prefix+ext))
+				except IOError:
+					print("Missing file %s" %(prefix+ext))
 	else:
-			print("Missing ncov-tools 'qc_analysis' directory")
+		print("Missing ncov-tools 'qc_analysis' directory")
 
 if __name__ == '__main__':
 	exec_dir, result_dir = set_up()
-	print("Don't forget to update the config.yaml file prior to running ncov-tools.")
+	print("Don't forget to update the config.yaml file as needed prior to running ncov-tools.")
 	#exec_dir, result_root, result_dir = set_up()
 	#run_all()
 	#move(exec_dir, result_root, result_dir)
