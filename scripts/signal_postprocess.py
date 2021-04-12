@@ -603,11 +603,6 @@ def parse_lineage(tsv_filename, sample_names, allow_missing=True):
                               'nextclade_ver': None }
         return { 'samples': samples }
 
-    # lineage = None
-    # pangolin = None
-    # pangolearn = None
-    # nextclade = None
-
     # Skip first line
     for line in open(tsv_filename).readlines()[1:]:
         n = line.split("\t")
@@ -632,9 +627,6 @@ def parse_lineage(tsv_filename, sample_names, allow_missing=True):
                                'pangolearn_ver': pangolearn, 
                                'nextclade_ver': nextclade }
 
-    #return { 'lineage': lineage, 'pangolin_ver': pangolin, 'pangolearn_ver': pangolearn, 'nextclade_ver': nextclade }
-    print(samples)
-    print(sample_names)
     assert len(samples) == len(sample_names)
     return { 'samples': samples }
 
@@ -928,7 +920,6 @@ class WriterBase:
 
     def write_lineage(self, s):
         title = "Pangolin Lineage Assignment" if self.unabridged else "Lineage (Pangolin)"
-        print(s.lineage['lineage'])
         self.write_lines(title, [s.lineage['lineage']], coalesce=True)
 
     def write_sample(self, s):
@@ -1294,7 +1285,7 @@ class Sample:
             assert ivarlin['pangolin_ver'] == fblin['pangolin_ver']
             assert ivarlin['pangolearn_ver'] == fblin['pangolearn_ver']
             assert ivarlin['nextclade_ver'] == fblin['nextclade_ver']
-            self.lineage = { 'lineage': str(ivalin['lineage'] + " (FB: %s)" %(fblin['lineage'])), 
+            self.lineage = { 'lineage': str(ivarlin['lineage'] + " (FB: %s)" %(fblin['lineage'])), 
                              'pangolin_ver': ivarlin['pangolin_ver'], 
                              'pangolearn_ver': ivarlin['pangolearn_ver'], 
                              'nextclade_ver': ivarlin['nextclade_ver'] }
