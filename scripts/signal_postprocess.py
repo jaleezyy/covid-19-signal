@@ -575,7 +575,7 @@ def parse_freebayes_variants(vcf_filename, allow_missing=True):
     """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
 
     if file_is_missing(vcf_filename, allow_missing):
-        return { 'variants': [] }
+        return { 'variants': [], 'run': False }
 
     variants = []
     
@@ -588,7 +588,27 @@ def parse_freebayes_variants(vcf_filename, allow_missing=True):
             if t[4] != '':
                 variants.append(f"{t[3]}{t[1]}{t[4]}")
 
-    return { 'variants': variants }
+    return { 'variants': variants, 'run': True }
+
+def parse_consensus_compare(vcf_filename, allow_missing=True):
+    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
+
+    if file_is_missing(vcf_filename, allow_missing):
+        return { 'positions': [], 'run': False }
+
+    positions = []
+    
+    # Only interpret lines that DO NOT start with "#"
+    for line in open(vcf_filename):
+        if not line.startswith("#"):
+            t = line.split('\t')
+            assert len(t) == 7
+
+            if t[4] != '':
+                positions.append(f"{t[3]}{t[1]}{t[4]}")
+
+    return { 'positions': positions, 'run': True }
+
 
 def parse_lineage(tsv_filename, sample_names, allow_missing=True):
     """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
@@ -634,7 +654,7 @@ def parse_breseq_output(html_filename, allow_missing=True):
     """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
 
     if file_is_missing(html_filename, allow_missing):
-        return { 'variants': [], 'qc_varfreq': 'MISSING', 'qc_orf_frameshift': 'MISSING'}
+        return { 'variants': [], 'qc_varfreq': 'MISSING', 'qc_orf_frameshift': 'MISSING', 'run': False}
 
     tables = parse_html_tables(html_filename)
 
@@ -708,7 +728,7 @@ def parse_breseq_output(html_filename, allow_missing=True):
                     qc_orf_frameshift = 'FAIL'
 
     return { 'variants': variants, 'qc_varfreq': qc_varfreq,
-            'qc_orf_frameshift': qc_orf_frameshift}
+            'qc_orf_frameshift': qc_orf_frameshift, 'run': True}
 
 
 ########  Base classes for writing summary files, see WriterBase docstring for explanation  ########
@@ -907,14 +927,14 @@ class WriterBase:
         self.write_lines(title, s.ivar['variants'], coalesce=True)
 
     def write_breseq(self, s):
-        if len(s.breseq['variants']) > 0:
+        if s.breseq['run'] == True:
             title = "Variants in Read Alignment (BreSeq)" if self.unabridged else "Variants (BreSeq)"
             self.write_lines(title, s.breseq['variants'])
         else:
             return None
 
     def write_freebayes(self, s):
-        if len(s.freebayes['variants']) > 0:
+        if s.freebayes['run'] == True:
             title = "Unique Variants in Consensus Genome (FreeBayes)" if self.unabridged else "Unique Variants (FreeBayes)"
             self.write_lines(title, s.freebayes['variants'], coalesce=True)
         else:
@@ -923,6 +943,13 @@ class WriterBase:
     def write_lineage(self, s):
         title = "Pangolin Lineage Assignment" if self.unabridged else "Lineage (Pangolin)"
         self.write_lines(title, [s.lineage['lineage']], coalesce=True)
+
+    def write_compare(self, s):
+        if s.compare['run'] == True:
+            title = "Differences between Consensus Genomes (ivar vs. FreeBayes)" if self.unabridged else "Consensus Differences (iVar vs. FreeBayes)"
+            self.write_lines(title, s.compare['positions'], coalesce=True)
+        else:
+            return None
 
     def write_sample(self, s):
         self.start_sample(s)
@@ -934,6 +961,7 @@ class WriterBase:
         self.write_quast(s)
         self.write_ivar(s)
         self.write_freebayes(s)
+        self.write_compare(s)
         self.write_breseq(s)
         self.end_sample(s)
 
@@ -1281,7 +1309,9 @@ class Sample:
         self.coverage = parse_coverage(f"{name}/coverage/{name}_depth.txt")
         self.ivar = parse_ivar_variants(f"{name}/core/{name}_ivar_variants.tsv")
         self.freebayes = parse_freebayes_variants(f"{name}/freebayes/{name}.variants.norm.vcf")
+        self.compare = parse_consensus_compare(f"{name}/freebayes/{name}_consensus_compare.vcf")
         self.breseq = parse_breseq_output(f"{name}/breseq/{name}_output/index.html")
+
 
         if ivarlin['lineage'] != fblin['lineage'] and fblin['lineage'] is not None:
             assert ivarlin['pangolin_ver'] == fblin['pangolin_ver']
