@@ -829,10 +829,12 @@ class WriterBase:
         self.write_kv_pair(key, s.coverage['qc_meancov'], indent=1, qc=True)
         
         key = "All variants with at least 90% frequency among reads" if self.unabridged else "Variants\n>90%"
-        self.write_kv_pair(key, s.breseq['qc_varfreq'], indent=1, qc=True)
+        if 'MISSING' not in s.breseq['qc_varfreq']:
+            self.write_kv_pair(key, s.breseq['qc_varfreq'], indent=1, qc=True)
         
         key = "Frameshifts in SARS-CoV-2 open reading frames" if self.unabridged else "ORF\nFrameshifts"
-        self.write_kv_pair(key, s.breseq['qc_orf_frameshift'], indent=1, qc=True)
+        if 'MISSING' not in s.breseq['qc_orf_frameshift']:
+            self.write_kv_pair(key, s.breseq['qc_orf_frameshift'], indent=1, qc=True)
 
         key = "Reads per base sequence quality" if self.unabridged else "Fastqc\nquality"
         val = s.post_trim_qc['summary'].get('Per base sequence quality', 'FAIL')
