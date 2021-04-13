@@ -946,7 +946,7 @@ class WriterBase:
 
     def write_compare(self, s):
         if s.compare['run'] == True:
-            title = "Differences between Consensus Genomes (ivar vs. FreeBayes)" if self.unabridged else "Consensus Differences (iVar vs. FreeBayes)"
+            title = "Nucleotide Differences between Consensus Genomes (ivar vs. FreeBayes)" if self.unabridged else "Consensus Nucleotide Differences (iVar vs. FreeBayes)"
             self.write_lines(title, s.compare['positions'], coalesce=True)
         else:
             return None
