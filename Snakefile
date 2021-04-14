@@ -215,7 +215,8 @@ rule ncov_tools:
         amplicon_bed = os.path.join(exec_dir, config['amplicon_loc_bed']),
         primer_bed = os.path.join(exec_dir, config['scheme_bed']),
         viral_reference_genome = os.path.join(exec_dir, config['viral_reference_genome']),
-        phylo_include_seqs = os.path.join(exec_dir, config['phylo_include_seqs'])
+        phylo_include_seqs = os.path.join(exec_dir, config['phylo_include_seqs']),
+        negative_control_prefix = config['negative_control_prefix']
     input:
         consensus = expand('{sn}/core/{sn}.consensus.fa', sn=sample_names),
         primertrimmed_bams = expand("{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam", sn=sample_names),
