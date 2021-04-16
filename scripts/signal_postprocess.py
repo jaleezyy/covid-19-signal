@@ -575,7 +575,7 @@ def parse_freebayes_variants(vcf_filename, allow_missing=True):
     """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
 
     if file_is_missing(vcf_filename, allow_missing):
-        return { 'variants': [] }
+        return { 'variants': [], 'run': False }
 
     variants = []
     
@@ -588,14 +588,73 @@ def parse_freebayes_variants(vcf_filename, allow_missing=True):
             if t[4] != '':
                 variants.append(f"{t[3]}{t[1]}{t[4]}")
 
-    return { 'variants': variants }
+    return { 'variants': variants, 'run': True }
 
+def parse_consensus_compare(vcf_filename, allow_missing=True):
+    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
+
+    if file_is_missing(vcf_filename, allow_missing):
+        return { 'positions': [], 'run': False }
+
+    positions = []
+    
+    # Only interpret lines that DO NOT start with "#"
+    for line in open(vcf_filename):
+        if not line.startswith("#"):
+            t = line.split('\t')
+            assert len(t) == 7
+
+            if t[4] != '':
+                positions.append(f"{t[3]}{t[1]}{t[4]}")
+
+    return { 'positions': positions, 'run': True }
+
+
+def parse_lineage(tsv_filename, sample_names, allow_missing=True):
+    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
+
+    samples = {}
+    
+    if file_is_missing(tsv_filename, allow_missing):
+        for name in sample_names:
+            samples[name] = { 'lineage' : None, 
+                              'pangolin_ver': None, 
+                              'pangolearn_ver': None, 
+                              'nextclade_ver': None }
+        return { 'samples': samples }
+
+    # Skip first line
+    for line in open(tsv_filename).readlines()[1:]:
+        n = line.split("\t")
+        assert len(n) == 30
+
+    # Determine sample name
+        if n[0].startswith("Consensus"):
+            sid = re.findall("_(.*?)\.", n[0])[0]
+        else:
+            sid = str(n[0])
+
+        assert sid in sample_names
+        
+    # Pull Pangolin lineage
+        if n[1] != '':
+            lineage = str(n[1])
+            pangolin = str(n[27])
+            pangolearn = str(n[28])
+            nextclade = str(n[29])
+            samples[sid] = { 'lineage' : lineage, 
+                               'pangolin_ver': pangolin, 
+                               'pangolearn_ver': pangolearn, 
+                               'nextclade_ver': nextclade }
+
+    assert len(samples) == len(sample_names)
+    return { 'samples': samples }
 
 def parse_breseq_output(html_filename, allow_missing=True):
     """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
 
     if file_is_missing(html_filename, allow_missing):
-        return { 'variants': [], 'qc_varfreq': 'MISSING', 'qc_orf_frameshift': 'MISSING'}
+        return { 'variants': [], 'qc_varfreq': 'MISSING', 'qc_orf_frameshift': 'MISSING', 'run': False}
 
     tables = parse_html_tables(html_filename)
 
@@ -669,7 +728,7 @@ def parse_breseq_output(html_filename, allow_missing=True):
                     qc_orf_frameshift = 'FAIL'
 
     return { 'variants': variants, 'qc_varfreq': qc_varfreq,
-            'qc_orf_frameshift': qc_orf_frameshift}
+            'qc_orf_frameshift': qc_orf_frameshift, 'run': True}
 
 
 ########  Base classes for writing summary files, see WriterBase docstring for explanation  ########
@@ -790,10 +849,12 @@ class WriterBase:
         self.write_kv_pair(key, s.coverage['qc_meancov'], indent=1, qc=True)
         
         key = "All variants with at least 90% frequency among reads" if self.unabridged else "Variants\n>90%"
-        self.write_kv_pair(key, s.breseq['qc_varfreq'], indent=1, qc=True)
+        if 'MISSING' not in s.breseq['qc_varfreq']:
+            self.write_kv_pair(key, s.breseq['qc_varfreq'], indent=1, qc=True)
         
         key = "Frameshifts in SARS-CoV-2 open reading frames" if self.unabridged else "ORF\nFrameshifts"
-        self.write_kv_pair(key, s.breseq['qc_orf_frameshift'], indent=1, qc=True)
+        if 'MISSING' not in s.breseq['qc_orf_frameshift']:
+            self.write_kv_pair(key, s.breseq['qc_orf_frameshift'], indent=1, qc=True)
 
         key = "Reads per base sequence quality" if self.unabridged else "Fastqc\nquality"
         val = s.post_trim_qc['summary'].get('Per base sequence quality', 'FAIL')
@@ -866,15 +927,33 @@ class WriterBase:
         self.write_lines(title, s.ivar['variants'], coalesce=True)
 
     def write_breseq(self, s):
-        title = "Variants in Read Alignment (BreSeq)" if self.unabridged else "Variants (BreSeq)"
-        self.write_lines(title, s.breseq['variants'])
+        if s.breseq['run'] == True:
+            title = "Variants in Read Alignment (BreSeq)" if self.unabridged else "Variants (BreSeq)"
+            self.write_lines(title, s.breseq['variants'])
+        else:
+            return None
 
     def write_freebayes(self, s):
-        title = "Unique Variants in Consensus Genome (FreeBayes)" if self.unabridged else "Unique Variants (FreeBayes)"
-        self.write_lines(title, s.freebayes['variants'], coalesce=True)
+        if s.freebayes['run'] == True:
+            title = "Unique Variants in Consensus Genome (FreeBayes)" if self.unabridged else "Unique Variants (FreeBayes)"
+            self.write_lines(title, s.freebayes['variants'], coalesce=True)
+        else:
+            return None
+
+    def write_lineage(self, s):
+        title = "Pangolin Lineage Assignment" if self.unabridged else "Lineage (Pangolin)"
+        self.write_lines(title, [s.lineage['lineage']], coalesce=True)
+
+    def write_compare(self, s):
+        if s.compare['run'] == True:
+            title = "Nucleotide Differences in Consensus Genomes (FreeBayes as reference)" if self.unabridged else "Consensus Nucleotide Differences (FreeBayes as Reference)"
+            self.write_lines(title, s.compare['positions'], coalesce=True)
+        else:
+            return None
 
     def write_sample(self, s):
         self.start_sample(s)
+        self.write_lineage(s)
         self.write_data_volume_summary(s)
         self.write_qc_flags(s)
         self.write_fastqc_summary(s)
@@ -882,6 +961,7 @@ class WriterBase:
         self.write_quast(s)
         self.write_ivar(s)
         self.write_freebayes(s)
+        self.write_compare(s)
         self.write_breseq(s)
         self.end_sample(s)
 
@@ -1216,7 +1296,7 @@ class Archive:
 class Sample:
     """Must be constructed from toplevel pipeline directory."""
 
-    def __init__(self, name):
+    def __init__(self, name, ivarlin, fblin):
         self.name = name
 
         self.trim_galore = parse_trim_galore_log(f"{name}/adapter_trimmed/{name}_trim_galore.log")
@@ -1229,14 +1309,25 @@ class Sample:
         self.coverage = parse_coverage(f"{name}/coverage/{name}_depth.txt")
         self.ivar = parse_ivar_variants(f"{name}/core/{name}_ivar_variants.tsv")
         self.freebayes = parse_freebayes_variants(f"{name}/freebayes/{name}.variants.norm.vcf")
+        self.compare = parse_consensus_compare(f"{name}/freebayes/{name}_consensus_compare.vcf")
         self.breseq = parse_breseq_output(f"{name}/breseq/{name}_output/index.html")
 
+
+        if ivarlin['lineage'] != fblin['lineage'] and fblin['lineage'] is not None:
+            assert ivarlin['pangolin_ver'] == fblin['pangolin_ver']
+            assert ivarlin['pangolearn_ver'] == fblin['pangolearn_ver']
+            assert ivarlin['nextclade_ver'] == fblin['nextclade_ver']
+            self.lineage = { 'lineage': str(ivarlin['lineage'] + " (FB: %s)" %(fblin['lineage'])), 
+                             'pangolin_ver': ivarlin['pangolin_ver'], 
+                             'pangolearn_ver': ivarlin['pangolearn_ver'], 
+                             'nextclade_ver': ivarlin['nextclade_ver'] }
+        else:
+            self.lineage = ivarlin 
     
     # Compare sample consensus and variant outputs if both iVar and FreeBayes are present
     # Only will report iVar but values that differ from FreeBayes will be flagged with an asterisks
     
-
-   # def quast_compare(self):
+    # QC metrics comparison
         param = ["qc_gfrac", "qc_indel"]
         status = ["FAIL", "WARN", "PASS"]
         for item in param:
@@ -1246,7 +1337,8 @@ class Sample:
                 fb = status.index(self.quast_freebayes[item])
                 if fb > ivar:
                     self.quast[item] = str(self.quast[item]) + "*" # Ex. WARN*
-
+     
+    # Variant call comparison
         if len(self.freebayes['variants']) > 0:
             variants = []
             # Check if iVar variant found in FreeBayes: remove from FreeBayes if found, tag if not
@@ -1258,8 +1350,10 @@ class Sample:
                 else:
                     variants.append(var + "*")
             self.ivar = { 'variants': variants }
-            if len(self.freebayes['variants']) == 0: self.freebayes['variants'].append("None")
+            #if len(self.freebayes['variants']) == 0: self.freebayes['variants'].append("None")
 
+    # Compare consensus assembly (N counts at 5' and 3')
+    # Run quick_align to highlight specific differences across consensus genomes 
         for itemvar, itemfb in zip(self.consensus, self.consensus_freebayes):
             assert itemvar == itemfb
         # Check if # of N's is fewer than in the FreeBayes consensus (assumed less ambiguious)
@@ -1274,11 +1368,13 @@ class Pipeline:
         sample_csv = pd.read_csv(sample_csv_filename)
         sample_names = sorted(sample_csv['sample'].drop_duplicates().values)
 
-        self.samples = [ Sample(s) for s in sample_names ]
+        self.iv_lineage = parse_lineage(f"lineage_assignments.tsv", sample_names)
+        self.fb_lineage = parse_lineage(f"freebayes_lineage_assignments.tsv", sample_names)
+
+        self.samples = [ Sample(s, self.iv_lineage['samples'][s], self.fb_lineage['samples'][s]) for s in sample_names ]
 
         if len(self.samples) == 0:
             raise RuntimeError(f"{sample_csv_filename} contains zero samples, nothing to do!")
-
 
     def write_summary_plot1(self):
         """Writes toplevel summary plot: %SARS versus completeness."""

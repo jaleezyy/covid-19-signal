@@ -122,7 +122,8 @@ rule freebayes:
         expand('{sn}/freebayes/{sn}.consensus.fasta', sn=sample_names),
         expand('{sn}/freebayes/{sn}.variants.norm.vcf', sn=sample_names),
         'freebayes_lineage_assignments.tsv',
-        expand('{sn}/freebayes/quast/{sn}_quast_report.html', sn=sample_names)
+        expand('{sn}/freebayes/quast/{sn}_quast_report.html', sn=sample_names),
+        expand('{sn}/freebayes/{sn}_consensus_compare.vcf', sn=sample_names)
 
     
 rule coverage:
@@ -214,7 +215,8 @@ rule ncov_tools:
         amplicon_bed = os.path.join(exec_dir, config['amplicon_loc_bed']),
         primer_bed = os.path.join(exec_dir, config['scheme_bed']),
         viral_reference_genome = os.path.join(exec_dir, config['viral_reference_genome']),
-        phylo_include_seqs = os.path.join(exec_dir, config['phylo_include_seqs'])
+        phylo_include_seqs = os.path.join(exec_dir, config['phylo_include_seqs']),
+        negative_control_prefix = config['negative_control_prefix']
     input:
         consensus = expand('{sn}/core/{sn}.consensus.fa', sn=sample_names),
         primertrimmed_bams = expand("{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam", sn=sample_names),
@@ -625,6 +627,21 @@ rule run_freebayes:
         bcftools consensus -f {params.out}.ambiguous.fasta -m {params.out}.mask.txt {params.out}.fixed.norm.vcf.gz | sed s/MN908947\.3.*/{wildcards.sn}/ > {output.consensus}
         """
 
+rule consensus_compare:
+    threads: 1
+    priority: 1
+    conda: 'conda_envs/freebayes.yaml'
+    output:
+        '{sn}/freebayes/{sn}_consensus_compare.vcf'
+    input:
+        ivar = '{sn}/core/{sn}.consensus.fa',
+        freebayes = '{sn}/freebayes/{sn}.consensus.fasta'
+    params:
+        script_path = os.path.join(exec_dir, "scripts", "quick_align.py")
+    shell:
+        """
+        python {params.script_path} -g {input.ivar} -r {input.freebayes} -o vcf > {output}
+        """
 
 ##################  Based on scripts/hisat2.sh and scripts/coverage_stats_avg.sh  ##################
 
@@ -638,7 +655,7 @@ rule coverage_depth:
     benchmark:
         "{sn}/benchmarks/{sn}_coverage_depth.benchmark.tsv"
     shell:
-        'bedtools genomecov -d -ibam {input} >{output}'
+        'bedtools genomecov -d -ibam {input} > {output}'
 
 rule generate_coverage_plot:
     conda: 'conda_envs/postprocessing.yaml'

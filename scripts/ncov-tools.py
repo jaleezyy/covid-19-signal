@@ -28,7 +28,8 @@ def set_up():
 		# shutil.rmtree(snakemake_dir)
 
 ### Pull negative samples (based on common identifiers)
-	neg_names = ("Negative", "NEG", "PCR-NEG", "UTM", "BLANK", "Blank", "blank")
+	#neg_names = ("Negative", "NEG", "PCR-NEG", "UTM", "BLANK", "Blank", "blank")
+	neg_names = tuple(snakemake.params['negative_control_prefix'])
 	neg_samples = set()
 	with open(snakemake.params['sample_csv_filename']) as fh:
 		fh.readline()

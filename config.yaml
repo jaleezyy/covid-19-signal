@@ -61,3 +61,6 @@ amplicon_loc_bed: 'resources/primer_schemes/artic_v3/ncov-qc_V3.scheme.bed'
 
 # fasta of sequences to include with pangolin phylogeny
 phylo_include_seqs: "data/extra_data.fasta"
+
+# List of negative control sample names or prefixes (i.e., ['Blank'] will cover Blank1, Blank2, etc.)
+negative_control_prefix: []
