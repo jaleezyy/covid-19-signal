@@ -56,7 +56,7 @@ var_min_variant_quality: 20
 phylo_include_seqs: "data/gisaid_hcov-19_2020_05_25_23.fasta"
 
 # List of negative control sample names or prefixes (i.e., ['Blank'] will cover Blank1, Blank2, etc.)
-negative_control_prefix: ['negative', 'ntc', 'water', 'blank', 'neg']
+negative_control_prefix: ['ntc', 'water', 'blank', 'neg']
 
 # Path from snakemake dir to .bed file defining amplicon primer scheme
 # scheme_bed: Echo'd in at the end during script
