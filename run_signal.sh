@@ -40,6 +40,7 @@ schemeArray=('articV3' 'freed' 'resende' 'V2resende')
 HELP="
 USAGE:
     bash $SCRIPTPATH/run_signal.sh -d PATH_TO_PAIRED_FASTQ_DIR -p PRIMER_SCHEME
+    bash $SCRIPTPATH/run_signal.sh --update
     
 Flags:
     -d  --directory       :  Path to paired fastq file directory
@@ -53,6 +54,8 @@ Flags:
     --ncov-tools-env      :  (OPTIONAL) Name of ncov-tools env. Default is '$BASE_ENV_PATH/ncov-qc'
                 **NOTE** It is highly recommended to let the script generate the environments as it will
                           only occur once and you won't have to pass the path each time
+
+    --update              :  Passing --update will update pangolin and pangoLearn along with this repo and then exit
 "
 ### END DEFAULTS ###
 
@@ -66,7 +69,7 @@ if [ $# -eq 0 ]; then
 fi
 
 # Set Arguments #
-while [ "$1" = "--directory" -o "$1" = "-d" -o "$1" = "--primer-scheme" -o "$1" = "-p" -o "$1" = "--cores" -o "$1" = "-c" -o "$1" = "--run-name" -o "$1" = "-n" -o "$1" = "-m" -o "$1" = "--metadata" -o "$1" = "--pdf" -o "$1" = "--signal-env" -o "$1" = "--ncov-tools-env" ];
+while [ "$1" = "--directory" -o "$1" = "-d" -o "$1" = "--primer-scheme" -o "$1" = "-p" -o "$1" = "--cores" -o "$1" = "-c" -o "$1" = "--run-name" -o "$1" = "-n" -o "$1" = "-m" -o "$1" = "--metadata" -o "$1" = "--pdf" -o "$1" = "--signal-env" -o "$1" = "--ncov-tools-env" -o "$1" = "--update" ];
 do
     if [ "$1" = "--directory" -o "$1" = "-d" ]; then
         shift
@@ -101,6 +104,14 @@ do
         NCOV_ENV=$1
         USER_NCOV=true
         shift
+    elif [ "$1" = "--update" ]; then
+        shift
+        cd $SCRIPTPATH
+        git pull
+        eval "$(conda shell.bash hook)"
+        conda activate $BASE_ENV_PATH/$NCOV_ENV
+        pangolin --update
+        exit
     else
         shift
     fi

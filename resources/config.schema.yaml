@@ -47,6 +47,14 @@ result_dir:
     type: string
     default: "results"
     description: "Path to output results"
+run_breseq:
+    type: boolean
+    default: False
+    description: "optionally run BreSeq mutation analysis"
+run_freebayes:
+    type: boolean
+    default: False
+    description: "optionally run FreeBayes variant calling and consensus sequence generation"
 required:
     - min_len
     - min_qual

@@ -8,3 +8,4 @@ dependencies:
   - freebayes=1.3.2
   - pysam=0.15.3
   - tabix=0.2.6
+  - parasail-python
