@@ -94,11 +94,19 @@ def run_pangolin(input_genomes, threads):
     pangolin_df['pangolin_version'] = pangolin_version
 
     # tidy up the dataframe
-    pangolin_df = pangolin_df.rename(columns={'taxon': 'isolate',
-                                        'lineage': 'pangolin_lineage',
-                                        'status': 'pangolin_qc',
-                                        'note': 'pangolin_note',
-                                        'probability': 'pangolin_lineage_probability'})
+    if 'probability' in pangolin_df:
+        pangolin_df = pangolin_df.rename(columns={'taxon': 'isolate',
+                                              'lineage': 'pangolin_lineage',
+                                              'status': 'pangolin_qc',
+                                              'note': 'pangolin_note',
+                                              'probability': 'pangolin_lineage_score'})
+    elif 'conflict' in pangolin_df:
+        pangolin_df = pangolin_df.rename(columns={'taxon': 'isolate',
+                                              'lineage': 'pangolin_lineage',
+                                              'status': 'pangolin_qc',
+                                              'note': 'pangolin_note',
+                                              'conflict': 'pangolin_lineage_score'})
+
 
     # remove temp output
     shutil.rmtree(output_dir)
@@ -113,7 +121,7 @@ def collate_output(nextclade, pangolin, output):
     merged_df = pangolin.merge(nextclade, on='isolate', how='outer')
 
     merged_df = merged_df[['isolate', 'pangolin_lineage',
-                           'pangolin_lineage_probability', 'pangolin_note',
+                           'pangolin_lineage_score', 'pangolin_note',
                            'pangolin_qc', 'nextstrain_clade',
                            'nextclade_qc', 'nextclade_errors',
                            'totalGaps', 'totalInsertions', 'totalMissing',
