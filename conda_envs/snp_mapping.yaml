@@ -10,3 +10,4 @@ dependencies:
   - breseq=0.35.0
   - pysam
   - python=3.6.5
+  - tbb=2020.2

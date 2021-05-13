@@ -31,7 +31,7 @@ If you use this software please [cite](https://doi.org/10.3390/v12080895):
         wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
         bash Miniconda3-latest-Linux-x86_64.sh # follow instructions
         source $(conda info --base)/etc/profile.d/conda.sh
-        conda create -n signal -c conda-forge -c bioconda -c defaults snakemake pandas
+        conda create -n signal -c conda-forge -c bioconda -c defaults snakemake pandas conda
         conda activate signal 
 
 There are some issues with `conda` failing to install newer versions of snakemake
@@ -44,7 +44,7 @@ so alternatively install `mamba` and use that (snakemake has beta support for it
 Additional software dependencies are managed directly by `snakemake` using conda environment files:
 
   - trim-galore 0.6.5 ([docs](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/))
-  - kraken2 2.0.7-beta ([docs](https://ccb.jhu.edu/software/kraken2/))
+  - kraken2 2.1.1 ([docs](https://ccb.jhu.edu/software/kraken2/))
   - quast 5.0.2 ([docs](http://quast.sourceforge.net/quast))
   - bwa 0.7.17 ([docs](http://bio-bwa.sourceforge.net/))
   - samtools 1.7/1.9 ([docs](http://www.htslib.org/))
@@ -105,16 +105,17 @@ processing and postprocessing into 'all' and 'postprocess' targets.
 Related: because pipeline stages can fail, we recommend running 'snakemake all'
 with the -k flag ("Go on with independent jobs if a job fails").
 
-Additionally, you can run @jts' [ncov-tools](https://github.com/jts/ncov-tools)
+Additionally, SIGNAL can prepare output for use with @jts' [ncov-tools](https://github.com/jts/ncov-tools)
 to generate phylogenies and alternative summaries.
 
     snakemake --use-conda --cores 10 ncov_tools
 
-Signal manages installing the dependencies and will invoke `ncov-tools` if 
-it has been cloned as a sub-module and a fasta containing sequences to include in 
-the tree has been specified using `phylo_include_seqs:` in the main signal `config.yaml`.
+SIGNAL manages installing the dependencies and will generate the necessary hard links to required input
+files from SIGNAL for `ncov-tools` if it has been cloned as a sub-module and a fasta containing sequences 
+to include in the tree has been specified using `phylo_include_seqs:` in the main SIGANL`config.yaml`.
 
-Outputs will be written as specified within the `ncov-tools` folder and documentation.
+Outputs will be written as specified within the `ncov-tools` folder and documentation. At present, invoking `ncov-tools` 
+should be done manually as per its documentation. 
 
 ### Docker
 
