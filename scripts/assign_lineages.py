@@ -82,31 +82,13 @@ def run_pangolin(input_genomes, threads):
 
     pangolin_df = pd.read_csv(str(output_path), sep=',')
 
-    # get version information for pangolin, pangolearn model, and lineages
-    pangolearn_version = subprocess.run("pangolin --pangoLEARN-version".split(),
-                                        stdout=subprocess.PIPE)
-    pangolearn_version = pangolearn_version.stdout.decode('utf-8').strip()
-    pangolin_df['pangoLEARN_version'] = pangolearn_version
-
-    pangolin_version = subprocess.run("pangolin --version".split(),
-                                      stdout=subprocess.PIPE)
-    pangolin_version = pangolin_version.stdout.decode('utf-8').strip()
-    pangolin_df['pangolin_version'] = pangolin_version
-
     # tidy up the dataframe
-    if 'probability' in pangolin_df:
-        pangolin_df = pangolin_df.rename(columns={'taxon': 'isolate',
-                                              'lineage': 'pangolin_lineage',
+    pangolin_df = pangolin_df.rename(columns={'taxon': 'isolate',
+                                              'lineage': 'pango_lineage',
                                               'status': 'pangolin_qc',
                                               'note': 'pangolin_note',
-                                              'probability': 'pangolin_lineage_score'})
-    elif 'conflict' in pangolin_df:
-        pangolin_df = pangolin_df.rename(columns={'taxon': 'isolate',
-                                              'lineage': 'pangolin_lineage',
-                                              'status': 'pangolin_qc',
-                                              'note': 'pangolin_note',
-                                              'conflict': 'pangolin_lineage_score'})
-
+                                              'conflict': 'pangolin_conflict',
+                                              'ambiguity_score': 'pangolin_ambiguity_score'})
 
     # remove temp output
     shutil.rmtree(output_dir)
@@ -120,8 +102,10 @@ def collate_output(nextclade, pangolin, output):
     """
     merged_df = pangolin.merge(nextclade, on='isolate', how='outer')
 
-    merged_df = merged_df[['isolate', 'pangolin_lineage',
-                           'pangolin_lineage_score', 'pangolin_note',
+    merged_df = merged_df[['isolate', 'pango_lineage',
+                           'pangolin_conflict', 'pangolin_ambiguity_score',
+                           'pangolin_note', 'scorpio_call', 'scorpio_support',
+                           'scorpio_conflict',
                            'pangolin_qc', 'nextstrain_clade',
                            'nextclade_qc', 'nextclade_errors',
                            'totalGaps', 'totalInsertions', 'totalMissing',
@@ -133,7 +117,7 @@ def collate_output(nextclade, pangolin, output):
                            'totalAminoacidSubstitutions',
                            'aaDeletions', 'totalAminoacidDeletions',
                            'alignmentStart', 'alignmentEnd', 'alignmentScore',
-                           'pangolin_version',
+                           'pangolin_version', 'pango_version',
                            'pangoLEARN_version', 'nextclade_version']]
     merged_df.to_csv(output, sep='\t', index=False)
 

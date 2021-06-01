@@ -130,15 +130,17 @@ def get_lineage(pangolin_csv, sample_name):
         `str` lineage
         `str` pangoLEARN version
     '''
-    with open(pangolin_csv, 'r') as input_handle:
-        reader = csv.reader(input_handle)
+    df = pd.read_csv(pangolin_csv)
+    df_slice = df.loc[df['taxon'] == sample_name]
 
-        for row in reader: # Row format is ['taxon', 'lineage', 'probability', 'pangoLEARN_version', 'status', 'note']
+    if not df_slice.empty:
+        lineage = df_slice['lineage'].any()
+        pangoV = df_slice['pangoLEARN_version'].any()
 
-            if re.search(sample_name, row[0]):
-                return str(row[1]), str(row[3])
-    
-    return 'Unknown', 'Unknown'
+        return lineage, pangoV
+
+    else:
+        return 'Unknown', 'Unknown'
 
 def get_protein_variants(aa_table):
     '''
