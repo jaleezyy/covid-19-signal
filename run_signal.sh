@@ -27,11 +27,16 @@ RUNNAME="nml"
 METADATA_TSV=0
 PDF=false
 
+# SUBSTITUTE PARAMS #
+BED=0
+AMPLICON=0
+CUSTOM=false
+
 # Conda Parameters #
 BASE_ENV_PATH="$SCRIPTPATH/.snakemake/conda"
 SIGNAL_ENV="signal"
 USER_SIGNAL=false
-NCOV_ENV="ncov-qc"
+NCOV_ENV="ncov-qc-pangolin3"
 USER_NCOV=false
 
 # Values to Check #
@@ -39,23 +44,31 @@ schemeArray=('articV3' 'freed' 'resende' 'V2resende')
 
 HELP="
 USAGE:
-    bash $SCRIPTPATH/run_signal.sh -d PATH_TO_PAIRED_FASTQ_DIR -p PRIMER_SCHEME
+    bash $SCRIPTPATH/run_signal.sh -d PATH_TO_PAIRED_FASTQ_DIR -p PRIMER_SCHEME <OPTIONAL FLAGS>
     bash $SCRIPTPATH/run_signal.sh --update
     
 Flags:
-    -d  --directory       :  Path to paired fastq file directory
-    -p  --primer-scheme   :  Specify input data primer scheme
-                Available Primer Schemes: articV3, freed, resende, V2resende
-    -c  --cores           :  (OPTIONAL) Number of Cores to use in Signal. Default is 3
-    -n  --run-name        :  (OPTIONAL) Run name for final ncov-tools outputs. Default is 'nml'
-    -m  --metadata        :  (OPTIONAL) Add metadata to the run. Must be in TSV format with the columns 'sample', 'date', and 'ct'
-    --pdf                 :  (OPTIONAL) If you have pdflatex installed runs ncov-tools pdf output
-    --signal-env          :  (OPTIONAL) Name of signal conda env. Default is '$BASE_ENV_PATH/signal'
-    --ncov-tools-env      :  (OPTIONAL) Name of ncov-tools env. Default is '$BASE_ENV_PATH/ncov-qc'
+    NEEDED:
+    -d  --directory      :  Path to paired fastq file directory
+    -p  --primer-scheme  :  Specify input data primer scheme
+                Available Primer Schemes: articV3, freed, resende, V2resende, custom by passing '--bed' and '--amplicon'
+
+    SUBSTITUTE (Can be used instead of a primer scheme but must be used together):
+    --bed       :  Path to custom primer bed file to be used instead of default schemes
+    --amplicon  :  Path to custom amplicon bed file to be used instead of default schemes
+
+    OPTIONAL:
+    -c  --cores           :  Number of Cores to use in Signal. Default is 3
+    -n  --run-name        :  Run name for final ncov-tools outputs. Default is 'nml'
+    -m  --metadata        :  Add metadata to the run. Must be in TSV format with the columns 'sample', 'date', and 'ct'
+    --pdf                 :  If you have pdflatex installed runs ncov-tools pdf output
+    --signal-env          :  Name of signal conda env. Default is '$BASE_ENV_PATH/signal'
+    --ncov-tools-env      :  Name of ncov-tools env. Default is '$BASE_ENV_PATH/ncov-qc-pangolin3'
                 **NOTE** It is highly recommended to let the script generate the environments as it will
                           only occur once and you won't have to pass the path each time
 
-    --update              :  Passing --update will update pangolin and pangoLearn along with this repo and then exit
+    OTHER:
+    --update  :  Passing --update will update pangolin and pangoLearn along with this repo and then exit
 "
 ### END DEFAULTS ###
 
@@ -69,7 +82,7 @@ if [ $# -eq 0 ]; then
 fi
 
 # Set Arguments #
-while [ "$1" = "--directory" -o "$1" = "-d" -o "$1" = "--primer-scheme" -o "$1" = "-p" -o "$1" = "--cores" -o "$1" = "-c" -o "$1" = "--run-name" -o "$1" = "-n" -o "$1" = "-m" -o "$1" = "--metadata" -o "$1" = "--pdf" -o "$1" = "--signal-env" -o "$1" = "--ncov-tools-env" -o "$1" = "--update" ];
+while [ "$1" = "--directory" -o "$1" = "-d" -o "$1" = "--primer-scheme" -o "$1" = "-p" -o "$1" = "--cores" -o "$1" = "-c" -o "$1" = "--bed" -o "$1" = "--amplicon" -o "$1" = "--run-name" -o "$1" = "-n" -o "$1" = "-m" -o "$1" = "--metadata" -o "$1" = "--pdf" -o "$1" = "--signal-env" -o "$1" = "--ncov-tools-env" -o "$1" = "--update" ];
 do
     if [ "$1" = "--directory" -o "$1" = "-d" ]; then
         shift
@@ -82,6 +95,14 @@ do
     elif [ "$1" = "--cores" -o "$1" = "-c" ]; then
         shift
         CORES=$1
+        shift
+    elif [ "$1" = "--bed" ]; then
+        shift
+        BED=$1
+        shift
+    elif [ "$1" = "--amplicon" ]; then
+        shift
+        AMPLICON=$1
         shift
     elif [ "$1" = "--run-name" -o "$1" = "-n" ]; then
         shift
@@ -136,7 +157,24 @@ fi
 
 if containsElement "$PRIMER_SCHEME" "${schemeArray[@]}"; then
     echo "Using primer scheme $PRIMER_SCHEME"
+elif [[ $BED != 0 ]] && [[ $AMPLICON != 0 ]]; then
+    echo "Using custom amplicons"
+    PATHBED=$(realpath $BED)
+    PATHAMPLICON=$(realpath $AMPLICON)
+    CUSTOM=true
 else
+    # Check for custom scheme
+    if [[ $BED != 0 ]] && [[ $AMPLICON = 0 ]]; then
+        echo "ERROR: Passed '--bed' without also passing '--amplicon'."
+        echo "       Re-run the command with the missing argument to continue"
+        exit 1
+    elif [[ $BED = 0 ]] && [[ $AMPLICON != 0 ]]; then
+        echo "ERROR: Passed '--amplicon' without also passing '--bed'"
+        echo "       Re-run the command with the missing argument to continue"
+        exit 1
+    fi
+
+    # Check if no scheme given or if scheme name was wrong
     if [ $PRIMER_SCHEME = 0 ]; then
         echo "ERROR: Please specify a primer scheme"
         echo "Primer schemes available are ${schemeArray[@]}"
@@ -259,7 +297,17 @@ fi
 
 # Echo in correct data locations to parameters config
 # Done as for the primer pairs to work we need the full path
-if [ "$PRIMER_SCHEME" == "articV3" ]; then
+if [ "$CUSTOM" = true ]; then
+    # SIGNAL Parameters
+    echo "scheme_bed: '$PATHBED'" >> $SIGNAL_CONFIG
+    echo "amplicon_loc_bed: '$PATHAMPLICON'" >> $SIGNAL_CONFIG
+    echo "primer_pairs_tsv: ''" >> $SIGNAL_CONFIG
+
+    # NCOV-TOOLS Parameters
+    echo "amplicon_bed: $PATHAMPLICON" >> ./ncov-tools/config.yaml
+    echo "primer_bed: $PATHBED" >> ./ncov-tools/config.yaml
+
+elif [ "$PRIMER_SCHEME" == "articV3" ]; then
     # SIGNAL Parameters
     echo "scheme_bed: 'resources/primer_schemes/artic_v3/nCoV-2019.primer.bed'" >> $SIGNAL_CONFIG
     echo "amplicon_loc_bed: 'resources/primer_schemes/artic_v3/ncov-qc_V3.scheme.bed'" >> $SIGNAL_CONFIG
@@ -390,7 +438,7 @@ do
         --pangolin ${pangolin} \
         --ncov_summary ${ncov_qc} \
         --ncov_negative ${ncov_neg} \
-        --revision v1.4.1 \
+        --revision v1.4.2 \
         --script_name covid-19-signal \
         --sequencing_technology illumina \
         --scheme $PRIMER_SCHEME \
