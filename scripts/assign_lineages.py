@@ -118,7 +118,7 @@ def collate_output(nextclade, pangolin, output):
                            'aaDeletions', 'totalAminoacidDeletions',
                            'alignmentStart', 'alignmentEnd', 'alignmentScore',
                            'pangolin_version', 'pango_version',
-                           'pangoLEARN_version', 'nextclade_version']]
+                           'pangoLEARN_version', 'pango_version', 'nextclade_version']]
     merged_df.to_csv(output, sep='\t', index=False)
 
 

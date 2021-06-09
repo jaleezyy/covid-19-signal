@@ -12,6 +12,7 @@ dependencies:
   - gofasta
   - nodejs
   - usher
+  - bcftools=1.9
   - pip:
     - pandas==1.0.1
     - git+https://github.com/cov-lineages/pangoLEARN.git
