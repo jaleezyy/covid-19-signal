@@ -43,7 +43,7 @@ validate(config, 'resources/config.schema.yaml')
 
 # read and validate sample table specified in config.schema.yaml
 samples = pd.read_table(config['samples'], sep=',')
-validate(samples, 'resources/vcf.sample.schema.yaml')
+validate(samples, 'resources/fasta.sample.schema.yaml')
 
 # set output directory
 exec_dir = os.getcwd()
