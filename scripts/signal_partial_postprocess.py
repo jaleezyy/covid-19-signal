@@ -27,7 +27,7 @@ def parse_lineages(file):
 						'pangoLEARN_version',
 						'pango_version'
 						]]
-	#lin_df.rename(columns={'pangolin_qc': 'status'})
+	lin_df.rename(columns={'pangolin_qc': 'status'}, inplace=True)
 	#lin_df['isolate'] = lin_df['isolate'].apply(lambda x: x.split("_")[1].split(".")[0])
 	return lin_df
 	

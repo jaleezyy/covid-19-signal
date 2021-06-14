@@ -28,7 +28,7 @@ fi
 for vcf in "$@"; do 
     sample_name=$(echo "$(basename $vcf)" | cut -d '.' -f1 | cut -d '_' -f1)
     sample_dir="$(dirname $vcf)"
-    bgzip "$vcf"
+    bgzip --force --force "$vcf"
     bcftools index "$vcf".gz 
-    bcftools consensus --fasta-ref "$ref" "$vcf".gz | sed "s/>.*/>$sample_name/"  > "${sample_dir}/${sample_name}".vcf_consensus.fna
+    bcftools consensus --haplotype R --fasta-ref "$ref" "$vcf".gz | sed "s/>.*/>$sample_name/"  > "${sample_dir}/${sample_name}".vcf_consensus.fna
 done
