@@ -59,7 +59,7 @@ def set_up():
 			  'tree_include_consensus': f"'{snakemake.params['phylo_include_seqs']}'",
 			  'negative_control_samples': f"{neg_list}",
 			  'mutation_set': 'spike_mutations',
-			  'output_directory': f"ncov_{result_dir}"}
+			  'output_directory': f"{result_dir}_ncovresults"}
 
 	with open(os.path.join(exec_dir, 'ncov-tools', 'config.yaml'), 'w') as fh:
 			for key, value in config.items():
