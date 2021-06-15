@@ -53,7 +53,7 @@ elif [ ! $database_dir = 0 ] && [ ! $fasta_dir = 0 ]; then
     echo "You can only select one directory of fastq(.gz) reads (-d) or FASTA files (-f)."
     echo "$HELP"
     exit 1
-elif [ ! $$vcf_dir = 0 ] && [ ! $fasta_dir = 0 ]; then
+elif [ ! $vcf_dir = 0 ] && [ ! $fasta_dir = 0 ]; then
     echo "You can only select one directory of VCF files (-v) or FASTA files (-f)."
     echo "$HELP"
     exit 1
