@@ -58,7 +58,8 @@ def set_up():
 			  'assign_lineages': 'true',
 			  'tree_include_consensus': f"'{snakemake.params['phylo_include_seqs']}'",
 			  'negative_control_samples': f"{neg_list}",
-			  'mutation_set': 'spike_mutations'}
+			  'mutation_set': 'spike_mutations',
+			  'output_directory': f"{result_dir}_ncovresults"}
 
 	with open(os.path.join(exec_dir, 'ncov-tools', 'config.yaml'), 'w') as fh:
 			for key, value in config.items():
