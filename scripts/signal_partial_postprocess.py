@@ -30,7 +30,7 @@ def parse_lineages(file):
 						'pango_version'
 						]]
 	lin_df.rename(columns={'pangolin_qc': 'status'}, inplace=True)
-	lin_df['isolate'] = lin_df['isolate'].apply(lambda x: x.split("_")[1].split(".")[0])
+	lin_df['isolate'] = lin_df['isolate'].apply(lambda x: x.split("_")[1].split(".")[0] if x.startswith("Consensus") else x)
 	return lin_df
 	
 def parse_quast(quasts):
