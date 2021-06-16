@@ -39,25 +39,25 @@ def parse_quast(quasts):
 	for file in quasts:
 		sample_name = os.path.basename(file).split("_")[0] # intended sample name
 		if check_file(file) is False: # if missing or incomplete, replace with default values
-			print(f"QUAST report {file} can't be read! Skipping!")
+			print(f"Adding {file}")
 			info['isolate'].append(f"{sample_name}")
 			info["Genome Fraction (%)"].append(" ")
 			quast_df = pd.DataFrame(info, columns=['isolate', 'Genome Fraction (%)'])
-			return quast_df
-		
-		with open(file) as data:
-			file_red = data.readlines()
-			#print(file_red)
-			# exit()
-		if any(s.startswith("Assembly\t") and (match := s) for s in file_red):
-			info['isolate'].append(match.split("\t")[1].split(".")[0].strip("\n"))
 		else:
-			info['isolate'].append(f"{sample_name}")
-		
-		if any(s.startswith("Genome fraction (%)\t") and (match := s) for s in file_red):
-			info["Genome Fraction (%)"].append(match.split("\t")[1].strip("\n"))
-		else:
-			info["Genome Fraction (%)"].append(" ")
+			with open(file) as data:
+				file_red = data.readlines()
+				#print(file_red)
+				# exit()
+			if any(s.startswith("Assembly\t") and (match := s) for s in file_red):
+				info['isolate'].append(match.split("\t")[1].split(".")[0].strip("\n"))
+			else:
+				info['isolate'].append(f"{sample_name}")
+			
+			if any(s.startswith("Genome fraction (%)\t") and (match := s) for s in file_red):
+				info["Genome Fraction (%)"].append(match.split("\t")[1].strip("\n"))
+			else:
+				info["Genome Fraction (%)"].append(" ")
+
 
 		# for ele in file_red:
 			# if ele.startswith("Assembly\t"):

@@ -103,7 +103,6 @@ rule all:
     input:
         rules.link_vcf_files.input,
         rules.consensus.input,
-        rules.quast.input,
         rules.config_sample_log.input,
         rules.lineages.input
 
@@ -115,7 +114,8 @@ rule postprocess:
         input_lineage = 'lineage_assignments.tsv',
         postprocess_script_path = os.path.join(exec_dir, 'scripts', 'signal_partial_postprocess.py')
     input:
-        quast = expand('{sn}/quast/{sn}_quast_report.tsv', sn=sample_names)
+        #quast = expand('{sn}/quast/{sn}_quast_report.tsv', sn=sample_names)
+        quast = expand('{sn}', sn=sample_names)
     shell:
         '{params.postprocess_script_path} -i {params.input_lineage} -q {input.quast}'
 
