@@ -68,7 +68,7 @@ Flags:
                           only occur once and you won't have to pass the path each time
 
     OTHER:
-    --update  :  Passing --update will update pangolin and pangoLearn along with this repo and then exit
+    --update  :  Passing --update will update ncov-tools pip dependencies, pangolin and pangoLEARN along with this repo and then exit
 "
 ### END DEFAULTS ###
 
@@ -127,11 +127,18 @@ do
         shift
     elif [ "$1" = "--update" ]; then
         shift
+        # Scripts
         cd $SCRIPTPATH
         git pull
+
+        # ncov-tools Environment (not managed by snakemake unfortunately)
         eval "$(conda shell.bash hook)"
+        printf "\n Updating ncov-tools environment at $BASE_ENV_PATH/$NCOV_ENV \n\n"
         conda activate $BASE_ENV_PATH/$NCOV_ENV
+        pip install git+https://github.com/cov-lineages/pango-designation.git --upgrade
         pangolin --update
+        pip install ncov-parser --upgrade
+        pip install git+https://github.com/jts/ncov-watch.git --upgrade
         exit
     else
         shift
