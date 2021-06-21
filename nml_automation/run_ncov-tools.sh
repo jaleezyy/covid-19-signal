@@ -15,7 +15,6 @@ eval "$(conda shell.bash hook)"
 # Default name is ncov-qc from https://github.com/jts/ncov-tools/blob/master/workflow/envs/environment.yml
 # May have to switch to a container or something similar later to make it easier
 conda activate $NCOV_ENV
-pip install ncov-parser --upgrade
 
 # If we have a matching negative control, we modify the config to make sure its gotten
 # If we don't find any, then no negative controls are added
@@ -42,7 +41,6 @@ $BASE_SCRIPTPATH/scripts/prename "s/_viral_reference././" *.sorted.bam
 cd ../
 snakemake -s workflow/Snakefile --cores 1 build_snpeff_db
 snakemake -s workflow/Snakefile all --cores $CORES
-snakemake -s workflow/Snakefile --cores 2 all_qc_annotation
 
 if [ "$PDF" = true ]; then
     snakemake -s workflow/Snakefile all_final_report --cores 1
