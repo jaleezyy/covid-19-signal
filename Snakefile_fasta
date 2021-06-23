@@ -111,7 +111,7 @@ rule postprocess:
         postprocess_script_path = os.path.join(exec_dir, 'scripts', 'signal_partial_postprocess.py')
     input:
         #quast = expand('{sn}/quast/{sn}_quast_report.tsv', sn=sample_names)
-	quast = expand('{sn}', sn=sample_names)
+        quast = expand('{sn}', sn=sample_names)
     shell:
         '{params.postprocess_script_path} -i {params.input_lineage} -q {input.quast}'
 
@@ -161,11 +161,10 @@ rule link_raw_data:
     input:
         lambda wildcards: get_fasta_files(wildcards.sn)
     params:
-        ref = str(config['viral_reference_contig_name']).replace(".", "\.")
+        sample = '{sn}'
     shell:
-        #"sed '/^##sgmutationstatistics=.*/d' {input} | sed 's/^0/{params.ref}/' > {output}"
-        #'sed '/^##sgmutationstatistics=.*/d' {input} | sed 's/^0/MN908947\.3/' > {output}'
-        'ln -s {input} {output}'
+        "sed 's/>consensus sequence_BreakPoint_1/>{params.sample}/g' {input} > {output}"
+        #'ln -s {input} {output}'
 
 
 ##################################  Based on scripts/quast.sh   ####################################
