@@ -6,8 +6,6 @@
 
 # DEFAULTS #
 ############
-set -e # exit if pipeline returns non-zero status
-set -o pipefail # return value of last command to exit with non-zero status
 SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )" # Get script location which will be the signal base dir
 mkdir -p $SCRIPTPATH/.snakemake
 
