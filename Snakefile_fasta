@@ -111,9 +111,11 @@ rule postprocess:
         postprocess_script_path = os.path.join(exec_dir, 'scripts', 'signal_partial_postprocess.py')
     input:
         #quast = expand('{sn}/quast/{sn}_quast_report.tsv', sn=sample_names)
-        quast = expand('{sn}', sn=sample_names)
+        #stats = expand('{sn}', sn=sample_names)
+        stats = expand('{sn}/input_data/{sn}_stats.txt', sn=sample_names)
+        
     shell:
-        '{params.postprocess_script_path} -i {params.input_lineage} -q {input.quast}'
+        '{params.postprocess_script_path} -i {params.input_lineage} -q {input.stats}'
 
 
 rule ncov_tools:
@@ -161,9 +163,12 @@ rule link_raw_data:
     input:
         lambda wildcards: get_fasta_files(wildcards.sn)
     params:
-        sample = '{sn}'
+        sample = '{sn}',
+        outdir = '{sn}/input_data'
     shell:
-        "sed 's/>consensus sequence_BreakPoint_1/>{params.sample}/g' {input} > {output}"
+        "sed 's/>consensus sequence_BreakPoint_1/>{params.sample}/g' {input} > {output} && "
+        "cp $(dirname {input})/{params.sample}_*StatInfo.txt {params.outdir}/{params.sample}_stats.txt"
+        #TODO: correct format, dummy approach for initial testing
         #'ln -s {input} {output}'
 
 

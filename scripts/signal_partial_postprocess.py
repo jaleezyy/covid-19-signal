@@ -33,10 +33,10 @@ def parse_lineages(file):
 	lin_df['isolate'] = lin_df['isolate'].apply(lambda x: x.split("_")[1].split(".")[0] if x.startswith("Consensus") else x)
 	return lin_df
 	
-def parse_quast(quasts):
+def parse_stats(stats):
 	#quast_df = pd.DataFrame(columns=['isolate', 'Genome Fraction (%)'])
 	info = defaultdict(list)
-	for file in quasts:
+	for file in stats:
 		sample_name = os.path.basename(file).split("_")[0] # intended sample name
 		if check_file(file) is False: # if missing or incomplete, replace with default values
 			print(f"Adding {file}")
@@ -49,14 +49,21 @@ def parse_quast(quasts):
 				#print(file_red)
 				# exit()
 			if any(s.startswith("Assembly\t") and (match := s) for s in file_red):
-				info['isolate'].append(match.split("\t")[1].split(".")[0].strip("\n"))
+				info['isolate'].append(match.split("\t")[1].split(".")[0].strip("\n")) ### QUAST
 			else:
-				info['isolate'].append(f"{sample_name}")
+				info['isolate'].append(f"{sample_name}") ### DEFAULT
 			
 			if any(s.startswith("Genome fraction (%)\t") and (match := s) for s in file_red):
-				info["Genome Fraction (%)"].append(match.split("\t")[1].strip("\n"))
+				info["Genome Fraction (%)"].append(match.split("\t")[1].strip("\n")) ### QUAST
+			elif any(c.startswith("Covered Bases: ") and (match_cov := c) for c in file_red):
+				covered = int(match_cov.split(": ")[1].strip("\n")) ### STATS
+				if any(r.startswith("Reference Length: ") and (match_len := r) for r in file_red):
+					length = int(match_len.split(": ")[1].strip("\n")) ### STATS
+				genome_frac = round((covered/length)*100, 2)
+				
+				info["Genome Fraction (%)"].append(f"{genome_frac}")
 			else:
-				info["Genome Fraction (%)"].append(" ")
+				info["Genome Fraction (%)"].append(" ") ### DEFAULT
 
 
 		# for ele in file_red:
@@ -73,16 +80,16 @@ def parse_quast(quasts):
 	
 	
 	
-def collate_output(lineage, quast, output):
-	merged_df = lineage.merge(quast, on='isolate', how='outer')
+def collate_output(lineage, stats, output):
+	merged_df = lineage.merge(stats, on='isolate', how='outer')
 	
 	merged_df.to_csv(output, sep='\t', index=False)
 
 
 if __name__ == '__main__':
-	parser = argparse.ArgumentParser('Partial postprocessing script for SIGNAL using input consensus FASTAs')
+	parser = argparse.ArgumentParser('Partial postprocessing script for SIGNAL using input VCFs or consensus FASTAs')
 	parser.add_argument("-i", "--input_lineages", required=True, help="Lineage assessment file from SIGNAL")
-	parser.add_argument("-q", "--input_quast", nargs='*', required=True, help="QUAST TSV output")
+	parser.add_argument("-q", "--input_sample", nargs='*', required=True, help="TXT file stats, QUAST TSV output, or list of sample IDs")
 	parser.add_argument("-o", "--output", default="summary.tsv", help="Output file for collated summary table")
 	args = parser.parse_args()
 	
@@ -90,6 +97,6 @@ if __name__ == '__main__':
 		raise argparse.ArgumentTypeError(f"Required lineage assessment file {args.input_lineages} can't be read!")
 	lin = parse_lineages(args.input_lineages)
 	
-	qua = parse_quast(args.input_quast)
+	stat = parse_stats(args.input_sample)
 	
-	collate_output(lin, qua, args.output)
+	collate_output(lin, stat, args.output)
