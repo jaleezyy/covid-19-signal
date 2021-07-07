@@ -57,12 +57,21 @@ if [ ! $database_dir = 0 ]; then
 	for file in $database_dir/*.f?(ast)q*; do
 		sample=$(basename $file | cut -d_ -f 1)
 		if [[ ! " ${samples_dir[@]} " =~ " ${sample} " ]] && [[ ! " ${samples_fail[@]} " =~ " ${sample} " ]]; then
-			count=$(($(ls $database_dir/${sample}*_L00*_R{1,2}*.f?(ast)q* 2>/dev/null | wc -l)/2)) || samples_fail+=("${sample}") # estimate # of files; sample fails if file(s) missing
-			for (( i=1; i<=$count; i++ )); do
-				r1=$(ls $database_dir/${sample}*_L00${i}_R1* | grep /${sample}_) 
-				r2=$(ls $database_dir/${sample}*_L00${i}_R2* | grep /${sample}_)
-				echo ${sample},${r1},${r2} >> ${name} && echo ${sample},${r1},${r2}
-			done
+			count=$(($(ls $database_dir/${sample}_*L00*_R{1,2}*.f?(ast)q* 2>/dev/null | wc -l)/2)) || count=0 # estimate # of files; assign 0 if no files found (check for general name)
+			if [ $count -eq 0 ]; then # cannot find files with replicate L00*
+				count=$(($(ls $database_dir/${sample}_*R{1,2}*.f?(ast)q* 2>/dev/null | wc -l)/2)) || samples_fail+=("${sample}") # estimate # of files; sample fails if file(s) missing
+				if [ $count -eq 1 ]; then # Assume 1 R1 and 1 R2
+					r1=$(ls $database_dir/${sample}_*R1* | grep /${sample}_) 
+					r2=$(ls $database_dir/${sample}_*R2* | grep /${sample}_)
+					echo ${sample},${r1},${r2} >> ${name} && echo ${sample},${r1},${r2}
+				fi
+			else
+				for (( i=1; i<=$count; i++ )); do
+					r1=$(ls $database_dir/${sample}_*L00${i}_R1* | grep /${sample}_) 
+					r2=$(ls $database_dir/${sample}_*L00${i}_R2* | grep /${sample}_)
+					echo ${sample},${r1},${r2} >> ${name} && echo ${sample},${r1},${r2}
+				done
+			fi
 			samples_dir+=("${sample}") # sample passed
 		fi
 	done
@@ -75,5 +84,5 @@ if [ ${#samples_fail[@]} -gt 0 ]; then
 		echo -e $failed
 	done
 else
-	echo -e "Success!"
+	echo -e "Complete!"
 fi
