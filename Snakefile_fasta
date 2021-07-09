@@ -107,7 +107,7 @@ rule postprocess:
         'conda_envs/postprocessing.yaml'
     params:
         #sample_csv_filename = os.path.join(exec_dir, config['samples']),
-        results_dir = os.path.join(exec_dir, config['result_dir']),
+        results_dir = os.path.basename(config['result_dir']),
         input_lineage = 'lineage_assignments.tsv',
         postprocess_script_path = os.path.join(exec_dir, 'scripts', 'signal_partial_postprocess.py'),
         #stats = expand('{sn}/input_data/{sn}_stats.txt', sn=sample_names)
