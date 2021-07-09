@@ -33,7 +33,7 @@ def main():
     args = parser.parse_args()
 
     # Read in qc csv file
-    df = pd.read_csv(args.qc_csv, sep=',')
+    df = pd.read_csv(args.qc_csv, sep=',', dtype=object)
 
     # Set the negative control headers which are static based on ncov-tools
     negative_columns = ['negative_control_qc', 'negative_control_genome_covered_bases', 'negative_control_genome_total_bases', 'negative_control_genome_covered_fraction', 'negative_control_amplicons_detected']
@@ -61,7 +61,6 @@ def main():
         df[key] = '-'.join(replace_dict[key])
 
     # Drop uneeded run name column and fill in blank columns
-    df.drop(['run_name'], axis=1, inplace=True)
     df.fillna('NA', inplace=True)
     df.to_csv('{}.qc.csv'.format(args.output_prefix), index=False)
 

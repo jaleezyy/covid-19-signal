@@ -58,7 +58,7 @@ Flags:
     OPTIONAL:
     -c  --cores           :  Number of Cores to use in Signal. Default is 3
     -n  --run-name        :  Run name for final ncov-tools outputs. Default is 'nml'
-    -m  --metadata        :  Add metadata to the run. Must be in TSV format with the columns 'sample', 'date', and 'ct'
+    -m  --metadata        :  Add metadata to the run. Must be in TSV format with atleast a column called 'sample'
     --pdf                 :  If you have pdflatex installed runs ncov-tools pdf output
     --signal-env          :  Name of signal conda env. Default is '$BASE_ENV_PATH/signal'
     --ncov-tools-env      :  Name of ncov-tools env. Default is '$BASE_ENV_PATH/ncov-qc-pangolin3'
@@ -296,6 +296,13 @@ if [ $METADATA_TSV = 0 ]; then
     sed -i -e 's/^metadata/#metadata/' ./ncov-tools/config.yaml
     cleanup_metadata=""
 else
+    # Check if metadata has correct ncov-tools columns, if not we only append it to final output csv
+    if $(head -n 1 $FULL_PATH_METADATA | grep -q ct) && $(head -n 1 $FULL_PATH_METADATA | grep -q date); then
+        echo "Metadata contains correct ncov-tools headers"
+    else
+        echo "Metadata is missing ncov-tools headers, appending it only to final QC output"
+        sed -i -e 's/^metadata/#metadata/' ./ncov-tools/config.yaml
+    fi
     cp $FULL_PATH_METADATA ./ncov-tools/metadata.tsv
     cleanup_metadata="--sample_sheet $FULL_PATH_METADATA"
 fi
