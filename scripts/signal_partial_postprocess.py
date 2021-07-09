@@ -18,6 +18,39 @@ def check_file(path: str) -> Path:
 		return False
 		#raise argparse.ArgumentTypeError(f"{path} can't be read")
 
+def identify_stats_file(id):
+	"""
+	Determine if provided stats file is from QUAST or already provided
+	"""
+
+	exec_dir = snakemake.params['exec_dir']
+	files = []
+	
+	for filename in id:
+		stats = False
+		quast = False
+	
+		stats_file = os.path.join(exec_dir, filename, "_stats.txt")
+		quast_file = os.path.join(exec_dir, filename, "_quast_report.tsv")
+		
+		if check_file(stats_file): stats = True
+		if check_file(quast_file): quast = True
+	
+		if (stats is True) and (quast is True): # select stats file by default
+			files.append(stats_file)
+			#return stats
+		elif (stats is True) and (quast is False):
+			files.append(stats_file)
+			#return stats
+		elif (stats is False) and (quast is True):
+			files.append(quast_file)
+			#return quast
+		else:
+			files.append(stats_file)
+			#return stats
+	
+	return files
+
 def parse_lineages(file):
 	lineages = pd.read_table(file, sep='\t')
 	lin_df = lineages[['isolate', 
@@ -97,6 +130,7 @@ if __name__ == '__main__':
 		raise argparse.ArgumentTypeError(f"Required lineage assessment file {args.input_lineages} can't be read!")
 	lin = parse_lineages(args.input_lineages)
 	
-	stat = parse_stats(args.input_sample)
+	stats_files = identify_stats_file(args.input_sample)
+	stat = parse_stats(stats_files)
 	
 	collate_output(lin, stat, args.output)

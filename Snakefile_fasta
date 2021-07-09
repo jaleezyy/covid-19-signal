@@ -107,15 +107,17 @@ rule postprocess:
         'conda_envs/postprocessing.yaml'
     params:
         #sample_csv_filename = os.path.join(exec_dir, config['samples']),
+        exec_dir = exec_dir,
         input_lineage = 'lineage_assignments.tsv',
-        postprocess_script_path = os.path.join(exec_dir, 'scripts', 'signal_partial_postprocess.py')
+        postprocess_script_path = os.path.join(exec_dir, 'scripts', 'signal_partial_postprocess.py'),
+        #stats = expand('{sn}/input_data/{sn}_stats.txt', sn=sample_names)
     input:
         #quast = expand('{sn}/quast/{sn}_quast_report.tsv', sn=sample_names)
-        #stats = expand('{sn}', sn=sample_names)
-        stats = expand('{sn}/input_data/{sn}_stats.txt', sn=sample_names)
+        stats = expand('{sn}', sn=sample_names)
+        #stats = expand('{sn}/input_data/{sn}_stats.txt', sn=sample_names)
         
     shell:
-        '{params.postprocess_script_path} -i {params.input_lineage} -q {input.stats}'
+        '{params.postprocess_script_path} -i {params.input_lineage} -q {params.stats}'
 
 
 rule ncov_tools:
