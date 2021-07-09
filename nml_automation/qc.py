@@ -134,8 +134,8 @@ def get_lineage(pangolin_csv, sample_name):
     df_slice = df.loc[df['taxon'] == sample_name]
 
     if not df_slice.empty:
-        lineage = df_slice['lineage'].any()
-        pangoV = df_slice['pangoLEARN_version'].any()
+        lineage = df_slice['lineage'].item()
+        pangoV = df_slice['pangoLEARN_version'].item()
 
         return lineage, pangoV
 
@@ -185,9 +185,11 @@ def parse_ncov_tsv(file_in, sample, negative=False):
         for spot in range(1, len(new_columns)):
             new_columns[spot] = 'negative_control_{}'.format(new_columns[spot])
         df.columns = new_columns
+
     # Input is summary_df, drop its lineage column as we pull and create our own (as it didn't have this before)
+    # Run name is also unneeded
     else:
-        df.drop(columns=['lineage'], inplace=True)
+        df.drop(columns=['lineage', 'run_name'], inplace=True)
 
     # Set which column contains the sample
     sample_column = 'sample'
@@ -218,18 +220,19 @@ def get_samplesheet_info(sample_tsv, sample_name):
     df = pd.read_csv(sample_tsv, sep='\t', dtype=object)
     # Rename run to run_identifier as that is what is already in IRIDA
     df.rename(columns={'run': 'run_identifier'}, inplace=True)
+    samplesheet_columns = df.columns.values
 
-    # ncov-tools captures these columns and date is not required so drop them
-    try:
-        df.drop(columns=['ct', 'date'], inplace=True)
-    except KeyError:
-        df.drop(columns=['ct'], inplace=True)
+    # ncov-tools or this script captures these columns from metadata file already, don't double dip them
+    columns_to_remove = set(['ct', 'date', 'scheme', 'primer_scheme']).intersection(samplesheet_columns)
+    if columns_to_remove:
+        df.drop(columns=columns_to_remove, inplace=True)
+
     
     # Get only the sample row and if empty, fill it in to match other rows
     df = df.loc[df['sample'] == sample_name]
     if df.empty:
         df.loc[1, 'sample']  = sample_name
-    
+
     df.fillna('NA', inplace=True)
 
     return df
