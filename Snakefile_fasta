@@ -167,7 +167,7 @@ rule link_raw_data:
         outdir = '{sn}/input_data'
     shell:
         "sed 's/>consensus sequence_BreakPoint_1/>{params.sample}/g' {input} > {output} && "
-        "cp $(dirname {input})/{params.sample}_*StatInfo.txt {params.outdir}/{params.sample}_stats.txt"
+        "cp $(dirname {input})/{params.sample}_*StatInfo.txt {params.outdir}/{params.sample}_stats.txt 2>/dev/null || echo 'No stats file found!'"
         #TODO: correct format, dummy approach for initial testing
         #'ln -s {input} {output}'
 
