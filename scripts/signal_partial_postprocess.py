@@ -23,15 +23,14 @@ def identify_stats_file(id):
 	Determine if provided stats file is from QUAST or already provided
 	"""
 
-	exec_dir = snakemake.params['exec_dir']
 	files = []
 	
 	for filename in id:
 		stats = False
 		quast = False
 	
-		stats_file = os.path.join(exec_dir, filename, "_stats.txt")
-		quast_file = os.path.join(exec_dir, filename, "_quast_report.tsv")
+		stats_file = os.path.join(snakemake.params['results_dir'], filename, "_stats.txt")
+		quast_file = os.path.join(snakemake.params['results_dir'], filename, "_quast_report.tsv")
 		
 		if check_file(stats_file): stats = True
 		if check_file(quast_file): quast = True
