@@ -6,7 +6,7 @@ import argparse
 
 # require that filename contains the specified extension
 def require_extension(filename, ext):
-    assert(args.input_R1[-len(ext):] == ext)
+    assert(filename[-len(ext):] == ext)
 
 def contains_adapter(read_sequence, adapter_sequence, min_match_length):
     # discard all reads that contain the full adapter
@@ -23,7 +23,7 @@ def contains_adapter(read_sequence, adapter_sequence, min_match_length):
             return True
     return False
 
-def filter_reads(filter_sequences, min_match_length, input_R1_fp, input_R2_fp, output_R1_fp, output_R2_fp):
+def filter_paired_reads(filter_sequences, min_match_length, input_R1_fp, input_R2_fp, output_R1_fp, output_R2_fp):
 
     input_R1 = pysam.FastxFile(input_R1_fp)
     input_R2 = pysam.FastxFile(input_R2_fp)
@@ -54,13 +54,40 @@ def filter_reads(filter_sequences, min_match_length, input_R1_fp, input_R2_fp, o
 
     print(f"reads kept: {reads_kept}, reads filtered: {reads_filtered}")
 
+def filter_unpaired_reads(filter_sequences, min_match_length, input_reads_fp, output_reads_fp):
+
+    input_reads = pysam.FastxFile(input_reads_fp)
+
+    output_reads = gzip.open(output_reads_fp, 'w')
+
+    reads_filtered = 0
+    reads_kept = 0
+    for r in input_reads:
+
+        discard = False
+        for f in filter_sequences:
+            if contains_adapter(r.sequence, f, min_match_length):
+                discard = True
+                break
+
+        if discard:
+            reads_filtered += 1
+            continue
+        else:
+            reads_kept += 1
+
+            fq1 = str(r) + "\n"
+            output_reads.write(fq1.encode('utf-8'))
+
+    print(f"reads kept: {reads_kept}, reads filtered: {reads_filtered}")
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="Discard read pairs that contain sequencing adapters that are missed by a trimmer")
     parser.add_argument('--input_R1', required=True, default=False,
-                        help="Input fasta/fastq file for first half of pair")
+                        help="Input fasta/fastq file for first half of pair or single unpaired fasta/fastq")
 
-    parser.add_argument('--input_R2', required=True, default=False,
+    parser.add_argument('--input_R2', required=False, default=False,
                         help="Input fasta/fastq file for second half of pair")
 
     args = parser.parse_args()
@@ -68,11 +95,9 @@ if __name__ == '__main__':
     # this is designed to only work in the nextflow pipeline so we put strict requirements on the input/output names
     in_ext = ".fq.gz"
     require_extension(args.input_R1, in_ext)
-    require_extension(args.input_R2, in_ext)
 
     out_ext = "_posttrim_filter.fq.gz"
     output_R1 = args.input_R1.replace(in_ext, out_ext)
-    output_R2 = args.input_R2.replace(in_ext, out_ext)
 
     # Illumina adapters that are occasionally leftover in reads
     S7 = "CCGAGCCCACGAGAC"
@@ -82,5 +107,10 @@ if __name__ == '__main__':
     min_length = 10
     filter_sequences = [ S7, P7 ]
 
-    filter_reads(filter_sequences, min_length, args.input_R1, args.input_R2, output_R1, output_R2)
+    if args.input_R2 is not False:
+		require_extension(args.input_R2, in_ext)
+		output_R2 = args.input_R2.replace(in_ext, out_ext)
+		filter_paired_reads(filter_sequences, min_length, args.input_R1, args.input_R2, output_R1, output_R2)
+	else:
+		filter_unpaired_reads(filter_sequences, min_length, args.input_R1, output_R1)
 

@@ -6,6 +6,7 @@ shopt -s extglob
 
 
 database_dir=0
+bam_dir=0
 name="sample_table.csv"
 existing=0
 
@@ -41,6 +42,7 @@ if [ ! $database_dir = 0 ] && [ ! $bam_dir = 0 ]; then
 	echo "You can only select one directory of fastq(.gz) reads (-d) or bam(.gz) reads (-b)."
 	echo "$HELP"
 	exit 1
+fi
 
 echo -e "Adding samples\n"
 if [ $existing = 0 ] && [ ! $database_dir = 0 ]; then
@@ -91,8 +93,8 @@ fi
 if [ ! $bam_dir = 0 ]; then
 		samples_dir=()
 		samples_fail=()
-		for file in $bam_dir/*.bam(.gz); do
-			sample=$(basename $file | cut -d_ -f 1 | cut -d. -f1)
+		for file in $bam_dir/*.bam?(.gz); do
+			sample=$(basename $file | cut -d_ -f 1)
 			if [ -f $file ]; then
 				echo ${sample},${file} >> ${name} && echo ${sample},${file}
 			else
@@ -100,6 +102,7 @@ if [ ! $bam_dir = 0 ]; then
 			fi
 		done
 		echo -e "\n"
+fi
 
 if [ ${#samples_fail[@]} -gt 0 ]; then 
 	echo -e "Samples that failed to be added to sample table:"
