@@ -108,9 +108,9 @@ if __name__ == '__main__':
     filter_sequences = [ S7, P7 ]
 
     if args.input_R2 is not False:
-		require_extension(args.input_R2, in_ext)
-		output_R2 = args.input_R2.replace(in_ext, out_ext)
-		filter_paired_reads(filter_sequences, min_length, args.input_R1, args.input_R2, output_R1, output_R2)
-	else:
-		filter_unpaired_reads(filter_sequences, min_length, args.input_R1, output_R1)
+        require_extension(args.input_R2, in_ext)
+        output_R2 = args.input_R2.replace(in_ext, out_ext)
+        filter_paired_reads(filter_sequences, min_length, args.input_R1, args.input_R2, output_R1, output_R2)
+    else:
+        filter_unpaired_reads(filter_sequences, min_length, args.input_R1, output_R1)
 

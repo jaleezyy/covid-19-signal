@@ -26,8 +26,7 @@ plt.style.use('seaborn-whitegrid')
 
 ########################    Helper functions/classes for text file parsing   #######################
 
-
-def file_is_missing(filename, allow_missing=True):
+def file_is_missing(filename, allow_missing=True, quiet=False):
     """
     This helper function is called in several places where we want
     to detect a missing file, and either print a warning or throw
@@ -38,7 +37,8 @@ def file_is_missing(filename, allow_missing=True):
         return False
     if not allow_missing:
         raise RuntimeError(f"File {filename} does not exist")
-    print(f"Warning: file {filename} does not exist")
+    if not quiet:
+        print(f"Warning: file {filename} does not exist")
     return True
 
 
@@ -315,6 +315,32 @@ def parse_fastqc_output(zip_filename, allow_missing=True):
 
     return ret
 
+def parse_fastqc_single(zip_filename, allow_missing=True):
+    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
+
+    fastqc = parse_fastqc_output(zip_filename)
+
+    seq_tot = fastqc['total_sequences']
+    flagged_tot = fastqc['flagged_sequences']
+
+    summary = { }
+    for text in list(fastqc['summary'].keys()):
+        flavor = fastqc['summary'].get(text, 'PASS')
+
+        summary[text] = 'PASS'
+        if 'WARN' in flavor:
+            summary[text] = 'WARN'
+        if 'FAIL' in flavor:
+            summary[text] = 'FAIL'
+
+
+    if (flagged_tot is not None) and (flagged_tot > 0):
+        summary[f'{flagged_tot} sequences flagged as poor quality'] = 'WARN'
+
+    return { 'total_sequences': seq_tot,
+             'flagged_sequences': flagged_tot,
+             'read_pairs': 0,
+             'summary': summary }
 
 def parse_fastqc_pair(zip_filename1, zip_filename2, allow_missing=True):
     """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
@@ -1309,7 +1335,7 @@ class Sample:
         self.name = name
 
         self.trim_galore = parse_trim_galore_log(f"{name}/adapter_trimmed/{name}_trim_galore.log")
-        self.post_trim_qc = parse_fastqc_pair(f"{name}/adapter_trimmed/{name}_R1_val_1_fastqc.zip", f"{name}/adapter_trimmed/{name}_R2_val_2_fastqc.zip")
+        #self.post_trim_qc = parse_fastqc_pair(f"{name}/adapter_trimmed/{name}_R1_val_1_fastqc.zip", f"{name}/adapter_trimmed/{name}_R2_val_2_fastqc.zip")
         self.kraken2 = parse_kraken2_report(f"{name}/kraken2/{name}_kraken2.report")
         self.quast = parse_quast_report(f"{name}/quast/{name}_quast_report.html")
         self.quast_freebayes = parse_quast_report(f"{name}/freebayes/quast/{name}_quast_report.html")
@@ -1321,6 +1347,10 @@ class Sample:
         self.compare = parse_consensus_compare(f"{name}/freebayes/{name}_consensus_compare.vcf")
         self.breseq = parse_breseq_output(f"{name}/breseq/{name}_output/index.html")
 
+        if (file_is_missing(f"{name}/adapter_trimmed/{name}_R1_val_1_fastqc.zip", quiet=True)) and (file_is_missing(f"{name}/adapter_trimmed/{name}_R2_val_2_fastqc.zip", quiet=True)):
+            self.post_trim_qc = parse_fastqc_single(f"{name}/adapter_trimmed/{name}_trimmed_fastqc.zip")
+        else:
+            self.post_trim_qc = parse_fastqc_pair(f"{name}/adapter_trimmed/{name}_R1_val_1_fastqc.zip", f"{name}/adapter_trimmed/{name}_R2_val_2_fastqc.zip")
 
         if ivarlin['lineage'] != fblin['lineage'] and fblin['lineage'] is not None:
             assert ivarlin['pangolin_ver'] == fblin['pangolin_ver']

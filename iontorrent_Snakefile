@@ -93,13 +93,13 @@ def get_bam_files(sample_name):
 # determine raw FASTQ handling
 # if duplicate sample names in table, run legacy concat_and_sort
 # TODO: add handle for duplicate BAMs (if possibility exists)
-if input_type is 'fastq':
+if input_type == 'fastq':
     if samples['sample'].duplicated().any():
         print("Duplicate sample names in sample table. Assuming multi-lane samples exist")
         ruleorder: concat_and_sort > link_raw_data
     else:
         ruleorder: link_raw_data > concat_and_sort
-elif input_type is 'bam':
+elif input_type == 'bam':
     if samples['sample'].duplicated().any():
         print("Duplicate sample names in sample table with BAM file input, please fix and restart")
         exit(1)
@@ -121,8 +121,8 @@ rule remove_adapters:
 
 # Unpaired alternate
 rule remove_unpaired_adapters:
-    input: expand('{sn}/adapter_trimmed/{sn}_val.fq.gz', sn=sample_names),
-           expand('{sn}/adapter_trimmed/{sn}_val_posttrim_filter.fq.gz', sn=sample_names)
+    input: expand('{sn}/adapter_trimmed/{sn}_trimmed.fq.gz', sn=sample_names),
+           expand('{sn}/adapter_trimmed/{sn}_trimmed_posttrim_filter.fq.gz', sn=sample_names)
 
 rule host_removed_raw_reads:
     input: expand('{sn}/host_removal/{sn}_R{r}.fastq.gz', sn=sample_names, r=[1,2])
@@ -224,8 +224,12 @@ else:
             rules.ivar_variants.input,
             rules.consensus.input
 
-if input_type is 'fastq':
+if input_type == 'fastq':
 # FASTQ data processing
+    ruleorder: raw_reads_composite_reference_bwa_map > unpaired_reads_composite_reference_bwa_map
+    ruleorder: get_host_removed_reads > unpaired_get_host_removed_reads
+    ruleorder: viral_reference_bwa_map > unpaired_viral_reference_bwa_map
+    ruleorder: run_kraken2 > run_unpaired_kraken2
     rule data_analysis:
         input:
             rules.raw_read_data_symlinks.input,
@@ -240,8 +244,12 @@ if input_type is 'fastq':
             rules.config_sample_log.input,
             rules.variant_calling.input,
             rules.lineages.input
-elif input_type is 'bam':
+elif input_type == 'bam':
 # Unpaired BAM (Ion Torrent) processing
+    ruleorder: unpaired_reads_composite_reference_bwa_map > raw_reads_composite_reference_bwa_map
+    ruleorder: unpaired_get_host_removed_reads > get_host_removed_reads
+    ruleorder: unpaired_viral_reference_bwa_map > viral_reference_bwa_map
+    ruleorder: run_unpaired_kraken2 > run_kraken2
     rule data_analysis:
         input:
             rules.raw_unpaired_data_symlinks.input,
@@ -359,7 +367,7 @@ rule link_unpaired_data:
     conda:
         'conda_envs/snp_mapping.yaml'
     output:
-        reads = '{sn}/raw_fastq/{sn}.fastq.gz'
+        reads = '{sn}/raw_fastq/{sn}.fastq.gz',
         bam = '{sn}/raw_fastq/{sn}_decompressed_sorted.bam'
     input:
         lambda wildcards: get_bam_files(wildcards.sn)
@@ -469,7 +477,8 @@ rule unpaired_get_host_removed_reads:
     shell:
         """
         samtools view -b {input} | samtools sort -n -@{threads} > {output.bam} 2> {log}
-        samtools fastq -0 {output.reads} {output.bam} 2>> {log} 
+        samtools fastq -0 {output.reads} {output.bam} 2>> {log}
+        """
 
 ###### Based on github.com/connor-lab/ncov2019-artic-nf/blob/master/modules/illumina.nf#L124 ######
 
@@ -505,9 +514,10 @@ rule unpaired_run_trimgalore:
     conda: 
         'conda_envs/trim_qc.yaml'
     output:
-        '{sn}/adapter_trimmed/{sn}_trimmed.fq.gz'
+        '{sn}/adapter_trimmed/{sn}_trimmed.fq.gz',
+        '{sn}/adapter_trimmed/{sn}_trimmed_fastqc.html'
     input:
-        reads = '{sn}/host_removal/{sn}_R1.fastq.gz'
+        reads = '{sn}/host_removal/{sn}.fastq.gz'
     log:
         '{sn}/adapter_trimmed/{sn}_trim_galore.log'
     benchmark:
@@ -701,7 +711,7 @@ rule get_unpaired_mapping_reads:
     priority: 2
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        reads = '{sn}/mapped_clean_reads/{sn}.fastq.gz'
+        reads = '{sn}/mapped_clean_reads/{sn}.fastq.gz',
         bam = '{sn}/mapped_clean_reads/{sn}_sorted_clean.bam'
     input:
         "{sn}/core/{sn}_viral_reference.mapping.primertrimmed.bam",
@@ -810,7 +820,7 @@ rule run_unpaired_breseq:
     output:
         '{sn}/breseq/{sn}_output/index.html'
     input:
-        expand('{sn}/mapped_clean_reads/{sn}.fastq.gz')
+        expand('{{sn}}/mapped_clean_reads/{{sn}}.fastq.gz')
     log:
         '{sn}/breseq/{sn}_breseq.log',
     benchmark:

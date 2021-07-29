@@ -70,26 +70,26 @@ def set_up():
 		sample = bam.split('/')[0]
 		ln_path = f"{data_root}/{sample}.bam"
 		if not os.path.exists(ln_path):
-				os.link(bam, ln_path)
+			shutil.copy(bam, ln_path)
 
 
 	for primer_trimmed_bam in snakemake.input['primertrimmed_bams']:
 		sample = primer_trimmed_bam.split('/')[0]
 		ln_path = f"{data_root}/{sample}.mapped.primertrimmed.sorted.bam"
 		if not os.path.exists(ln_path):
-			os.link(primer_trimmed_bam, ln_path)
+			shutil.copy(primer_trimmed_bam, ln_path)
 
 	for variants in snakemake.input['variants']:
 		sample = variants.split('/')[0]
 		ln_path = f"{data_root}/{sample}.variants.tsv"
 		if not os.path.exists(ln_path):
-			os.link(variants, ln_path)
+			shutil.copy(variants, ln_path)
 
 	for consensus in snakemake.input['consensus']:
 		sample = consensus.split('/')[0]
 		ln_path = f"{data_root}/{sample}.consensus.fasta"
 		if not os.path.exists(ln_path):
-				os.link(consensus, ln_path)
+				shutil.copy(consensus, ln_path)
 		for line in fileinput.input(ln_path, inplace=True):
 				if line.startswith(">"):
 						new_header = str(">"+sample)
