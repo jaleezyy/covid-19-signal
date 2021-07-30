@@ -16,19 +16,9 @@ def check_file(path: str) -> Path:
 		return path
 	else:
 		return False
-		#raise argparse.ArgumentTypeError(f"{path} can't be read")
 
 def parse_lineages(file):
 	lineages = pd.read_table(file, sep='\t')
-	# lin_df = lineages[['isolate', 
-						# 'pango_lineage', 
-						# 'pangolin_conflict', 'pangolin_ambiguity_score', 
-						# 'pangolin_qc', 
-						# 'pangolin_note', 
-						# 'pangolin_version', 
-						# 'pangoLEARN_version',
-						# 'pango_version'
-						# ]]
 	lin_df = lineages[['isolate', 
 						'pango_lineage', 
 						'pangolin_version', 
@@ -41,7 +31,6 @@ def parse_lineages(file):
 	return lin_df
 	
 def parse_stats(stats):
-	#quast_df = pd.DataFrame(columns=['isolate', 'Genome Fraction (%)'])
 	info = defaultdict(list)
 	for file in stats:
 		sample_name = os.path.basename(file).split("_")[0] # intended sample name
