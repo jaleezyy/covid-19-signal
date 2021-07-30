@@ -122,7 +122,7 @@ def set_up():
 				stripped_line = line.strip("\n")
 				if stripped_line.startswith(">"):
 					new_header = str(">"+sample)
-					new_line = line.replace(stripped_line, new_header)
+					new_line = stripped_line.replace(stripped_line, new_header)
 					print(new_line)
 				else:
 					print(stripped_line)
