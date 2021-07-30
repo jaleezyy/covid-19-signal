@@ -40,7 +40,29 @@ def set_up():
 	neg_list = list(neg_samples)
 	print("Negative control samples found include: %s" %(neg_list))
 
+### Determine which variant file to grab
+	for ivar,free in zip(snakemake.params['ivar_var'], snakemake.params['free_var']):
+		assert ivar.split("/")[0] == free.split("/")[0] # ensure same sample
+		if (os.path.exists(ivar)) and (os.path.exists(free)):
+			var = "freebayes"
+		# elif (not os.path.exists(ivar_var)) and (os.path.exists(free_var):
+			# var = "freebayes"
+			# above should never happen because iVar runs by default
+		else:
+			var = "ivar"
 
+### Determine which consensus FASTA to grab
+	for ivar,free in zip(snakemake.params['ivar_con'], snakemake.params['free_con']):
+		assert ivar.split("/")[0] == free.split("/")[0] # ensure same sample
+		if (os.path.exists(ivar)) and (os.path.exists(free)):
+			con = "freebayes"
+		# elif (not os.path.exists(ivar_con)) and (os.path.exists(free_con):
+			# con = "freebayes"
+			# above should not happen
+		else:
+			con = "ivar" 
+	
+	
 ### config.yaml parameters
 	config = {'data_root': f"'{data_root}'",
 			  'run_name': f"'{result_dir}'", # name ncov-tools output files with name of SIGNAL results directory (default: "default")
@@ -52,18 +74,23 @@ def set_up():
 			  'offset': 0,
 			  'completeness_threshold': 0.9,
 			  'bam_pattern': "'{data_root}/{sample}.bam'", # symlink files following this
+			  'consensus_pattern': "'{data_root}/{sample}.consensus.fasta'",
 			  'primer_trimmed_bam_pattern': "'{data_root}/{sample}.mapped.primertrimmed.sorted.bam'",
 			  'consensus_pattern': "'{data_root}/{sample}.consensus.fasta'", # symlink files following this
-			  'variants_pattern': "'{data_root}/{sample}.variants.tsv'",
 			  'assign_lineages': 'true',
 			  'tree_include_consensus': f"'{snakemake.params['phylo_include_seqs']}'",
 			  'negative_control_samples': f"{neg_list}",
 			  'mutation_set': 'spike_mutations',
 			  'output_directory': f"{result_dir}_ncovresults"}
+	
+	if (var == "freebayes") and (con == "freebayes"):
+		config['variants_pattern'] = "'{data_root}/{sample}.variants.vcf'"
+	else:
+		config['variants_pattern'] = "'{data_root}/{sample}.variants.tsv'"
 
 	with open(os.path.join(exec_dir, 'ncov-tools', 'config.yaml'), 'w') as fh:
-			for key, value in config.items():
-					fh.write(f"{key}: {value}\n")
+		for key, value in config.items():
+			fh.write(f"{key}: {value}\n")
 
 	print("Linking files to ncov")
 	for bam in snakemake.input['bams']:
@@ -78,25 +105,46 @@ def set_up():
 		ln_path = f"{data_root}/{sample}.mapped.primertrimmed.sorted.bam"
 		if not os.path.exists(ln_path):
 			shutil.copy(primer_trimmed_bam, ln_path)
-
-	for variants in snakemake.input['variants']:
-		sample = variants.split('/')[0]
-		ln_path = f"{data_root}/{sample}.variants.tsv"
-		if not os.path.exists(ln_path):
-			shutil.copy(variants, ln_path)
-
-	for consensus in snakemake.input['consensus']:
-		sample = consensus.split('/')[0]
-		ln_path = f"{data_root}/{sample}.consensus.fasta"
-		if not os.path.exists(ln_path):
+	
+	if (var == "freebayes") and (con == "freebayes"): 
+		for variants in snakemake.params['free_var']:
+			sample = variants.split('/')[0]
+			ln_path = f"{data_root}/{sample}.variants.vcf"
+			if not os.path.exists(ln_path):
+				shutil.copy(variants, ln_path)
+				
+		for consensus in snakemake.params['free_con']:
+			sample = consensus.split('/')[0]
+			ln_path = f"{data_root}/{sample}.consensus.fasta"
+			if not os.path.exists(ln_path):
 				shutil.copy(consensus, ln_path)
-		for line in fileinput.input(ln_path, inplace=True):
-				if line.startswith(">"):
-						new_header = str(">"+sample)
-						new_line = line.replace(line, new_header)
-						print(new_line, end='\n')
+			for line in fileinput.input(ln_path, inplace=True):
+				stripped_line = line.strip("\n")
+				if stripped_line.startswith(">"):
+					new_header = str(">"+sample)
+					new_line = line.replace(stripped_line, new_header)
+					print(new_line)
 				else:
-						print(line, end='\n')
+					print(stripped_line)
+	else:
+		for variants in snakemake.params['ivar_var']:
+			sample = variants.split('/')[0]
+			ln_path = f"{data_root}/{sample}.variants.tsv"
+			if not os.path.exists(ln_path):
+				shutil.copy(variants, ln_path)
+				
+		for consensus in snakemake.params['ivar_con']:
+			sample = consensus.split('/')[0]
+			ln_path = f"{data_root}/{sample}.consensus.fasta"
+			if not os.path.exists(ln_path):
+				shutil.copy(consensus, ln_path)
+			for line in fileinput.input(ln_path, inplace=True):
+				if line.startswith(">"):
+					new_header = str(">"+sample)
+					new_line = line.replace(line, new_header)
+					print(new_line, end='\n')
+				else:
+					print(line, end='\n')
 
 	# os.chdir(os.path.join(exec_dir, 'ncov-tools'))
 	#return exec_dir, result_root, result_dir

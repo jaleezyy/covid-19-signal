@@ -294,12 +294,16 @@ rule ncov_tools:
         primer_bed = os.path.join(exec_dir, config['scheme_bed']),
         viral_reference_genome = os.path.join(exec_dir, config['viral_reference_genome']),
         phylo_include_seqs = os.path.join(exec_dir, config['phylo_include_seqs']),
-        negative_control_prefix = config['negative_control_prefix']
+        negative_control_prefix = config['negative_control_prefix'],
+        ivar_var = expand("{sn}/core/{sn}_ivar_variants.tsv", sn=sample_names),
+        free_var = expand("{sn}/freebayes/{sn}.variants.norm.vcf", sn=sample_names),
+        ivar_con = expand('{sn}/core/{sn}.consensus.fa', sn=sample_names),
+        free_con = expand('{sn}/freebayes/{sn}.consensus.fasta', sn=sample_names)
     input:
-        consensus = expand('{sn}/core/{sn}.consensus.fa', sn=sample_names),
+        #consensus = expand('{sn}/core/{sn}.consensus.fa', sn=sample_names),
         primertrimmed_bams = expand("{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam", sn=sample_names),
-        bams = expand("{sn}/core/{sn}_viral_reference.mapping.bam", sn=sample_names),
-        variants = expand("{sn}/core/{sn}_ivar_variants.tsv", sn=sample_names)
+        bams = expand("{sn}/core/{sn}_viral_reference.mapping.bam", sn=sample_names)
+        #variants = expand("{sn}/core/{sn}_ivar_variants.tsv", sn=sample_names)
     script: "scripts/ncov-tools.py"
         
         
