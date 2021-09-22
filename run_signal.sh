@@ -38,7 +38,7 @@ NCOV_ENV="ncov-qc-pangolin3"
 USER_NCOV=false
 
 # Values to Check #
-schemeArray=('articV3' 'freed' 'resende' 'V2resende')
+schemeArray=('articV3' 'freed' 'resende' 'V2resende' 'articV4')
 
 HELP="
 USAGE:
@@ -49,7 +49,7 @@ Flags:
     NEEDED:
     -d  --directory      :  Path to paired fastq file directory
     -p  --primer-scheme  :  Specify input data primer scheme
-                Available Primer Schemes: articV3, freed, resende, V2resende, custom by passing '--bed' and '--amplicon'
+                Available Primer Schemes: articV3, articV4, freed, resende, V2resende, custom by passing '--bed' and '--amplicon'
 
     SUBSTITUTE (Can be used instead of a primer scheme but must be used together):
     --bed       :  Path to custom primer bed file to be used instead of default schemes
@@ -329,6 +329,16 @@ elif [ "$PRIMER_SCHEME" == "articV3" ]; then
     echo "amplicon_bed: $SCRIPTPATH/resources/primer_schemes/artic_v3/ncov-qc_V3.scheme.bed" >> ./ncov-tools/config.yaml
     echo "primer_bed: $SCRIPTPATH/resources/primer_schemes/artic_v3/nCoV-2019.bed" >> ./ncov-tools/config.yaml
 
+elif [ "$PRIMER_SCHEME" == "articV4" ]; then
+    # SIGNAL Parameters
+    echo "scheme_bed: 'resources/primer_schemes/artic_v4/nCoV-2019.primer.bed'" >> $SIGNAL_CONFIG
+    echo "amplicon_loc_bed: 'resources/primer_schemes/artic_v4/ncov-qc_V4.scheme.bed'" >> $SIGNAL_CONFIG
+    echo "primer_pairs_tsv: '-f $SCRIPTPATH/resources/primer_pairs/articV4_primer_pairs.tsv'" >> $SIGNAL_CONFIG
+
+    # NCOV-TOOLS Parameters
+    echo "amplicon_bed: $SCRIPTPATH/resources/primer_schemes/artic_v4/ncov-qc_V4.scheme.bed" >> ./ncov-tools/config.yaml
+    echo "primer_bed: $SCRIPTPATH/resources/primer_schemes/artic_v4/nCoV-2019.bed" >> ./ncov-tools/config.yaml
+
 elif [ "$PRIMER_SCHEME" == "freed" ]; then
     # SIGNAL Parameters
     echo "scheme_bed: 'resources/primer_schemes/freed/nCoV-2019.primer.bed'" >> $SIGNAL_CONFIG
@@ -342,7 +352,7 @@ elif [ "$PRIMER_SCHEME" == "freed" ]; then
 elif [ "$PRIMER_SCHEME" == "resende" ]; then
     # SIGNAL Parameters
     echo "scheme_bed: 'resources/primer_schemes/2kb_resende/nCoV-2019.primer.bed'" >> $SIGNAL_CONFIG
-    echo "amplicon_loc_bed: 'resources/primer_schemes/2kb_resende/ncov-qc_V3.scheme.bed'" >> $SIGNAL_CONFIG
+    echo "amplicon_loc_bed: 'resources/primer_schemes/2kb_resende/ncov-qc_resende.scheme.bed'" >> $SIGNAL_CONFIG
     echo "primer_pairs_tsv: '-f $SCRIPTPATH/resources/primer_pairs/resende_primer_pairs.tsv'" >> $SIGNAL_CONFIG
 
     # NCOV-TOOLS Parameters
@@ -352,7 +362,7 @@ elif [ "$PRIMER_SCHEME" == "resende" ]; then
 elif [ "$PRIMER_SCHEME" == "V2resende" ]; then
     # SIGNAL Parameters
     echo "scheme_bed: 'resources/primer_schemes/2kb_resende_v2/nCoV-2019.primer.bed'" >> $SIGNAL_CONFIG
-    echo "amplicon_loc_bed: 'resources/primer_schemes/2kb_resende_v2/ncov-qc_V3.scheme.bed'" >> $SIGNAL_CONFIG
+    echo "amplicon_loc_bed: 'resources/primer_schemes/2kb_resende_v2/ncov-qc_resende.scheme.bed'" >> $SIGNAL_CONFIG
     echo "primer_pairs_tsv: '-f $SCRIPTPATH/resources/primer_pairs/resende_primer_pairs.tsv'" >> $SIGNAL_CONFIG
 
     # NCOV-TOOLS Parameters
