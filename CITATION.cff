@@ -1,0 +1,77 @@
+cff-version: 1.1.0
+date-released: 2020-07-15
+version: 1.4.3
+message: "If you use SIGNAL in your research please cite it as follows:"
+repository-code: "https://github.com/jaleezyy/covid-19-signal"
+title: "A Comparison of Whole Genome Sequencing of SARS-CoV-2 Using Amplicon-Based Sequencing, Random Hexamers, and Bait Capture."
+doi: "10.3390/v12080895"
+journal: "Viruses"
+authors:
+  -
+    affiliation: "McMaster University"
+    family-names: "Nasir"
+    given-names: "Jalees A"
+  -
+    affiliation: "Sunnybrook Health Sciences Centre"
+    family-names: "Kozak"
+    given-names: "Robert A"
+  -
+    affiliation: "Sunnybrook Health Sciences Centre"
+    family-names: "Aftanas"
+    given-names: "Patryk A"
+  -
+    affiliation: "McMaster University"
+    family-names: "Raphenya"
+    given-names: "Amogelang R"
+  -
+    affiliation: "Perimeter Institute"
+    family-names: "Smith"
+    given-names: "Kendrick M"
+  -
+    affiliation: "Dalhousie University"
+    family-names: "Maguire"
+    given-names: "Finlay"
+  -
+    affiliation: "University Health Network, Toronto"
+    family-names: "Maan"
+    given-names: "Hassaan"
+  -
+    affiliation: "University of Liverpool"
+    family-names: "Alruwaili"
+    given-names: "Muhannad"
+  -
+    affiliation: "McMaster University"
+    family-names: "Banerjee"
+    given-names: "Arinjay"
+  -
+    affiliation: "Sunnybrook Health Sciences Centre"
+    family-names: "Mbareche"
+    given-names: "Hamza"
+  -
+    affiliation: "McMaster University"
+    family-names: "Alcock"
+    given-names: "Brian P"
+  -
+    affiliation: "Public Health Agency of Canada"
+    family-names: "Knox"
+    given-names: "Natalie C"
+  -
+    affiliation: "McMaster University"
+    family-names: "Mossman"
+    given-names: "Karen"
+  -
+    affiliation: "University of Toronto"
+    family-names: "Wang"
+    given-names: "Bo"
+  -
+    affiliation: "University of Liverpool"
+    family-names: "Hiscox"
+    given-names: "Julian A"
+  -
+    affiliation: "McArthur University"
+    family-names: "McArthur"
+    given-names: "Andrew G"
+  -
+    affiliation: "Sunnybrook Health Sciences Centre"
+    family-names: "Mubareka"
+    given-names: "Samira"

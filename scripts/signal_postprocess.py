@@ -1325,11 +1325,16 @@ class Sample:
         if ivarlin['lineage'] != fblin['lineage'] and fblin['lineage'] is not None:
             assert ivarlin['pangolin_ver'] == fblin['pangolin_ver']
             assert ivarlin['pangolearn_ver'] == fblin['pangolearn_ver']
-            assert ivarlin['clade'] == fblin['clade']
-            self.lineage = { 'lineage': str(ivarlin['lineage'] + " (FB: %s)" %(fblin['lineage'])),
-                             'pangolin_ver': ivarlin['pangolin_ver'],
-                             'pangolearn_ver': ivarlin['pangolearn_ver'],
-                             'clade': ivarlin['clade'] }
+            if ivarlin['clade'] == fblin['clade']:
+                 self.lineage = { 'lineage': str(ivarlin['lineage'] + " (FB: %s)" %(fblin['lineage'])),
+                                 'pangolin_ver': ivarlin['pangolin_ver'],
+                                 'pangolearn_ver': ivarlin['pangolearn_ver'],
+                                 'clade': ivarlin['clade'] }
+            else:
+                 self.lineage = { 'lineage': str(ivarlin['lineage'] + " (FB: %s)" %(fblin['lineage'])),
+                                 'pangolin_ver': ivarlin['pangolin_ver'],
+                                 'pangolearn_ver': ivarlin['pangolearn_ver'],
+                                 'clade': str(ivarlin['clade'] + " (FB: %s)" %(fblin['clade'])) }
         else:
             self.lineage = ivarlin
 
