@@ -8,13 +8,13 @@ dependencies:
   - minimap2>=2.16
   - pip=19.3.1
   - python>=3.7
-  - snakemake-minimal>=5.13
+  - snakemake-minimal>=5.13,<=6.8.0
   - gofasta
   - nodejs
   - usher
-  - bcftools=1.9
+  - pandas
+  - pysam==0.16.0.1
   - pip:
-    - pandas==1.0.1
     - git+https://github.com/cov-lineages/pangoLEARN.git
     - git+https://github.com/cov-lineages/scorpio.git
     - git+https://github.com/cov-lineages/constellations.git
