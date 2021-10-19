@@ -70,6 +70,10 @@ def run_pangolin(input_genomes, threads):
     """
     Execute pangolin and collect assignments
     """
+    
+   # check final versions for pangolin
+    subprocess.check_output(["pangolin", "--all-versions"])
+    
     output_dir = Path(f"pangolin_tmp_{time.time()}")
     subprocess.check_output(f"pangolin {input_genomes} -t {threads} "
                             f"-o {str(output_dir)}".split(),
