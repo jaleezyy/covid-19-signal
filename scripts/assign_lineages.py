@@ -134,7 +134,7 @@ if __name__ == '__main__':
                         help="Output file for collated assignment table")
     args = parser.parse_args()
 
-    update_pangolin()
+    #update_pangolin()
     pangolin = run_pangolin(args.input_genomes, args.threads)
 
     update_nextclade()
