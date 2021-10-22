@@ -15,8 +15,8 @@ dependencies:
   - pandas
   - pysam==0.16.0.1
   - pip:
-    - git+https://github.com/cov-lineages/pangoLEARN.git@3fcf5d7
-    - git+https://github.com/cov-lineages/scorpio.git@1278e79
-    - git+https://github.com/cov-lineages/constellations.git@90fa3eb
-    - git+https://github.com/cov-lineages/pangolin.git@504d983
-    - git+https://github.com/cov-lineages/pango-designation.git@ee5137e
+    - git+https://github.com/cov-lineages/pangoLEARN.git@a0328a9
+    - git+https://github.com/cov-lineages/scorpio.git@e12eb0e
+    - git+https://github.com/cov-lineages/constellations.git@2620eeb
+    - git+https://github.com/cov-lineages/pangolin.git@a8f4a62
+    - git+https://github.com/cov-lineages/pango-designation.git@3933521
