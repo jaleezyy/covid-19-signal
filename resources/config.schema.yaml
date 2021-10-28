@@ -55,6 +55,26 @@ run_freebayes:
     type: boolean
     default: False
     description: "optionally run FreeBayes variant calling and consensus sequence generation"
+pangolin:
+    type: string
+    default: "0"
+    description: "Pangolin version"
+pangolearn:
+    type: string
+    default: "0"
+    description: "pangoLEARN version"
+constellations:
+    type: string
+    default: "0"
+    description: "Constellations version"
+scorpio:
+    type: string
+    default: "0"
+    description: "Scorpio version"
+pango-designation:
+    type: string
+    default: "0"
+    description: "Pango-designation date/version"
 required:
     - min_len
     - min_qual
@@ -64,3 +84,8 @@ required:
     - kraken2_db
     - samples
     - result_dir
+    - pangolin
+    - pangolearn
+    - constellations
+    - scorpio
+    - pango-designation

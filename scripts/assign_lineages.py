@@ -6,6 +6,7 @@ from pathlib import Path
 import time
 import pandas as pd
 import shutil
+import os, sys
 
 
 def check_file(path: str) -> Path:
@@ -19,12 +20,21 @@ def check_file(path: str) -> Path:
         raise argparse.ArgumentTypeError(f"{path} can't be read")
 
 
-def update_pangolin():
+def update_latest_pangolin():
     """
     Ensure pangolin is updated to the latest release
     """
     subprocess.check_output(["pangolin", "--update"])
 
+def update_pangolin(vers):
+    """
+    Update pangolin to a specific version
+    """
+    script_dir = os.path.dirname(sys.argv[0])
+    script = os.path.join(script_dir, "pangolin_specific_version_update.py")
+    print(script)
+    print(vers)
+    subprocess.run([script, '--versions_file', vers])
 
 def update_nextclade():
     """
@@ -136,9 +146,14 @@ if __name__ == '__main__':
                         help="Number of threads for pangolin/nextclade")
     parser.add_argument("-o", "--output", default="lineage_assignments.tsv",
                         help="Output file for collated assignment table")
+    parser.add_argument("-p", "--pangolin_ver", type=check_file, required=False, default=None,
+                        help="Input file containing version information for PANGOLIN tools")
     args = parser.parse_args()
 
-    #update_pangolin()
+    if args.pangolin_ver is None: 
+        update_latest_pangolin()
+    else:
+        update_pangolin(args.pangolin_ver)
     pangolin = run_pangolin(args.input_genomes, args.threads)
 
     update_nextclade()
