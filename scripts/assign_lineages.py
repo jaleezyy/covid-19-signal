@@ -32,8 +32,6 @@ def update_pangolin(vers):
     """
     script_dir = os.path.dirname(sys.argv[0])
     script = os.path.join(script_dir, "pangolin_specific_version_update.py")
-    print(script)
-    print(vers)
     subprocess.run([script, '--versions_file', vers])
 
 def update_nextclade():

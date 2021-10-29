@@ -53,7 +53,7 @@ if __name__ == "__main__":
             if dependency != "pangolearn" and not version.startswith("v"):
                 version = "v" + version
 
-            if (str(version) == "v0") or (str(version) == "vNone") or (dependency == "pangolearn" and (str(version) == "0" or str(version == None))):
+            if (str(version) == "vNone") or (dependency == "pangolearn" and str(version == None)):
                 commit_url = urllib.request.urlopen(f"https://github.com/cov-lineages/{dependency}/releases/latest").geturl()
                 version = commit_url.split("/")[-1]
             
