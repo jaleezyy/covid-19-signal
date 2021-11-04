@@ -58,23 +58,18 @@ properties:
         default: True
         description: "optionally run FreeBayes variant calling and consensus sequence generation"
     pangolin:
-        type: string
         default: "None"
         description: "Pangolin version"
     pangolearn:
-        type: string
         default: "None"
         description: "pangoLEARN version"
     constellations:
-        type: string
         default: "None"
         description: "Constellations version"
     scorpio:
-        type: string
         default: "None"
         description: "Scorpio version"
     pango-designation:
-        type: string
         default: "None"
         description: "Pango-designation date/version"
 
