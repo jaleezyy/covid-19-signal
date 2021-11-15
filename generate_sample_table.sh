@@ -35,7 +35,7 @@ while getopts ":d:v:f:n:e:" option; do
     esac
 done
 
-if [ $database_dir = 0 ] && [ $vcf_dir = 0 ] [ $fasta_dir = 0 ]; then
+if [ $database_dir = 0 ] && [ $vcf_dir = 0 ] && [ $fasta_dir = 0 ]; then
     echo "You must specify a data directory containing fastq(.gz) reads (-d),  VCF files (-v), or FASTA files (-f)."
     echo "$HELP"
     exit 1
