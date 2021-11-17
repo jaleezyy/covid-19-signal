@@ -551,7 +551,7 @@ rule run_breseq:
     priority: 1
     conda: 'conda_envs/snp_mapping.yaml'
     output:
-        '{sn}/breseq/{sn}_output/index.html'
+        '{sn}/breseq/output/index.html'
     input:
         expand('{{sn}}/mapped_clean_reads/{{sn}}_R{r}.fastq.gz', r=[1,2])
     log:
@@ -561,12 +561,12 @@ rule run_breseq:
     params:
         ref = os.path.join(exec_dir, breseq_ref),
         outdir = '{sn}/breseq',
-        unlabelled_output_dir = '{sn}/breseq/output',
-        labelled_output_dir = '{sn}/breseq/{sn}_output'
+        # unlabelled_output_dir = '{sn}/breseq/output',
+        # labelled_output_dir = '{sn}/breseq/{sn}_output'
     shell:
         """
         breseq --reference {params.ref} --num-processors {threads} --polymorphism-prediction --brief-html-output --output {params.outdir} {input} > {log} 2>&1
-        mv -T {params.unlabelled_output_dir} {params.labelled_output_dir}
+        # mv -T {params.unlabelled_output_dir} {params.labelled_output_dir}
         """
 
 ################## Based on https://github.com/jts/ncov2019-artic-nf/blob/be26baedcc6876a798a599071bb25e0973261861/modules/illumina.nf ##################
