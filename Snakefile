@@ -115,7 +115,7 @@ rule ivar_variants:
     input: expand('{sn}/core/{sn}_ivar_variants.tsv', sn=sample_names)
 
 rule breseq:
-    input: expand('{sn}/breseq/{sn}_output/index.html', sn=sample_names)
+    input: expand('{sn}/breseq/output/index.html', sn=sample_names)
 
 rule freebayes:
     input: 
