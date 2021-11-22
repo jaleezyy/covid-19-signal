@@ -560,13 +560,10 @@ rule run_breseq:
         "{sn}/benchmarks/{sn}_run_breseq.benchmark.tsv"
     params:
         ref = os.path.join(exec_dir, breseq_ref),
-        outdir = '{sn}/breseq',
-        # unlabelled_output_dir = '{sn}/breseq/output',
-        # labelled_output_dir = '{sn}/breseq/{sn}_output'
+        outdir = '{sn}/breseq'
     shell:
         """
         breseq --reference {params.ref} --num-processors {threads} --polymorphism-prediction --brief-html-output --output {params.outdir} {input} > {log} 2>&1
-        # mv -T {params.unlabelled_output_dir} {params.labelled_output_dir}
         """
 
 ################## Based on https://github.com/jts/ncov2019-artic-nf/blob/be26baedcc6876a798a599071bb25e0973261861/modules/illumina.nf ##################
