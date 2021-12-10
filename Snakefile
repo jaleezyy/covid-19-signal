@@ -89,55 +89,42 @@ else:
 
 ######################################   High-level targets   ######################################
 rule raw_read_data_symlinks:
-    input: expand('{sn}/raw_fastq/{sn}_R{r}.fastq.gz', sn=sample_names, r=[1,2])
-
-rule remove_adapters:
-    input: expand('{sn}/adapter_trimmed/{sn}_R{r}_val_{r}.fq.gz', sn=sample_names, r=[1,2]),
-           expand('{sn}/adapter_trimmed/{sn}_R{r}_val_{r}_posttrim_filter.fq.gz', sn=sample_names, r=[1,2]),
+    input: expand('{sn}/0.raw_fastq/{sn}_R{r}.fastq.gz', sn=sample_names, r=[1,2])
 
 rule host_removed_raw_reads:
-    input: expand('{sn}/host_removal/{sn}_R{r}.fastq.gz', sn=sample_names, r=[1,2]),
+    input: expand('{sn}/1.host_removal/{sn}_R{r}.fastq.gz', sn=sample_names, r=[1,2]),
+
+rule trimmed_reads:
+    input: expand('{sn}/2.trimmed_reads/{sn}_R{r}_val_{r}.fq.gz', sn=sample_names, r=[1,2]),
+           expand('{sn}/2.trimmed_reads/{sn}_R{r}_val_{r}_posttrim_filter.fq.gz', sn=sample_names, r=[1,2]),
+
+rule kraken2_qc:
+    input: expand('{sn}/3.kraken2/{sn}_kraken2.out', sn=sample_names)
+
+rule mapping:
+    input:
+       expand("{sn}/4.viral_mapping/{sn}_viral_reference.mapping.primertrimmed.bam", sn=sample_names),
+       expand('{sn}/5.viral_mapped_reads/{sn}_R{r}.fastq.gz', sn=sample_names, r=[1,2])
 
 rule fastqc:
-    input: expand('{sn}/raw_fastq/{sn}_R{r}_fastqc.html', sn=sample_names, r=[1,2]),
-           expand('{sn}/adapter_trimmed/{sn}_R{r}_val_{r}_fastqc.html', sn=sample_names, r=[1,2]),
-           expand('{sn}/mapped_clean_reads/{sn}_R{r}_fastqc.html', sn=sample_names, r=[1,2])
-
-rule clean_reads:
-    input:
-       expand("{sn}/core/{sn}_viral_reference.mapping.primertrimmed.bam", sn=sample_names),
-       expand('{sn}/mapped_clean_reads/{sn}_R{r}.fastq.gz', sn=sample_names, r=[1,2])
+    input: expand('{sn}/0.raw_fastq/{sn}_R{r}_fastqc.html', sn=sample_names, r=[1,2]),
+           expand('{sn}/2.trimmed_reads/{sn}_R{r}_val_{r}_fastqc.html', sn=sample_names, r=[1,2]),
+           expand('{sn}/5.viral_mapped_reads/{sn}_R{r}_fastqc.html', sn=sample_names, r=[1,2])
 
 rule consensus:
-    input: expand('{sn}/core/{sn}.consensus.fa', sn=sample_names)
+    input: expand('{sn}/6.freebayes/{sn}.consensus.fasta', sn=sample_names)
 
-rule ivar_variants:
-    input: expand('{sn}/core/{sn}_ivar_variants.tsv', sn=sample_names)
-
-rule breseq:
-    input: expand('{sn}/breseq/output/index.html', sn=sample_names)
-
-rule freebayes:
-    input: 
-        expand('{sn}/freebayes/{sn}.consensus.fasta', sn=sample_names),
-        expand('{sn}/freebayes/{sn}.variants.norm.vcf', sn=sample_names),
-        'freebayes_lineage_assignments.tsv',
-        expand('{sn}/freebayes/quast/{sn}_quast_report.html', sn=sample_names),
-        expand('{sn}/freebayes/{sn}_consensus_compare.vcf', sn=sample_names)
-
-    
 rule coverage:
-    input: expand('{sn}/coverage/{sn}_depth.txt', sn=sample_names)
-
-rule coverage_plot:
-    input: expand('{sn}/coverage/{sn}_coverage_plot.png', sn=sample_names)
-
-rule kraken2:
-    input: expand('{sn}/kraken2/{sn}_kraken2.out', sn=sample_names)
+    input: expand('{sn}/6.freebayes/{sn}_coverage_plot.png', sn=sample_names),
+           expand('{sn}/6.freebayes/{sn}_depth.txt', sn=sample_names)
 
 rule quast:
-    input: expand('{sn}/quast/{sn}_quast_report.html', sn=sample_names)
+    input:
+        expand('{sn}/6.freebayes/quast/{sn}_quast_report.html', sn=sample_names),
 
+rule breseq:
+    input: expand('{sn}/7.breseq/output/index.html', sn=sample_names)
+ 
 rule lineages:
     input: 
         'lineage_assignments.tsv'
@@ -148,51 +135,33 @@ rule config_sample_log:
         config['samples']
 
 # to handle different options in variant calling
-if config['run_breseq'] and config['run_freebayes']:
+if config['run_breseq']:
     if breseq_ref == "":
         print("Invalid BreSeq reference (paramter: breseq_reference) in config file. Please double check and restart")
         exit(1)
     rule variant_calling:
         input:
             rules.breseq.input,
-            rules.ivar_variants.input,
-            rules.consensus.input,
-            rules.freebayes.input
-elif config['run_breseq'] and not config['run_freebayes']:
-    if breseq_ref == "":
-        print("Invalid BreSeq reference (paramter: breseq_reference) in config file. Please double check and restart")
-        exit(1)
-    rule variant_calling:
-        input:
-            rules.breseq.input,
-            rules.ivar_variants.input,
-            rules.consensus.input
-elif not config['run_breseq'] and config['run_freebayes']:
-    rule variant_calling:
-        input:
-            rules.freebayes.input,
-            rules.ivar_variants.input,
-            rules.consensus.input
+            expand("{sn}/6.freebayes/{sn}.variants.norm.vcf", sn=sample_names)
 else:
     rule variant_calling:
         input:
-            rules.ivar_variants.input,
-            rules.consensus.input
+            expand("{sn}/6.freebayes/{sn}.variants.norm.vcf", sn=sample_names)
 
 rule all:
     input:
         rules.raw_read_data_symlinks.input,
         rules.host_removed_raw_reads.input,
-        rules.remove_adapters.input,
+        rules.trimmed_reads.input,
+        rules.kraken2_qc.input,
+        rules.mapping.input,
         rules.fastqc.input,
-        rules.clean_reads.input,
-        rules.coverage.input,
-        rules.coverage_plot.input,
-        rules.kraken2.input,
-        rules.quast.input,
-        rules.config_sample_log.input,
+        rules.consensus.input,
         rules.variant_calling.input,
+        rules.coverage.input,
+        rules.quast.input,
         rules.lineages.input
+
 
 rule postprocess:
     conda: 
@@ -218,10 +187,10 @@ rule ncov_tools:
         phylo_include_seqs = os.path.join(exec_dir, config['phylo_include_seqs']),
         negative_control_prefix = config['negative_control_prefix']
     input:
-        consensus = expand('{sn}/core/{sn}.consensus.fa', sn=sample_names),
-        primertrimmed_bams = expand("{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam", sn=sample_names),
-        bams = expand("{sn}/core/{sn}_viral_reference.mapping.bam", sn=sample_names),
-        variants = expand("{sn}/core/{sn}_ivar_variants.tsv", sn=sample_names)
+        consensus = expand('{sn}/6.freebayes/{sn}.consensus.fasta', sn=sample_names),
+        primertrimmed_bams = expand("{sn}/4.viral_mapping/{sn}_viral_reference.mapping.primertrimmed.sorted.bam", sn=sample_names),
+        bams = expand("{sn}/4.viral_mapping/{sn}_viral_reference.mapping.bam", sn=sample_names),
+        variants = expand("{sn}/6.freebayes/{sn}.variants.norm.vcf", sn=sample_names)
     script: "scripts/ncov-tools.py"
         
         
@@ -245,7 +214,7 @@ rule copy_config_sample_log:
 rule link_raw_data:
     priority: 4
     output:
-        '{sn}/raw_fastq/{sn}_R{r}.fastq.gz'
+        '{sn}/0.raw_fastq/{sn}_R{r}.fastq.gz'
     input:
         lambda wildcards: get_input_fastq_files(wildcards.sn, wildcards.r)
     shell:
@@ -254,7 +223,7 @@ rule link_raw_data:
 rule concat_and_sort:
     priority: 4
     output:
-        '{sn}/raw_fastq/{sn}_R{r}.fastq.gz'
+        '{sn}/0.raw_fastq/{sn}_R{r}.fastq.gz'
     input:
         lambda wildcards: get_pooled_fastq_files(wildcards.sn, wildcards.r)
     benchmark:
@@ -264,19 +233,19 @@ rule concat_and_sort:
 
 rule run_raw_fastqc:
     conda: 
-        'conda_envs/trim_qc.yaml'
+        'conda_envs/read_qc.yaml'
     output:
-        r1_fastqc = '{sn}/raw_fastq/{sn}_R1_fastqc.html',
-        r2_fastqc = '{sn}/raw_fastq/{sn}_R2_fastqc.html'
+        r1_fastqc = '{sn}/0.raw_fastq/{sn}_R1_fastqc.html',
+        r2_fastqc = '{sn}/0.raw_fastq/{sn}_R2_fastqc.html'
     input:
-        r1 = '{sn}/raw_fastq/{sn}_R1.fastq.gz',
-        r2 = '{sn}/raw_fastq/{sn}_R2.fastq.gz'
+        r1 = '{sn}/0.raw_fastq/{sn}_R1.fastq.gz',
+        r2 = '{sn}/0.raw_fastq/{sn}_R2.fastq.gz'
     benchmark:
         '{sn}/benchmarks/{sn}_raw_fastqc.benchmark.tsv'
     params:
-        output_prefix = '{sn}/raw_fastq'
+        output_prefix = '{sn}/0.raw_fastq'
     log:
-        '{sn}/raw_fastq/{sn}_fastqc.log'
+        '{sn}/0.raw_fastq/{sn}_fastqc.log'
     shell:
         """
         fastqc -o {params.output_prefix} {input} 2> {log}
@@ -287,16 +256,16 @@ rule run_raw_fastqc:
 rule raw_reads_composite_reference_bwa_map:
     threads: 2
     conda: 
-        'conda_envs/snp_mapping.yaml'
+        'conda_envs/mapping.yaml'
     output:
-        '{sn}/host_removal/{sn}_viral_and_nonmapping_reads.bam',
+        '{sn}/1.host_removal/{sn}_viral_and_nonmapping_reads.bam',
     input:
-        raw_r1 = '{sn}/raw_fastq/{sn}_R1.fastq.gz',
-        raw_r2 = '{sn}/raw_fastq/{sn}_R2.fastq.gz'
+        raw_r1 = '{sn}/0.raw_fastq/{sn}_R1.fastq.gz',
+        raw_r2 = '{sn}/0.raw_fastq/{sn}_R2.fastq.gz'
     benchmark:
         "{sn}/benchmarks/{sn}_composite_reference_bwa_map.benchmark.tsv"
     log:
-        '{sn}/host_removal/{sn}_human_read_mapping.log'
+        '{sn}/1.host_removal/{sn}_human_read_mapping.log'
     params:
        composite_index = os.path.join(exec_dir, config['composite_reference']),
        script_path = os.path.join(exec_dir, "scripts", "filter_non_human_reads.py"),
@@ -308,18 +277,18 @@ rule raw_reads_composite_reference_bwa_map:
 
 rule get_host_removed_reads:
     threads: 2
-    conda: 'conda_envs/snp_mapping.yaml'
+    conda: 'conda_envs/mapping.yaml'
     output:
-        r1 = '{sn}/host_removal/{sn}_R1.fastq.gz',
-        r2 = '{sn}/host_removal/{sn}_R2.fastq.gz',
-        s = '{sn}/host_removal/{sn}_singletons.fastq.gz',
-        bam = '{sn}/host_removal/{sn}_viral_and_nonmapping_reads_filtered_sorted.bam'
+        r1 = '{sn}/1.host_removal/{sn}_R1.fastq.gz',
+        r2 = '{sn}/1.host_removal/{sn}_R2.fastq.gz',
+        s = '{sn}/1.host_removal/{sn}_singletons.fastq.gz',
+        bam = '{sn}/1.host_removal/{sn}_viral_and_nonmapping_reads_filtered_sorted.bam'
     input:
-        '{sn}/host_removal/{sn}_viral_and_nonmapping_reads.bam',
+        '{sn}/1.host_removal/{sn}_viral_and_nonmapping_reads.bam',
     benchmark:
         "{sn}/benchmarks/{sn}_get_host_removed_reads.benchmark.tsv"
     log:
-        '{sn}/host_removal/{sn}_samtools_fastq.log'
+        '{sn}/1.host_removal/{sn}_samtools_fastq.log'
     shell:
         """
         samtools view -b {input} | samtools sort -n -@{threads} > {output.bam} 2> {log}
@@ -332,39 +301,39 @@ rule run_trimgalore:
     threads: 2
     priority: 2
     conda: 
-        'conda_envs/trim_qc.yaml'
+        'conda_envs/read_qc.yaml'
     output:
-        '{sn}/adapter_trimmed/{sn}_R1_val_1.fq.gz',
-        '{sn}/adapter_trimmed/{sn}_R2_val_2.fq.gz',
-        '{sn}/adapter_trimmed/{sn}_R1_val_1_fastqc.html',
-        '{sn}/adapter_trimmed/{sn}_R2_val_2_fastqc.html'
+        '{sn}/2.trimmed_reads/{sn}_R1_val_1.fq.gz',
+        '{sn}/2.trimmed_reads/{sn}_R2_val_2.fq.gz',
+        '{sn}/2.trimmed_reads/{sn}_R1_val_1_fastqc.html',
+        '{sn}/2.trimmed_reads/{sn}_R2_val_2_fastqc.html'
     input:
-        raw_r1 = '{sn}/host_removal/{sn}_R1.fastq.gz',
-        raw_r2 = '{sn}/host_removal/{sn}_R2.fastq.gz'
+        raw_r1 = '{sn}/1.host_removal/{sn}_R1.fastq.gz',
+        raw_r2 = '{sn}/1.host_removal/{sn}_R2.fastq.gz'
     log:
-        '{sn}/adapter_trimmed/{sn}_trim_galore.log'
+        '{sn}/2.trimmed_reads/{sn}_trim_galore.log'
     benchmark:
         "{sn}/benchmarks/{sn}_trimgalore.benchmark.tsv"
     params:
         min_len = config['min_len'],
         min_qual = config['min_qual'],
-        output_prefix = '{sn}/adapter_trimmed'
+        output_prefix = '{sn}/2.trimmed_reads'
     shell:
         'trim_galore --quality {params.min_qual} --length {params.min_len} '
         ' -o {params.output_prefix} --cores {threads} --fastqc '
-        '--paired {input.raw_r1} {input.raw_r2} 2> {log} || touch ../../{output}'
+        '--paired {input.raw_r1} {input.raw_r2} 2> {log} || touch {output}'
 
 rule run_filtering_of_residual_adapters:
     threads: 2
     priority: 2
     conda: 
-        'conda_envs/snp_mapping.yaml'
+        'conda_envs/mapping.yaml'
     input:
-        r1 = '{sn}/adapter_trimmed/{sn}_R1_val_1.fq.gz',
-        r2 = '{sn}/adapter_trimmed/{sn}_R2_val_2.fq.gz'
+        r1 = '{sn}/2.trimmed_reads/{sn}_R1_val_1.fq.gz',
+        r2 = '{sn}/2.trimmed_reads/{sn}_R2_val_2.fq.gz'
     output:
-        '{sn}/adapter_trimmed/{sn}_R1_val_1_posttrim_filter.fq.gz',
-        '{sn}/adapter_trimmed/{sn}_R2_val_2_posttrim_filter.fq.gz'
+        '{sn}/2.trimmed_reads/{sn}_R1_val_1_posttrim_filter.fq.gz',
+        '{sn}/2.trimmed_reads/{sn}_R2_val_2_posttrim_filter.fq.gz'
     params:
         script_path = os.path.join(exec_dir, "scripts", "filter_residual_adapters.py")
     shell:
@@ -374,17 +343,17 @@ rule run_filtering_of_residual_adapters:
        
 rule viral_reference_bwa_build:
     conda: 
-        'conda_envs/snp_mapping.yaml'
+        'conda_envs/mapping.yaml'
     output:
-        '{sn}/core/viral_reference.bwt'
+        '{sn}/4.viral_mapping/viral_reference.bwt'
     input:
         reference = os.path.join(exec_dir, config['viral_reference_genome']),
     log:
-        '{sn}/core/{sn}_viral_reference_bwa-build.log'
+        '{sn}/4.viral_mapping/{sn}_viral_reference_bwa-build.log'
     benchmark:
         "{sn}/benchmarks/{sn}_reference_bwa_build.benchmark.tsv"
     params:
-        output_prefix = "{sn}/core/viral_reference"
+        output_prefix = "{sn}/4.viral_mapping/viral_reference"
     shell:
         'bwa index -p {params.output_prefix} {input} >{log} 2>&1'
 
@@ -392,19 +361,19 @@ rule viral_reference_bwa_build:
 rule viral_reference_bwa_map:
     threads: 2
     conda: 
-        'conda_envs/snp_mapping.yaml'
+        'conda_envs/mapping.yaml'
     output:
-        '{sn}/core/{sn}_viral_reference.bam'
+        '{sn}/4.viral_mapping/{sn}_viral_reference.bam'
     input:
-        r1 = '{sn}/adapter_trimmed/{sn}_R1_val_1_posttrim_filter.fq.gz',
-        r2 = '{sn}/adapter_trimmed/{sn}_R2_val_2_posttrim_filter.fq.gz',
-        ref = '{sn}/core/viral_reference.bwt'
+        r1 = '{sn}/2.trimmed_reads/{sn}_R1_val_1_posttrim_filter.fq.gz',
+        r2 = '{sn}/2.trimmed_reads/{sn}_R2_val_2_posttrim_filter.fq.gz',
+        ref = '{sn}/4.viral_mapping/viral_reference.bwt'
     benchmark:
         "{sn}/benchmarks/{sn}_viral_reference_bwa_map.benchmark.tsv"
     log:
-        '{sn}/core/{sn}_viral_reference_bwa.log'
+        '{sn}/4.viral_mapping/{sn}_viral_reference_bwa.log'
     params:
-       ref_prefix = '{sn}/core/viral_reference'
+       ref_prefix = '{sn}/4.viral_mapping/viral_reference'
     shell:
         '(bwa mem -t {threads} {params.ref_prefix} '
         '{input.r1} {input.r2} | '
@@ -415,18 +384,18 @@ rule run_bed_primer_trim:
     conda: 
         'conda_envs/ivar.yaml'
     input:
-        "{sn}/core/{sn}_viral_reference.bam"
+        "{sn}/4.viral_mapping/{sn}_viral_reference.bam"
     output:
-        sorted_trimmed_mapped_bam = "{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam",
-        trimmed_mapped_bam = "{sn}/core/{sn}_viral_reference.mapping.primertrimmed.bam",
-        mapped_bam = "{sn}/core/{sn}_viral_reference.mapping.bam"
+        sorted_trimmed_mapped_bam = "{sn}/4.viral_mapping/{sn}_viral_reference.mapping.primertrimmed.sorted.bam",
+        trimmed_mapped_bam = "{sn}/4.viral_mapping/{sn}_viral_reference.mapping.primertrimmed.bam",
+        mapped_bam = "{sn}/4.viral_mapping/{sn}_viral_reference.mapping.bam"
     benchmark:
         "{sn}/benchmarks/{sn}_bed_primer_trim.benchmark.tsv"
     log:
-        "{sn}/core/{sn}_ivar_trim.log"
+        "{sn}/4.viral_mapping/{sn}_ivar_trim.log"
     params:
         scheme_bed = os.path.join(exec_dir, config['scheme_bed']),
-        ivar_output_prefix = "{sn}/core/{sn}_viral_reference.mapping.primertrimmed",
+        ivar_output_prefix = "{sn}/4.viral_mapping/{sn}_viral_reference.mapping.primertrimmed",
         min_len = config['min_len'],
         min_qual = config['min_qual'],
         primer_pairs = config['primer_pairs_tsv']
@@ -442,19 +411,19 @@ rule run_bed_primer_trim:
 
 
 rule run_fastqc_on_mapped_reads:
-    conda: 'conda_envs/trim_qc.yaml'
+    conda: 'conda_envs/read_qc.yaml'
     output:
-        r1_fastqc = '{sn}/mapped_clean_reads/{sn}_R1_fastqc.html',
-        r2_fastqc = '{sn}/mapped_clean_reads/{sn}_R2_fastqc.html'
+        r1_fastqc = '{sn}/5.viral_mapped_reads/{sn}_R1_fastqc.html',
+        r2_fastqc = '{sn}/5.viral_mapped_reads/{sn}_R2_fastqc.html'
     input:
-        r1 = '{sn}/mapped_clean_reads/{sn}_R1.fastq.gz',
-        r2 = '{sn}/mapped_clean_reads/{sn}_R2.fastq.gz'
+        r1 = '{sn}/5.viral_mapped_reads/{sn}_R1.fastq.gz',
+        r2 = '{sn}/5.viral_mapped_reads/{sn}_R2.fastq.gz'
     benchmark:
         '{sn}/benchmarks/{sn}_clean_fastqc.benchmark.tsv'
     params:
-        output_prefix = '{sn}/mapped_clean_reads'
+        output_prefix = '{sn}/5.viral_mapped_reads'
     log:
-        '{sn}/mapped_clean_reads/{sn}_fastqc.log'
+        '{sn}/5.viral_mapped_reads/{sn}_fastqc.log'
     shell:
         """
         fastqc -o {params.output_prefix} {input} 2> {log}
@@ -462,45 +431,23 @@ rule run_fastqc_on_mapped_reads:
 
 rule get_mapping_reads:
     priority: 2
-    conda: 'conda_envs/snp_mapping.yaml'
+    conda: 'conda_envs/mapping.yaml'
     output:
-        r1 = '{sn}/mapped_clean_reads/{sn}_R1.fastq.gz',
-        r2 = '{sn}/mapped_clean_reads/{sn}_R2.fastq.gz',
-        s = '{sn}/mapped_clean_reads/{sn}_singletons.fastq.gz',
-        bam = '{sn}/mapped_clean_reads/{sn}_sorted_clean.bam'
+        r1 = '{sn}/5.viral_mapped_reads/{sn}_R1.fastq.gz',
+        r2 = '{sn}/5.viral_mapped_reads/{sn}_R2.fastq.gz',
+        s = '{sn}/5.viral_mapped_reads/{sn}_singletons.fastq.gz',
+        bam = '{sn}/5.viral_mapped_reads/{sn}_sorted_clean.bam'
     input:
-        "{sn}/core/{sn}_viral_reference.mapping.primertrimmed.bam",
+        "{sn}/4.viral_mapping/{sn}_viral_reference.mapping.primertrimmed.bam",
     benchmark:
         "{sn}/benchmarks/{sn}_get_mapping_reads.benchmark.tsv"
     log:
-        '{sn}/mapped_clean_reads/{sn}_samtools_fastq.log'
+        '{sn}/5.viral_mapped_reads/{sn}_samtools_fastq.log'
     shell:
         """
         samtools sort -n {input} -o {output.bam} 2> {log}
         samtools fastq -1 {output.r1} -2 {output.r2} -s {output.s} {output.bam} 2>> {log} 
         """
-
-rule run_ivar_consensus:
-    conda: 
-        'conda_envs/ivar.yaml'
-    output:
-        '{sn}/core/{sn}.consensus.fa'
-    input:
-        "{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam"
-    log:
-        '{sn}/core/{sn}_ivar_consensus.log'
-    benchmark:
-        "{sn}/benchmarks/{sn}_ivar_consensus.benchmark.tsv"
-    params:
-        mpileup_depth = config['mpileup_depth'],
-        ivar_min_coverage_depth = config['var_min_coverage_depth'],
-        ivar_freq_threshold = config['var_freq_threshold'],
-        output_prefix = '{sn}/core/{sn}.consensus',
-    shell:
-        '(samtools mpileup -aa -A -d {params.mpileup_depth} -Q0 {input} | '
-        'ivar consensus -t {params.ivar_freq_threshold} '
-        '-m {params.ivar_min_coverage_depth} -n N -p {params.output_prefix}) '
-        '2>{log}'
 
 rule index_viral_reference:
     # from @jts both mpileup and ivar need a reference .fai file and will create 
@@ -517,53 +464,27 @@ rule index_viral_reference:
         'samtools faidx {input}'
 
 
-rule run_ivar_variants:
-    conda: 
-        'conda_envs/ivar.yaml'
-    output:
-        '{sn}/core/{sn}_ivar_variants.tsv'
-    input:
-        reference = os.path.join(exec_dir, config['viral_reference_genome']),
-        indexed_reference = os.path.join(exec_dir, config['viral_reference_genome']) + ".fai",
-        read_bam = "{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam",
-        viral_reference_gff = os.path.join(exec_dir, config['viral_reference_feature_coords'])
-    log:
-        '{sn}/core/{sn}_ivar_variants.log'
-    benchmark:
-        "{sn}/benchmarks/{sn}_ivar_variants.benchmark.tsv"
-    params:
-        output_prefix = '{sn}/core/{sn}_ivar_variants',
-        ivar_min_coverage_depth = config['var_min_coverage_depth'],
-        ivar_min_freq_threshold = config['var_min_freq_threshold'],
-        ivar_min_variant_quality = config['var_min_variant_quality'],
-    shell:
-        '(samtools mpileup -aa -A -d 0 --reference {input.reference} -B '
-            '-Q 0 {input.read_bam} | '
-        'ivar variants -r {input.reference} -m {params.ivar_min_coverage_depth} '
-        '-p {params.output_prefix} -q {params.ivar_min_variant_quality} '
-        '-t {params.ivar_min_freq_threshold} -g {input.viral_reference_gff}) 2> {log}'
-
 
 ################################   Based on scripts/breseq.sh   ####################################
 
 rule run_breseq:
     threads: 4
     priority: 1
-    conda: 'conda_envs/snp_mapping.yaml'
+    conda: 'conda_envs/mapping.yaml'
     output:
-        '{sn}/breseq/output/index.html'
+        '{sn}/7.breseq/output/index.html'
     input:
-        expand('{{sn}}/mapped_clean_reads/{{sn}}_R{r}.fastq.gz', r=[1,2])
+        expand('{{sn}}/5.viral_mapped_reads/{{sn}}_R{r}.fastq.gz', r=[1,2])
     log:
-        '{sn}/breseq/{sn}_breseq.log',
+        '{sn}/7.breseq/{sn}_breseq.log',
     benchmark:
         "{sn}/benchmarks/{sn}_run_breseq.benchmark.tsv"
     params:
         ref = os.path.join(exec_dir, breseq_ref),
-        outdir = '{sn}/breseq'
+        outdir = '{sn}/7.breseq'
     shell:
         """
-        breseq --reference {params.ref} --num-processors {threads} --polymorphism-prediction --brief-html-output --output {params.outdir} {input} > {log} 2>&1
+        breseq --reference {params.ref} --num-processors {threads} --polymorphism-prediction --brief-html-output --output {params.outdir} {input} > {log} 2>&1 || touch {output}
         """
 
 ################## Based on https://github.com/jts/ncov2019-artic-nf/blob/be26baedcc6876a798a599071bb25e0973261861/modules/illumina.nf ##################
@@ -573,13 +494,13 @@ rule run_freebayes:
     priority: 1
     conda: 'conda_envs/freebayes.yaml'
     output:
-        consensus = '{sn}/freebayes/{sn}.consensus.fasta',
-        variants = '{sn}/freebayes/{sn}.variants.norm.vcf'
+        consensus = '{sn}/6.freebayes/{sn}.consensus.fasta',
+        variants = '{sn}/6.freebayes/{sn}.variants.norm.vcf'
     input:
         reference = os.path.join(exec_dir, config['viral_reference_genome']),
-        read_bam = "{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam"
+        read_bam = "{sn}/4.viral_mapping/{sn}_viral_reference.mapping.primertrimmed.sorted.bam"
     params:
-        out = '{sn}/freebayes/work/{sn}',
+        out = '{sn}/6.freebayes/work/{sn}',
         freebayes_min_coverage_depth = config['var_min_coverage_depth'],
         freebayes_min_freq_threshold = config['var_min_freq_threshold'],
         freebayes_min_variant_quality = config['var_min_variant_quality'],
@@ -624,31 +545,13 @@ rule run_freebayes:
         bcftools consensus -f {params.out}.ambiguous.fasta -m {params.out}.mask.txt {params.out}.fixed.norm.vcf.gz | sed s/MN908947\.3.*/{wildcards.sn}/ > {output.consensus}
         """
 
-rule consensus_compare:
-    threads: 1
-    priority: 1
-    conda: 'conda_envs/freebayes.yaml'
-    output:
-        '{sn}/freebayes/{sn}_consensus_compare.vcf'
-    input:
-        ivar = '{sn}/core/{sn}.consensus.fa',
-        freebayes = '{sn}/freebayes/{sn}.consensus.fasta'
-    params:
-        script_path = os.path.join(exec_dir, "scripts", "quick_align.py")
-    shell:
-        """
-        python {params.script_path} -g {input.ivar} -r {input.freebayes} -o vcf > {output}
-        """
-
 ##################  Based on scripts/hisat2.sh and scripts/coverage_stats_avg.sh  ##################
-
-
 rule coverage_depth:
-    conda: 'conda_envs/snp_mapping.yaml'
+    conda: 'conda_envs/mapping.yaml'
     output:
-        '{sn}/coverage/{sn}_depth.txt'
+        '{sn}/6.freebayes/{sn}_depth.txt'
     input:
-        "{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam"
+        "{sn}/4.viral_mapping/{sn}_viral_reference.mapping.primertrimmed.sorted.bam"
     benchmark:
         "{sn}/benchmarks/{sn}_coverage_depth.benchmark.tsv"
     shell:
@@ -657,9 +560,9 @@ rule coverage_depth:
 rule generate_coverage_plot:
     conda: 'conda_envs/postprocessing.yaml'
     output: 
-        '{sn}/coverage/{sn}_coverage_plot.png' 
+        '{sn}/6.freebayes/{sn}_coverage_plot.png' 
     input:
-        '{sn}/coverage/{sn}_depth.txt'
+        '{sn}/6.freebayes/{sn}_depth.txt'
     params:
         script_path = os.path.join(exec_dir, "scripts", "generate_coverage_plot.py")
     shell:
@@ -670,18 +573,18 @@ rule generate_coverage_plot:
 
 rule run_kraken2:
     threads: 1
-    conda: 'conda_envs/trim_qc.yaml'
+    conda: 'conda_envs/read_qc.yaml'
     output:
-        '{sn}/kraken2/{sn}_kraken2.out'
+        '{sn}/3.kraken2/{sn}_kraken2.out'
     input:
-        r1 = '{sn}/adapter_trimmed/{sn}_R1_val_1_posttrim_filter.fq.gz',
-        r2 = '{sn}/adapter_trimmed/{sn}_R2_val_2_posttrim_filter.fq.gz'
+        r1 = '{sn}/2.trimmed_reads/{sn}_R1_val_1_posttrim_filter.fq.gz',
+        r2 = '{sn}/2.trimmed_reads/{sn}_R2_val_2_posttrim_filter.fq.gz'
     log:
-        '{sn}/kraken2/{sn}_kraken2.log'
+        '{sn}/3.kraken2/{sn}_kraken2.log'
     benchmark:
         "{sn}/benchmarks/{sn}_run_kraken2.benchmark.tsv"
     params:
-        outdir = '{sn}/kraken2',
+        outdir = '{sn}/3.kraken2',
         db = os.path.join(exec_dir, config['kraken2_db']),
         labelled_output = '{sn}_kraken2.out',
         labelled_report = '{sn}_kraken2.report',
@@ -705,48 +608,27 @@ rule run_kraken2:
 
 ##################################  Based on scripts/quast.sh   ####################################
 
-
 rule run_quast:
     threads: 1
     conda: 'conda_envs/assembly_qc.yaml'
     output:
-         '{sn}/quast/{sn}_quast_report.html'
+         '{sn}/6.freebayes/quast/{sn}_quast_report.html'
     input:
-         '{sn}/core/{sn}.consensus.fa'
+         '{sn}/6.freebayes/{sn}.consensus.fasta'
     log:
-         '{sn}/quast/{sn}_quast.log'
+         '{sn}/6.freebayes/quast/{sn}_quast.log'
     benchmark:
         "{sn}/benchmarks/{sn}_run_quast.benchmark.tsv"
     params:
-         outdir = '{sn}/quast',
+         outdir = '{sn}/6.freebayes/quast',
          genome = os.path.join(exec_dir, config['viral_reference_genome']),
          fcoords = os.path.join(exec_dir, config['viral_reference_feature_coords']),
          sample_name = '{sn}_quast_report',
-         unlabelled_reports = '{sn}/quast/report.*'
+         unlabelled_reports = '{sn}/6.freebayes/quast/report.*'
     shell:
          'quast {input} -r {params.genome} -g {params.fcoords} --output-dir {params.outdir} --threads {threads} >{log} && '
          'for f in {params.unlabelled_reports}; do mv $f ${{f/report/{params.sample_name}}}; done'
 
-rule run_quast_freebayes:
-    threads: 1
-    conda: 'conda_envs/assembly_qc.yaml'
-    output:
-         '{sn}/freebayes/quast/{sn}_quast_report.html'
-    input:
-         '{sn}/freebayes/{sn}.consensus.fasta'
-    log:
-         '{sn}/freebayes/quast/{sn}_quast.log'
-    benchmark:
-        "{sn}/benchmarks/{sn}_run_quast.benchmark.tsv"
-    params:
-         outdir = '{sn}/freebayes/quast',
-         genome = os.path.join(exec_dir, config['viral_reference_genome']),
-         fcoords = os.path.join(exec_dir, config['viral_reference_feature_coords']),
-         sample_name = '{sn}_quast_report',
-         unlabelled_reports = '{sn}/freebayes/quast/report.*'
-    shell:
-         'quast {input} -r {params.genome} -g {params.fcoords} --output-dir {params.outdir} --threads {threads} >{log} && '
-         'for f in {params.unlabelled_reports}; do mv $f ${{f/report/{params.sample_name}}}; done'
 
 rule run_lineage_assignment:
     threads: 4
@@ -754,22 +636,9 @@ rule run_lineage_assignment:
     output:
         'lineage_assignments.tsv'
     input:
-        expand('{sn}/core/{sn}.consensus.fa', sn=sample_names)
-    params:
-        assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py')
-    shell:
-        'cat {input} > all_genomes.fa && '
-        '{params.assignment_script_path} -i all_genomes.fa -t {threads} -o {output}'
-
-rule run_lineage_assignment_freebayes:
-    threads: 4
-    conda: 'conda_envs/assign_lineages.yaml'
-    output:
-        'freebayes_lineage_assignments.tsv'
-    input:
-        expand('{sn}/freebayes/{sn}.consensus.fasta', sn=sample_names)
+        expand('{sn}/6.freebayes/{sn}.consensus.fasta', sn=sample_names)
     params:
         assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py'),
     shell:
-        'cat {input} > all_freebayes_genomes.fa && '
-        '{params.assignment_script_path} -i all_freebayes_genomes.fa -t {threads} -o {output}'
+        'cat {input} > all_consensus.fna && '
+        '{params.assignment_script_path} -i all_consensus.fna -t {threads} -o {output}'

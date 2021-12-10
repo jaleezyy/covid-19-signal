@@ -1,4 +1,4 @@
-name: snp_mapping
+name: mapping
 channels:
   - conda-forge
   - bioconda

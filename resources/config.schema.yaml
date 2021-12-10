@@ -27,7 +27,7 @@ mpileup_depth:
 var_freq_threshold:
     type: float
     default: 0.75
-    description: "ivar frequency threshold to build consensus"
+    description: "freebayes frequency threshold to build consensus"
 var_min_coverage_depth:
     type: int
     default: 10
@@ -35,11 +35,11 @@ var_min_coverage_depth:
 var_min_freq_threshold:
     type: float
     default: 0.25
-    description: "ivar frequency threshold to call variant (ivar variants: -t )"
+    description: "freebayes frequency threshold to call variant"
 var_min_variant_quality:
     type: int
     default: 20
-    description: "iVar minimum mapQ to call variant (ivar variants: -q)"
+    description: "freebayes minimum mapQ to call variant"
 samples:
     type: string
     description: "Sample filepaths/table"
@@ -51,10 +51,6 @@ run_breseq:
     type: boolean
     default: False
     description: "optionally run BreSeq mutation analysis"
-run_freebayes:
-    type: boolean
-    default: False
-    description: "optionally run FreeBayes variant calling and consensus sequence generation"
 required:
     - min_len
     - min_qual

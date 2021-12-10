@@ -1,4 +1,4 @@
-name: trim_qc
+name: read_qc
 channels:
   - conda-forge
   - bioconda

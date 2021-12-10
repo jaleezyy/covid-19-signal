@@ -32,9 +32,6 @@ run_breseq: False
 # Used as --reference argument to 'breseq'
 breseq_reference: 'data/MN908947.3.gbk'
 
-# run freebayes for variant and consensus calling (as well as ivar)
-run_freebayes: True
-
 # Used as --db argument to 'kraken2'
 kraken2_db: 'data/Kraken2/db'
 
@@ -46,13 +43,13 @@ primer_pairs_tsv:
 
 # Consensus and variant calling ivar/samtools params from https://github.com/connor-lab/ncov2019-artic-nf/blob/master/conf/illumina.config
 mpileup_depth: 100000
-# ivar/freebayes frequency threshold to build consensus
+# freebayes frequency threshold to build consensus
 var_freq_threshold: 0.75
 # Minimum coverage depth to call variant
 var_min_coverage_depth: 10
-# iVar/freebayes frequency threshold to call variant (ivar variants: -t )
+# freebayes frequency threshold to call variant (ivar variants: -t )
 var_min_freq_threshold: 0.25
-# iVar/freebayes minimum mapQ to call variant (ivar variants: -q)
+# freebayes minimum mapQ to call variant (ivar variants: -q)
 var_min_variant_quality: 20
 
 # ONLY NEEDED IF USING NCOV-TOOLS SUMMARIES
