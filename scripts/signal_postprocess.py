@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-long_git_id = '$Id: b158164f87c79271ddc9d1083e64e4be1fc26d8e $'
+long_git_id = '$Id: 4d89c77 $'
 
 assert long_git_id.startswith('$Id: ')
 short_git_id = long_git_id[5:12]
@@ -52,7 +52,6 @@ def read_file(filename, allow_missing=True, zname=None):
     If 'zname' is specified, then 'filename' should be a .zip file,
     and 'zname' should be the name of the constituent file to be read.
     """
-
     if file_is_missing(filename, allow_missing):
         pass
     elif zname is None:
@@ -123,7 +122,7 @@ class TextFileParser:
         self._field_names.append(field_name)
         self._field_details.append((regexp_pattern, regexp_group, dtype, required, reducer))
 
-    def parse_file(self, filename, allow_missing=True, zname=None):
+    def parse_file(self, filename, allow_missing=True, zname=None, allow_empty=False):
         """
         Parses the specified file and returns a dict (field_name) -> (parsed_value).
 
@@ -152,7 +151,10 @@ class TextFileParser:
 
         for (name, (_,_,_,required,reducer)) in zip(self._field_names, self._field_details):
             if required and len(ret[name]) == 0:
-                raise RuntimeError(f"{filename}: failed to parse field '{name}'")
+                if allow_empty:
+                    return 0
+                else:
+                    raise RuntimeError(f"{filename}: failed to parse field '{name}'")
             if reducer is not None:
                 ret[name] = reducer(ret[name])
             elif len(ret[name]) > 1:
@@ -290,12 +292,12 @@ def parse_trim_galore_log(filename, allow_missing=True):
     t.add_field('base_pairs_processed', r'Total basepairs processed:\s+([0-9,]+)\s+', dtype=comma_separated_int, reducer=sum)
     t.add_field('base_pairs_written', r'Total written \(filtered\):\s+([0-9,]+)\s+', dtype=comma_separated_int, reducer=sum)
 
-    return t.parse_file(filename, allow_missing)
+    allow_empty=True
+    return t.parse_file(filename, allow_missing, None, allow_empty)
 
 
 def parse_fastqc_output(zip_filename, allow_missing=True):
     """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
-
     assert zip_filename.endswith('_fastqc.zip')
     zname_data = f"{os.path.basename(zip_filename[:-4])}/fastqc_data.txt"
     zname_summ = f"{os.path.basename(zip_filename[:-4])}/summary.txt"
@@ -660,6 +662,9 @@ def parse_breseq_output(html_filename, allow_missing=True):
         return { 'variants': [], 'qc_varfreq': 'MISSING', 'qc_orf_frameshift': 'MISSING', 'run': False}
 
     tables = parse_html_tables(html_filename)
+    if len(tables) == 0:
+        return { 'variants': [], 'qc_varfreq': 'FAIL',
+                 'qc_orf_frameshift': 'N/A', 'run': True}
 
     assert len(tables) >= 2
     assert tables[1][0] in [ ['Predicted mutation'], ['Predicted mutations'] ]
@@ -766,7 +771,6 @@ class WriterBase:
         self.unabridged = unabridged
         self.pipeline_name = f'SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL), version {short_git_id}'
         self.pipeline_url = 'https://github.com/jaleezyy/covid-19-signal'
-        self.pipeline_note = "Note: Asterisks (*) indicates a discrepancy between iVar (default) and FreeBayes (if run)"
 
         self.f = open(filename, 'w')
 
@@ -826,7 +830,7 @@ class WriterBase:
 
 
     def write_data_volume_summary(self, s):
-        self.start_kv_pairs("Data Volume", link_filenames=[f"adapter_trimmed/{s.name}_trim_galore.log"])
+        self.start_kv_pairs("Data Volume", link_filenames=[f"2.trimmed_reads/{s.name}_trim_galore.log"])
         self.write_kv_pair("Raw\nData\n(read\npairs)", s.trim_galore['read_pairs_processed'], indent=1)
 
         if self.unabridged:
@@ -880,7 +884,7 @@ class WriterBase:
         if not self.unabridged:
             return
 
-        self.start_kv_pairs("FASTQC Flags", link_filenames=[f"adapter_trimmed/{s.name}_R{r}_val_{r}_fastqc.html" for r in [1,2]])
+        self.start_kv_pairs("FASTQC Flags", link_filenames=[f"2.trimmed_reads/{s.name}_R{r}_val_{r}_fastqc.html" for r in [1,2]])
 
         for flavor in [ 'FAIL', 'WARN' ]:
             for (msg,f) in s.post_trim_qc['summary'].items():
@@ -896,13 +900,13 @@ class WriterBase:
 
 
     def write_kraken2(self, s):
-        self.start_kv_pairs("Kraken2", link_filenames=[f"kraken2/{s.name}_kraken2.report"])
+        self.start_kv_pairs("Kraken2", link_filenames=[f"3.kraken2/{s.name}_kraken2.report"])
         self.write_kv_pair("Reads\nSARS-CoV-2\n(%)", s.kraken2['sars_cov2_percentage'], indent=1)
         self.end_kv_pairs()
 
 
     def write_quast(self, s):
-        self.start_kv_pairs("QUAST", link_filenames=[f"quast/{s.name}_quast_report.html"])
+        self.start_kv_pairs("QUAST", link_filenames=[f"6.freebayes/quast/{s.name}_quast_report.html"])
         self.write_kv_pair("Genome\nLength\n(bp)", s.quast['genome_length'], indent=1)
         self.write_kv_pair("Genome\nFraction\n(%)", s.quast['genome_fraction'], indent=1)
         self.write_kv_pair("N's per\n100 kbp", s.quast['Ns_per_100_kbp'], indent=1)
@@ -925,10 +929,6 @@ class WriterBase:
         self.end_kv_pairs()
 
 
-    def write_ivar(self, s):
-        title = "Variants in Consensus Genome (iVar)" if self.unabridged else "Variants (iVar)"
-        self.write_lines(title, s.ivar['variants'], coalesce=True)
-
     def write_breseq(self, s):
         if s.breseq['run'] == True:
             title = "Variants in Read Alignment (BreSeq)" if self.unabridged else "Variants (BreSeq)"
@@ -937,11 +937,8 @@ class WriterBase:
             return None
 
     def write_freebayes(self, s):
-        if s.freebayes['run'] == True:
-            title = "Unique Variants in Consensus Genome (FreeBayes)" if self.unabridged else "Unique Variants (FreeBayes)"
-            self.write_lines(title, s.freebayes['variants'], coalesce=True)
-        else:
-            return None
+        title = "Variants in Consensus Genome (FreeBayes)" if self.unabridged else "Variants (FreeBayes)"
+        self.write_lines(title, s.variants, coalesce=True)
 
     def write_lineage(self, s):
         title = "Pangolin Lineage Assignment" if self.unabridged else "Lineage (Pangolin)"
@@ -952,13 +949,6 @@ class WriterBase:
         self.write_lines(title, [s.lineage['clade']], coalesce=True)
 
 
-    def write_compare(self, s):
-        if s.compare['run'] == True:
-            title = "Nucleotide Differences in Consensus Genomes (FreeBayes as reference)" if self.unabridged else "Consensus Nucleotide Differences (FreeBayes as Reference)"
-            self.write_lines(title, s.compare['positions'], coalesce=True)
-        else:
-            return None
-
     def write_sample(self, s):
         self.start_sample(s)
         self.write_lineage(s)
@@ -968,9 +958,7 @@ class WriterBase:
         self.write_fastqc_summary(s)
         self.write_kraken2(s)
         self.write_quast(s)
-        self.write_ivar(s)
         self.write_freebayes(s)
-        self.write_compare(s)
         self.write_breseq(s)
         self.end_sample(s)
 
@@ -1000,7 +988,6 @@ class HTMLWriterBase(WriterBase):
         print("<body>", file=self.f)
 
         print(f'<h3>{self.pipeline_name}&nbsp;&nbsp;(<a href="{self.pipeline_url}">{self.pipeline_url}</a>)</h3>', file=self.f)
-        print(f'<p>{self.pipeline_note}</p>', file=self.f)
 
     def close(self):
         if self.f is not None:
@@ -1021,8 +1008,6 @@ class SampleTextWriter(WriterBase):
 
         print(self.pipeline_name, file=self.f)
         print(self.pipeline_url, file=self.f)
-        print("", file=self.f)
-        print(self.pipeline_note, file=self.f)
         print("", file=self.f)
 
     def start_sample(self, s):
@@ -1305,74 +1290,18 @@ class Archive:
 class Sample:
     """Must be constructed from toplevel pipeline directory."""
 
-    def __init__(self, name, ivarlin, fblin):
+    def __init__(self, name, lineage):
         self.name = name
 
-        self.trim_galore = parse_trim_galore_log(f"{name}/adapter_trimmed/{name}_trim_galore.log")
-        self.post_trim_qc = parse_fastqc_pair(f"{name}/adapter_trimmed/{name}_R1_val_1_fastqc.zip", f"{name}/adapter_trimmed/{name}_R2_val_2_fastqc.zip")
-        self.kraken2 = parse_kraken2_report(f"{name}/kraken2/{name}_kraken2.report")
-        self.quast = parse_quast_report(f"{name}/quast/{name}_quast_report.html")
-        self.quast_freebayes = parse_quast_report(f"{name}/freebayes/quast/{name}_quast_report.html")
-        self.consensus = parse_consensus_assembly(f"{name}/core/{name}.consensus.fa")
-        self.consensus_freebayes = parse_consensus_assembly(f"{name}/freebayes/{name}.consensus.fasta")
-        self.coverage = parse_coverage(f"{name}/coverage/{name}_depth.txt")
-        self.ivar = parse_ivar_variants(f"{name}/core/{name}_ivar_variants.tsv")
-        self.freebayes = parse_freebayes_variants(f"{name}/freebayes/{name}.variants.norm.vcf")
-        self.compare = parse_consensus_compare(f"{name}/freebayes/{name}_consensus_compare.vcf")
-        self.breseq = parse_breseq_output(f"{name}/breseq/output/index.html")
-
-
-        if ivarlin['lineage'] != fblin['lineage'] and fblin['lineage'] is not None:
-            assert ivarlin['pangolin_ver'] == fblin['pangolin_ver']
-            assert ivarlin['pangolearn_ver'] == fblin['pangolearn_ver']
-            if ivarlin['clade'] == fblin['clade']:
-                 self.lineage = { 'lineage': str(ivarlin['lineage'] + " (FB: %s)" %(fblin['lineage'])),
-                                 'pangolin_ver': ivarlin['pangolin_ver'],
-                                 'pangolearn_ver': ivarlin['pangolearn_ver'],
-                                 'clade': ivarlin['clade'] }
-            else:
-                 self.lineage = { 'lineage': str(ivarlin['lineage'] + " (FB: %s)" %(fblin['lineage'])),
-                                 'pangolin_ver': ivarlin['pangolin_ver'],
-                                 'pangolearn_ver': ivarlin['pangolearn_ver'],
-                                 'clade': str(ivarlin['clade'] + " (FB: %s)" %(fblin['clade'])) }
-        else:
-            self.lineage = ivarlin
-
-    # Compare sample consensus and variant outputs if both iVar and FreeBayes are present
-    # Only will report iVar but values that differ from FreeBayes will be flagged with an asterisks
-
-    # QC metrics comparison
-        param = ["qc_gfrac", "qc_indel"]
-        status = ["FAIL", "WARN", "PASS"]
-        for item in param:
-        # If values don't match, compare whether FreeBayes shows improvement (i.e., no indels) by indexing status
-            if self.quast[item] != self.quast_freebayes[item]:
-                ivar = status.index(self.quast[item])
-                fb = status.index(self.quast_freebayes[item])
-                if fb > ivar:
-                    self.quast[item] = str(self.quast[item]) + "*" # Ex. WARN*
-
-    # Variant call comparison
-        if len(self.freebayes['variants']) > 0:
-            variants = []
-            # Check if iVar variant found in FreeBayes: remove from FreeBayes if found, tag if not
-            # Final output should be a list of unique FreeBayes variants and a list of appropriately tagged iVar variants
-            for var in self.ivar['variants']:
-                if var in self.freebayes['variants']:
-                    variants.append(var)
-                    self.freebayes['variants'].remove(var)
-                else:
-                    variants.append(var + "*")
-            self.ivar = { 'variants': variants }
-            #if len(self.freebayes['variants']) == 0: self.freebayes['variants'].append("None")
-
-    # Compare consensus assembly (N counts at 5' and 3')
-    # Run quick_align to highlight specific differences across consensus genomes
-        for itemvar, itemfb in zip(self.consensus, self.consensus_freebayes):
-            assert itemvar == itemfb
-        # Check if # of N's is fewer than in the FreeBayes consensus (assumed less ambiguious)
-            if (self.consensus_freebayes[itemfb] is not None) and (float(self.consensus_freebayes[itemfb]) < float(self.consensus[itemvar])):
-                self.consensus[itemvar] = str(self.consensus[itemvar]) + "*"
+        self.trim_galore = parse_trim_galore_log(f"{name}/2.trimmed_reads/{name}_trim_galore.log")
+        self.post_trim_qc = parse_fastqc_pair(f"{name}/2.trimmed_reads/{name}_R1_val_1_fastqc.zip", f"{name}/2.trimmed_reads/{name}_R2_val_2_fastqc.zip")
+        self.kraken2 = parse_kraken2_report(f"{name}/3.kraken2/{name}_kraken2.report")
+        self.quast = parse_quast_report(f"{name}/6.freebayes/quast/{name}_quast_report.html")
+        self.consensus = parse_consensus_assembly(f"{name}/6.freebayes/{name}.consensus.fasta")
+        self.coverage = parse_coverage(f"{name}/6.freebayes/{name}_depth.txt")
+        self.variants = parse_freebayes_variants(f"{name}/6.freebayes/{name}.variants.norm.vcf")
+        self.breseq = parse_breseq_output(f"{name}/7.breseq/output/index.html")
+        self.lineage = lineage
 
 
 class Pipeline:
@@ -1382,10 +1311,9 @@ class Pipeline:
         sample_csv = pd.read_csv(sample_csv_filename)
         sample_names = sorted(sample_csv['sample'].drop_duplicates().values)
 
-        self.iv_lineage = parse_lineage(f"lineage_assignments.tsv", sample_names)
-        self.fb_lineage = parse_lineage(f"freebayes_lineage_assignments.tsv", sample_names)
+        self.lineage = parse_lineage(f"lineage_assignments.tsv", sample_names)
 
-        self.samples = [ Sample(s, self.iv_lineage['samples'][s], self.fb_lineage['samples'][s]) for s in sample_names ]
+        self.samples = [ Sample(s, self.lineage['samples'][s]) for s in sample_names ]
 
         if len(self.samples) == 0:
             raise RuntimeError(f"{sample_csv_filename} contains zero samples, nothing to do!")
@@ -1535,15 +1463,15 @@ class Pipeline:
             s = sample.name
             a.add_glob(f'{s}/{s}_sample.txt')
             a.add_glob(f'{s}/{s}_sample.html')
-            a.add_glob(f'{s}/coverage/{s}_coverage_plot.png')
-            a.add_glob(f'{s}/adapter_trimmed/{s}_trim_galore.log')
-            a.add_glob(f'{s}/adapter_trimmed/{s}_*_fastqc.html')
-            a.add_glob(f'{s}/kraken2/{s}_kraken2.report')
-            a.add_glob(f'{s}/host_removal/{s}_human_read_mapping.log')
-            a.add_glob(f'{s}/quast/*.html')
-            a.add_dir(f'{s}/quast/icarus_viewers')
-            a.add_glob(f'{s}/breseq/{s}_breseq.log')
-            a.add_dir(f'{s}/breseq/{s}_output')
+            a.add_glob(f'{s}/1.host_removal/{s}_human_read_mapping.log')
+            a.add_glob(f'{s}/2.trimmed_reads/{s}_trim_galore.log')
+            a.add_glob(f'{s}/2.trimmed_reads/{s}_*_fastqc.html')
+            a.add_glob(f'{s}/3.kraken2/{s}_kraken2.report')
+            a.add_glob(f'{s}/6.freebayes/quast/*.html')
+            a.add_glob(f'{s}/6.freebayes/coverage/{s}_coverage_plot.png')
+            a.add_dir(f'{s}/6.freebayes/quast/icarus_viewers')
+            a.add_glob(f'{s}/7.breseq/{s}_breseq.log')
+            a.add_dir(f'{s}/7.breseq/{s}_output')
 
         a.close()
 
@@ -1553,7 +1481,7 @@ class Pipeline:
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
-        print(f"Usage: c19_postprocess.py <sample_table.csv>", file=sys.stderr)
+        print(f"Usage: signal_postprocess.py <sample_table.csv>", file=sys.stderr)
         print(f"Note: must be run from toplevel pipeline directory", file=sys.stderr)
         sys.exit(1)
 
