@@ -352,7 +352,7 @@ rule run_trimgalore:
     shell:
         'trim_galore --quality {params.min_qual} --length {params.min_len} '
         ' -o {params.output_prefix} --cores {threads} --fastqc '
-        '--paired {input.raw_r1} {input.raw_r2} 2> {log}'
+        '--paired {input.raw_r1} {input.raw_r2} 2> {log} || touch ../../{output}'
 
 rule run_filtering_of_residual_adapters:
     threads: 2
@@ -698,7 +698,9 @@ rule run_kraken2:
             ' --paired --gzip-compressed'
             ' ../../{input.r1} ../../{input.r2}'
             ' --report {params.labelled_report}'
-            ' 2>../../{log}'
+            ' 2>../../{log} && (cd ../.. && touch {output})'
+            # kraken2 also fails if empty input is provided which will happen
+            # if there are no valid reads e.g., very clean negative controls
 
 
 ##################################  Based on scripts/quast.sh   ####################################
