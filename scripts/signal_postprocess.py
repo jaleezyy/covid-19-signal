@@ -1319,7 +1319,7 @@ class Sample:
         self.ivar = parse_ivar_variants(f"{name}/core/{name}_ivar_variants.tsv")
         self.freebayes = parse_freebayes_variants(f"{name}/freebayes/{name}.variants.norm.vcf")
         self.compare = parse_consensus_compare(f"{name}/freebayes/{name}_consensus_compare.vcf")
-        self.breseq = parse_breseq_output(f"{name}/breseq/{name}_output/index.html")
+        self.breseq = parse_breseq_output(f"{name}/breseq/output/index.html")
 
 
         if ivarlin['lineage'] != fblin['lineage'] and fblin['lineage'] is not None:
