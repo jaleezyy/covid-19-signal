@@ -938,7 +938,7 @@ class WriterBase:
 
     def write_freebayes(self, s):
         title = "Variants in Consensus Genome (FreeBayes)" if self.unabridged else "Variants (FreeBayes)"
-        self.write_lines(title, s.variants, coalesce=True)
+        self.write_lines(title, s.variants['variants'], coalesce=True)
 
     def write_lineage(self, s):
         title = "Pangolin Lineage Assignment" if self.unabridged else "Lineage (Pangolin)"
