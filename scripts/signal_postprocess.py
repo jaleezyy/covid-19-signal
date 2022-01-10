@@ -554,30 +554,11 @@ def parse_lmat_output(lmat_dirname, allow_missing=True):
     # 'top_taxa_ann' = "top taxa with annotations"
     return { 'top_taxa': top_taxa, 'top_taxa_ann': top_taxa_ann }
 
-
-def parse_ivar_variants(tsv_filename, allow_missing=True):
-    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
-
-    if file_is_missing(tsv_filename, allow_missing):
-        return { 'variants': [] }
-
-    variants = []
-
-    # Skip first line
-    for line in open(tsv_filename).readlines()[1:]:
-        t = line.split('\t')
-        assert len(t) == 19
-
-        if t[3] != '':
-            variants.append(f"{t[2]}{t[1]}{t[3]}")
-
-    return { 'variants': variants }
-
 def parse_freebayes_variants(vcf_filename, allow_missing=True):
     """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
 
     if file_is_missing(vcf_filename, allow_missing):
-        return { 'variants': [], 'run': False }
+        return { 'variants': [] }
 
     variants = []
 
@@ -590,27 +571,7 @@ def parse_freebayes_variants(vcf_filename, allow_missing=True):
             if t[4] != '':
                 variants.append(f"{t[3]}{t[1]}{t[4]}")
 
-    return { 'variants': variants, 'run': True }
-
-def parse_consensus_compare(vcf_filename, allow_missing=True):
-    """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
-
-    if file_is_missing(vcf_filename, allow_missing):
-        return { 'positions': [], 'run': False }
-
-    positions = []
-
-    # Only interpret lines that DO NOT start with "#"
-    for line in open(vcf_filename):
-        if not line.startswith("#"):
-            t = line.split('\t')
-            assert len(t) == 7
-
-            if t[4] != '':
-                positions.append(f"{t[3]}{t[1]}{t[4]}")
-
-    return { 'positions': positions, 'run': True }
-
+    return { 'variants': variants }
 
 def parse_lineage(tsv_filename, sample_names, allow_missing=True):
     """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
