@@ -3,6 +3,17 @@ import shutil
 import subprocess
 import fileinput
 import glob
+import urllib.request
+
+def pull_latest_ncov():
+	exec_dir = snakemake.params['exec_dir']
+	if not os.path.exist(os.path.join(exec_dir, 'ncov-tools', 'workflow')):
+		commit_url = urllib.request.urlopen(f"https://github.com/jts/ncov-tools/releases/latest").geturl()
+		version = commit_url.split("/")[-1]
+		link = f"git+https://github.com/jts/ncov-tools.git@{version}"
+		os.system(f"git clone {link}")
+	else:
+		print("The ncov-tools software was found!")
 
 def set_up():
 	print("Writing config for ncov to ncov-tools/config.yaml")

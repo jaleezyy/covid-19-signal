@@ -61,6 +61,14 @@ workdir: os.path.abspath(config['result_dir'])
 # get sample names 
 sample_names = sorted(samples['sample'].drop_duplicates().values)
 
+# get lineage calling versions
+versions = {'pangolin': config['pangolin'],
+            'pangolearn': config['pangolearn'],
+            'constellations': config['constellations'],
+            'scorpio': config['scorpio'],
+            'pango-designation': config['pango-designation']
+            }
+
 def get_input_fastq_files(sample_name, r):
     sample_fastqs = samples[samples['sample'] == sample_name]
     if r == '1':
@@ -191,8 +199,11 @@ rule ncov_tools:
         primertrimmed_bams = expand("{sn}/4.viral_mapping/{sn}_viral_reference.mapping.primertrimmed.sorted.bam", sn=sample_names),
         bams = expand("{sn}/4.viral_mapping/{sn}_viral_reference.mapping.bam", sn=sample_names),
         variants = expand("{sn}/6.freebayes/{sn}.variants.norm.vcf", sn=sample_names)
-    script: "scripts/ncov-tools.py"
-        
+    shell: 
+        """
+        scripts/ncov-tools.py 
+        scripts/run_ncov_tools.sh -c 1
+        """
         
 ################################# Copy config and sample table to output folder ##################
 
@@ -634,11 +645,18 @@ rule run_lineage_assignment:
     threads: 4
     conda: 'conda_envs/assign_lineages.yaml'
     output:
-        'lineage_assignments.tsv'
+        ver_out = 'versions.txt',
+        lin_out = 'lineage_assignments.tsv'
     input:
         expand('{sn}/6.freebayes/{sn}.consensus.fasta', sn=sample_names)
     params:
+        pangolin_ver = versions['pangolin'],
+        pangolearn_ver = versions['pangolearn'],
+        constellations_ver = versions['constellations'],
+        scorpio_ver = versions['scorpio'],
+        designation_ver = versions['pango-designation'],
         assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py'),
     shell:
+        "echo -e 'pangolin: {params.pangolin_ver}\npangolearn: {params.pangolearn_ver}\nconstellations: {params.constellations_ver}\nscorpio: {params.scorpio_ver}\npango-designation: {params.designation_ver}' > {output.ver_out} && "
         'cat {input} > all_consensus.fna && '
-        '{params.assignment_script_path} -i all_consensus.fna -t {threads} -o {output}'
+        '{params.assignment_script_path} -i all_consensus.fna -t {threads} -o {output.lin_out} -p {output.ver_out}'

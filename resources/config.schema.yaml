@@ -51,6 +51,26 @@ run_breseq:
     type: boolean
     default: False
     description: "optionally run BreSeq mutation analysis"
+pangolin:
+    type: string
+    default: "None"
+    description: "Pangolin version"
+pangolearn:
+    type: string
+    default: "None"
+    description: "pangoLEARN version"
+constellations:
+    type: string
+    default: "None"
+    description: "Constellations version"
+scorpio:
+    type: string
+    default: "None"
+    description: "Scorpio version"
+pango-designation:
+    type: string
+    default: "None"
+    description: "Pango-designation date/version"
 required:
     - min_len
     - min_qual

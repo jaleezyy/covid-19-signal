@@ -590,7 +590,7 @@ def parse_lineage(tsv_filename, sample_names, allow_missing=True):
     # Skip first line
     for line in open(tsv_filename).readlines()[1:]:
         n = line.split("\t")
-        assert len(n) == 35
+        assert len(n) == 36
 
     # Determine sample name
         if n[0].startswith("Consensus"):
@@ -605,8 +605,8 @@ def parse_lineage(tsv_filename, sample_names, allow_missing=True):
             lineage = str(n[1])
             clade = str(n[9])
             pangolin = str(n[31])
-            pangolearn = str(n[33])
-            nextclade = str(n[34])
+            pangolearn = str(n[34])
+            nextclade = str(n[35])
             samples[sid] = { 'lineage' : lineage,
                              'clade': clade,
                              'pangolin_ver': pangolin,

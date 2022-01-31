@@ -61,6 +61,9 @@ bwa index $database_dir/composite_human_viral_reference.fna
 
 # get kraken2 viral db
 mkdir -p $database_dir/Kraken2/db
-curl -s "https://genome-idx.s3.amazonaws.com/kraken/k2_viral_20210517.tar.gz" > $database_dir/Kraken2/k2_viral_20210517.tar.gz
-cd  $database_dir/Kraken2/db
+curl -s "https://genome-idx.s3.amazonaws.com/kraken/k2_viral_20210517.tar.gz" > $database_dir/Kraken2/db/k2_viral_20210517.tar.gz
+cd $database_dir/Kraken2/db
 tar xvf k2_viral_20210517.tar.gz
+
+# create blank fasta for 'phylo_include_seqs'
+touch $database_dir/blank.fasta
