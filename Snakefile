@@ -61,6 +61,14 @@ workdir: os.path.abspath(config['result_dir'])
 # get sample names 
 sample_names = sorted(samples['sample'].drop_duplicates().values)
 
+# get lineage calling versions
+versions = {'pangolin': config['pangolin'],
+            'pangolearn': config['pangolearn'],
+            'constellations': config['constellations'],
+            'scorpio': config['scorpio'],
+            'pango-designation': config['pango-designation']
+            }
+
 def get_input_fastq_files(sample_name, r):
     sample_fastqs = samples[samples['sample'] == sample_name]
     if r == '1':
@@ -139,7 +147,8 @@ rule quast:
     input: expand('{sn}/quast/{sn}_quast_report.html', sn=sample_names)
 
 rule lineages:
-    input: 
+    input:
+        'versions.txt', 
         'lineage_assignments.tsv'
 
 rule config_sample_log:
@@ -352,7 +361,7 @@ rule run_trimgalore:
     shell:
         'trim_galore --quality {params.min_qual} --length {params.min_len} '
         ' -o {params.output_prefix} --cores {threads} --fastqc '
-        '--paired {input.raw_r1} {input.raw_r2} 2> {log}' || touch {output}
+        '--paired {input.raw_r1} {input.raw_r2} 2> {log} || touch {output}'
 
 rule run_filtering_of_residual_adapters:
     threads: 2
@@ -642,7 +651,6 @@ rule consensus_compare:
 
 ##################  Based on scripts/hisat2.sh and scripts/coverage_stats_avg.sh  ##################
 
-
 rule coverage_depth:
     conda: 'conda_envs/snp_mapping.yaml'
     output:
@@ -666,7 +674,6 @@ rule generate_coverage_plot:
         "python {params.script_path} {input} {output}"
 
 ################################   Based on scripts/kraken2.sh   ###################################
-
 
 rule run_kraken2:
     threads: 1
@@ -752,14 +759,21 @@ rule run_lineage_assignment:
     threads: 4
     conda: 'conda_envs/assign_lineages.yaml'
     output:
-        'lineage_assignments.tsv'
+        ver_out = 'versions.txt',
+        lin_out = 'lineage_assignments.tsv'
     input:
         expand('{sn}/core/{sn}.consensus.fa', sn=sample_names)
     params:
+        pangolin_ver = versions['pangolin'],
+        pangolearn_ver = versions['pangolearn'],
+        constellations_ver = versions['constellations'],
+        scorpio_ver = versions['scorpio'],
+        designation_ver = versions['pango-designation'],
         assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py')
     shell:
+        "echo -e 'pangolin: {params.pangolin_ver}\npangolearn: {params.pangolearn_ver}\nconstellations: {params.constellations_ver}\nscorpio: {params.scorpio_ver}\npango-designation: {params.designation_ver}' > {output.ver_out} && "
         'cat {input} > all_genomes.fa && '
-        '{params.assignment_script_path} -i all_genomes.fa -t {threads} -o {output}'
+        '{params.assignment_script_path} -i all_genomes.fa -t {threads} -o {output.lin_out} -p {output.ver_out}'
 
 rule run_lineage_assignment_freebayes:
     threads: 4
@@ -772,4 +786,4 @@ rule run_lineage_assignment_freebayes:
         assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py'),
     shell:
         'cat {input} > all_freebayes_genomes.fa && '
-        '{params.assignment_script_path} -i all_freebayes_genomes.fa -t {threads} -o {output}'
+        '{params.assignment_script_path} -i all_freebayes_genomes.fa -t {threads} -o {output} --skip'

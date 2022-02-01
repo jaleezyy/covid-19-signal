@@ -1,4 +1,4 @@
-# SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL) 
+# SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL)
 
 This is a complete standardized workflow the assembly and subsequent analysis for short-read viral sequencing.
 This core workflow is compatible with the [illumina artic nf pipeline](https://github.com/connor-lab/ncov2019-artic-nf) and produces the same consensus and variants using `ivar` (1.3) [Grubaugh, 2019](https://doi.org/10.1186/s13059-018-1618-7).
@@ -22,69 +22,111 @@ If you use this software please [cite](https://doi.org/10.3390/v12080895):
 
 ## Setup/Execution
 
-0. Clone the git repository (`--recursive` only needed to run`ncov-tools` postprocessing)
-    
+### 0. Clone the git repository (`--recursive` only needed to run `ncov-tools` postprocessing)
+
         git clone --recursive https://github.com/jaleezyy/covid-19-signal
 
-1. Install `conda` and `snakemake` (version >5) e.g.
+### 1. Install `conda` and `snakemake` (version >5) e.g.
 
         wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
         bash Miniconda3-latest-Linux-x86_64.sh # follow instructions
         source $(conda info --base)/etc/profile.d/conda.sh
         conda create -n signal -c conda-forge -c bioconda -c defaults snakemake pandas conda
-        conda activate signal 
+        conda activate signal
 
 There are some issues with `conda` failing to install newer versions of snakemake
 so alternatively install `mamba` and use that (snakemake has beta support for it within the workflow)
-    
+
         conda install -c conda-forge mamba
-        mamba create -c conda-forge -c bioconda -n signal snakemake conda
+        mamba create -c conda-forge -c bioconda -n signal snakemake pandas conda
         conda activate signal
 
 Additional software dependencies are managed directly by `snakemake` using conda environment files:
 
-  - trim-galore 0.6.5 ([docs](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/))
-  - kraken2 2.1.1 ([docs](https://ccb.jhu.edu/software/kraken2/))
-  - quast 5.0.2 ([docs](http://quast.sourceforge.net/quast))
-  - bwa 0.7.17 ([docs](http://bio-bwa.sourceforge.net/))
-  - samtools 1.7/1.9 ([docs](http://www.htslib.org/))
-  - bedtools 2.26.0 ([docs](https://bedtools.readthedocs.io/en/latest/))
-  - breseq 0.35.0 ([docs](https://barricklab.org/twiki/bin/view/Lab/ToolsBacterialGenomeResequencing))
-  - ivar 1.3 ([docs](https://github.com/andersen-lab/ivar))
-  - ncov-tools postprocessing scripts require additional dependencies (see [file](ncov-tools/workflow/envs/environment.yml)).
+- trim-galore 0.6.5 ([docs](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/))
+- kraken2 2.1.1 ([docs](https://ccb.jhu.edu/software/kraken2/))
+- quast 5.0.2 ([docs](http://quast.sourceforge.net/quast))
+- bwa 0.7.17 ([docs](http://bio-bwa.sourceforge.net/))
+- samtools 1.7/1.9 ([docs](http://www.htslib.org/))
+- bedtools 2.26.0 ([docs](https://bedtools.readthedocs.io/en/latest/))
+- breseq 0.35.0 ([docs](https://barricklab.org/twiki/bin/view/Lab/ToolsBacterialGenomeResequencing))
+- ivar 1.3 ([docs](https://github.com/andersen-lab/ivar))
+- ncov-tools postprocessing scripts require additional dependencies (see [file](ncov-tools/workflow/envs/environment.yml)).
 
-2. Download necessary database files
+## SIGNAL Help Screen
+
+Using the provided `signal.py` script, the majority of SIGNAL functions can be accessed easily.
+
+To display the help screen:
+
+```
+python signal.py -h
+
+Output:
+usage: signal [-h] [-c CONFIGFILE] [-d DIRECTORY] [--cores CORES] [--config-only] [--remove-freebayes] [--add-breseq] [--dependencies] [all ...] [postprocess ...] [ncov_tools ...]
+
+SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL) aims to take Illumina short-read sequences and perform consensus assembly + variant calling for ongoing surveillance and research efforts towards
+the emergent coronavirus: Severe Acute Respiratory Syndrome Coronavirus 2 (SARS-CoV-2).
+
+positional arguments:
+  all                   Run SIGNAL with all associated assembly rules. Does not include postprocessing '--configfile' or '--directory' required. The latter will automatically generate a
+                        configuration file and sample table. If both provided, then '--configfile' will take priority
+  postprocess           Run SIGNAL postprocessing on completed SIGNAL run. '--configfile' is required
+  ncov_tools            Generate configuration file and filesystem setup required for ncov-tools quality control assessment. '--configfile' is required
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c CONFIGFILE, --configfile CONFIGFILE
+                        Configuration file (i.e., config.yaml) for SIGNAL analysis
+  -d DIRECTORY, --directory DIRECTORY
+                        Path to directory containing reads. Will be used to generate sample table and configuration file
+  --cores CORES         Number of cores. Default = 1
+  --config-only         Generate sample table and configuration file (i.e., config.yaml) and exit. '--directory' required
+  --remove-freebayes    Configuration file generator parameter. Set flag to NOT RUN freebayes variant calling (improves overall speed).
+  --add-breseq          Configuration file generator parameter. Set flag to RUN optional breseq step (will take more time for analysis to complete).
+  --dependencies        Download data dependencies (under a created 'data' directory) required for SIGNAL analysis and exit. Note: Will override other flags! (~10 GB storage required)
+```
+
+### 2. Download necessary database files
 
 The pipeline requires:
- 
- - Amplicon primer scheme sequences
- - SARS-CoV2 reference fasta
- - SARS-CoV2 reference gbk 
- - SARS-CoV2 reference gff3
- - kraken2 viral database
- - Human GRCh38 reference fasta (for composite human-viral BWA index)
 
-        bash scripts/get_data_dependencies.sh -d data -a MN908947.3
+- Amplicon primer scheme sequences
+- SARS-CoV2 reference fasta
+- SARS-CoV2 reference gbk
+- SARS-CoV2 reference gff3
+- kraken2 viral database
+- Human GRCh38 reference fasta (for composite human-viral BWA index)
 
-3. Configure your `config.yaml` file
+       python signal.py --dependencies
+       # defaults to a directory called `data` in repo root
 
-Either using the convenience python script or 
+       OR
+
+       bash scripts/get_data_dependencies.sh -d data -a MN908947.3
+       # allows you to rename and relocate the resultant directory
+
+**Note: Downloading the database files requires ~10GB of storage, with up to ~35GB required for all temporary downloads!**
+
+### 3. Configure your `config.yaml` file
+
+Either using the convenience python script or
 through modifying the `example_config.yaml` to suit your system
 
-4. Specify your samples in CSV format (e.g. `sample_table.csv`)
+### 4. Specify your samples in CSV format (e.g. `sample_table.csv`)
 
 See the example table `example_sample_table.csv` for an idea of how to organise this table. You can attempt to use `generate_sample_table.sh` to circumvent manual creation of the table.
 
-5. Execute pipeline (optionally explicitly specify `--cores`)
+### 5. Execute pipeline (optionally explicitly specify `--cores`)
 
-      `snakemake -kp --configfile config.yaml --cores=NCORES --use-conda --conda-prefix=$PWD/.snakemake/conda all`
-   
-   If the `--conda-prefix` is not set as this then all envs will be reinstalled for each
-   time you change the `results_dir` in the `config.yaml`.
+`snakemake -kp --configfile config.yaml --cores=NCORES --use-conda --conda-prefix=$PWD/.snakemake/conda all`
 
-6. Postprocessing analyses:
+If the `--conda-prefix` is not set as this then all envs will be reinstalled for each
+time you change the `results_dir` in the `config.yaml`.
 
-      `snakemake -p --configfile config.yaml --cores=NCORES --use-conda --conda-prefix=$PWD/.snakemake/conda postprocess`
+### 6. Postprocessing analyses:
+
+`snakemake -p --configfile config.yaml --cores=NCORES --use-conda --conda-prefix=$PWD/.snakemake/conda postprocess`
 
 After postprocessing finishes, you'll see the following summary files:
 
@@ -94,11 +136,12 @@ After postprocessing finishes, you'll see the following summary files:
   - {sample_name}/sample.txt    per-sample summaries, in text-file format instead of HTML
   - summary.zip                 zip archive containing all of the above summary files.
 ```
+
 Note that the pipeline postprocessing ('snakemake postprocess') is separated from
-the rest of the pipeline ('snakemake all').  This is because in a multi-sample run,
-it's likely that at least one pipeline stage will fail.  The postprocessing script
+the rest of the pipeline ('snakemake all'). This is because in a multi-sample run,
+it's likely that at least one pipeline stage will fail. The postprocessing script
 should handle failed pipeline stages gracefully, by substituting placeholder values
-when expected pipeline output files are absent.  However, this confuses snakemake's
+when expected pipeline output files are absent. However, this confuses snakemake's
 dependency tracking, so there seems to be no good alternative to separating piepline
 processing and postprocessing into 'all' and 'postprocess' targets.
 
@@ -111,11 +154,11 @@ to generate phylogenies and alternative summaries.
     snakemake --use-conda --cores 10 ncov_tools
 
 SIGNAL manages installing the dependencies and will generate the necessary hard links to required input
-files from SIGNAL for `ncov-tools` if it has been cloned as a sub-module and a fasta containing sequences 
+files from SIGNAL for `ncov-tools` if it has been cloned as a sub-module and a fasta containing sequences
 to include in the tree has been specified using `phylo_include_seqs:` in the main SIGANL`config.yaml`.
 
-Outputs will be written as specified within the `ncov-tools` folder and documentation. At present, invoking `ncov-tools` 
-should be done manually as per its documentation. 
+Outputs will be written as specified within the `ncov-tools` folder and documentation. At present, invoking `ncov-tools`
+should be done manually as per its documentation.
 
 ### Docker
 
@@ -128,12 +171,11 @@ Download data dependencies into a data directory that already contains your read
 
         mkdir -p data && docker run -v $PWD/data:/data finlaymaguire/signal:latest bash scripts/get_data_dependencies.sh -d /data
 
-Generate your `config.yaml`and `sample_table.csv` (with paths to the readsets underneath `/data`) and place them into the data directory:
+Generate your `config.yaml` and `sample_table.csv` (with paths to the readsets underneath `/data`) and place them into the data directory:
 
         cp config.yaml sample_table.csv $PWD/data
 
-*WARNING* `result_dir` in `config.yaml` must be within `/data` e.g. `/data/results` to automatically be copied to your host system.  Otherwise they will be automatically deleted when the container finishes running (unless docker is run interactively).
-
+_WARNING_ `result_dir` in `config.yaml` must be within `/data` e.g. `/data/results` to automatically be copied to your host system. Otherwise they will be automatically deleted when the container finishes running (unless docker is run interactively).
 
 Then execute the pipeline:
 
@@ -141,10 +183,9 @@ Then execute the pipeline:
 
 ## Summaries:
 
-  - `postprocessing` and `ncov_tools` as described above generate many summaries including interactive html reports.`
+- `postprocessing` and `ncov_tools` as described above generate many summaries including interactive html reports.`
 
-  - Generate summaries of BreSeq among many samples, [see](resources/dev_scripts/summaries/README.md)
-
+- Generate summaries of BreSeq among many samples, [see](resources/dev_scripts/summaries/README.md)
 
 ## Pipeline details:
 
@@ -156,5 +197,4 @@ A diagram of the workflow is shown below.
 
 ## Possible Artefacts
 
-- @jts: Host derived poly-A reads that sneak through the composite host removal stage can align to the viral poly-A tail giving it enough coverage to be called in the consensus.  Having this poly-A tail in the consensus can mess up the later analyses that require MSA.  If a sample is causing issues, check for host-derived poly-A reads. 
-
+- @jts: Host derived poly-A reads that sneak through the composite host removal stage can align to the viral poly-A tail giving it enough coverage to be called in the consensus. Having this poly-A tail in the consensus can mess up the later analyses that require MSA. If a sample is causing issues, check for host-derived poly-A reads.

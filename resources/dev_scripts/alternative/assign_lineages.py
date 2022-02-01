@@ -6,7 +6,6 @@ from pathlib import Path
 import time
 import pandas as pd
 import shutil
-import os, sys
 
 
 def check_file(path: str) -> Path:
@@ -19,19 +18,13 @@ def check_file(path: str) -> Path:
     else:
         raise argparse.ArgumentTypeError(f"{path} can't be read")
 
-def update_latest_pangolin():
+
+def update_pangolin():
     """
     Ensure pangolin is updated to the latest release
     """
     subprocess.check_output(["pangolin", "--update"])
 
-def update_pangolin(vers):
-    """
-    Update pangolin to a specific version
-    """
-    script_dir = os.path.dirname(sys.argv[0])
-    script = os.path.join(script_dir, "pangolin_specific_version_update.py")
-    subprocess.run([script, '--versions_file', vers])
 
 def update_nextclade():
     """
@@ -77,10 +70,6 @@ def run_pangolin(input_genomes, threads):
     """
     Execute pangolin and collect assignments
     """
-    
-   # check final versions for pangolin
-    subprocess.check_output(["pangolin", "--all-versions"])
-    
     output_dir = Path(f"pangolin_tmp_{time.time()}")
     subprocess.check_output(f"pangolin {input_genomes} -t {threads} "
                             f"-o {str(output_dir)}".split(),
@@ -129,7 +118,7 @@ def collate_output(nextclade, pangolin, output):
                            'aaDeletions', 'totalAminoacidDeletions',
                            'alignmentStart', 'alignmentEnd', 'alignmentScore',
                            'pangolin_version', 'pango_version',
-                           'pangoLEARN_version', 'pango_version', 'nextclade_version']]
+                           'pangoLEARN_version', 'nextclade_version']]
     merged_df.to_csv(output, sep='\t', index=False)
 
 
@@ -143,19 +132,12 @@ if __name__ == '__main__':
                         help="Number of threads for pangolin/nextclade")
     parser.add_argument("-o", "--output", default="lineage_assignments.tsv",
                         help="Output file for collated assignment table")
-    parser.add_argument("-p", "--pangolin_ver", type=check_file, required=False, default=None,
-                        help="Input file containing version information for PANGOLIN tools")
-    parser.add_argument("--skip", action="store_true", help="Skip updates to pangolin and nextclade")
     args = parser.parse_args()
 
-    if args.skip is False:
-        if args.pangolin_ver is None: 
-            update_latest_pangolin()
-        else:
-            update_pangolin(args.pangolin_ver)
-        update_nextclade()
-
+    update_pangolin()
     pangolin = run_pangolin(args.input_genomes, args.threads)
+
+    update_nextclade()
     nextclade = run_nextclade(args.input_genomes, args.threads)
 
     collate_output(nextclade, pangolin, args.output)
