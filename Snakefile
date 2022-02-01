@@ -134,7 +134,8 @@ rule breseq:
     input: expand('{sn}/7.breseq/output/index.html', sn=sample_names)
  
 rule lineages:
-    input: 
+    input:
+        'versions.txt',
         'lineage_assignments.tsv'
 
 rule config_sample_log:
