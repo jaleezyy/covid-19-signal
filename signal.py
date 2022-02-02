@@ -176,7 +176,14 @@ var_min_freq_threshold: 0.25
 # iVar/freebayes minimum mapQ to call variant (ivar variants: -q)
 var_min_variant_quality: 20
 
-# ONLY NEEDED IF USING NCOV-TOOLS SUMMARIES
+# Versions of software related to lineage calling (use numbers only, i.e., 3.1.1). Dates are accepted for pangolearn. Leave blank for latest version(s).
+pangolin: 
+pangolearn: 
+constellations:
+scorpio:
+pango-designation:
+
+# ANYTHING BELOW IS ONLY NEEDED IF USING NCOV-TOOLS SUMMARIES
 # Path from snakemake dir to .bed file defining the actual amplicon locations not the primers
 amplicon_loc_bed: 'resources/primer_schemes/artic_v4/SARS-CoV-2.scheme.bed'
 
@@ -184,14 +191,7 @@ amplicon_loc_bed: 'resources/primer_schemes/artic_v4/SARS-CoV-2.scheme.bed'
 phylo_include_seqs: "data/blank.fasta"
 
 # List of negative control sample names or prefixes (i.e., ['Blank'] will cover Blank1, Blank2, etc.)
-negative_control_prefix: []
-
-# Versions of software related to lineage calling (use numbers only, i.e., 3.1.1). Dates are accepted for pangolearn. Leave blank for latest version(s).
-pangolin: 
-pangolearn: 
-constellations:
-scorpio:
-pango-designation:"""
+negative_control_prefix: []"""
 
 	with open(config_file, 'w') as fh:
 		fh.write(config)
@@ -228,9 +228,9 @@ if __name__ == '__main__':
 				print(f"Running SIGNAL {task}!")
 				try:
 					subprocess.run(f"snakemake --conda-frontend mamba --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp", shell=True, check=True)
-				except CalledProcessError: # likely missing mamba 
+				except subprocess.CalledProcessError: # likely missing mamba 
 					try:
 						subprocess.run(f"snakemake --conda-frontend conda --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp", shell=True, check=True)
-					except CalledProcessError:
+					except subprocess.CalledProcessError:
 						exit(f"Something went wrong running SIGNAL {task}! Check input and try again!")
 	exit("SIGNAL complete!")
