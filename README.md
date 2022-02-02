@@ -99,7 +99,7 @@ The pipeline requires:
 - Human GRCh38 reference fasta (for composite human-viral BWA index)
 
        python signal.py --dependencies
-       # defaults to a directory called `data` in repo root
+       # defaults to a directory called `data` in repository root
 
        OR
 
@@ -110,12 +110,51 @@ The pipeline requires:
 
 ### 3. Configure your `config.yaml` file
 
-Either using the convenience python script or
-through modifying the `example_config.yaml` to suit your system
+You can use the `--config-only` flag to generate both `config.yaml` and `sample_table.csv` (see step 4). The directory provided will autogenerate a name for the run.
+
+```
+python signal.py --config-only --directory /path/to/reads
+
+# outputs: 'reads_config.yaml' and 'reads_sample_table.csv'
+```
+
+You can also create the configuration file through modifying the `example_config.yaml` to suit your system.
 
 ### 4. Specify your samples in CSV format (e.g. `sample_table.csv`)
 
-See the example table `example_sample_table.csv` for an idea of how to organise this table. You can attempt to use `generate_sample_table.sh` to circumvent manual creation of the table.
+See the example table `example_sample_table.csv` for an idea of how to organise this table.
+
+Using the `--config-only` flag, both configuration file and sample table will be generated (see above in step 3) from a given directory path to reads.
+
+Alternatively, you can attempt to use `generate_sample_table.sh` to circumvent manual creation of the table.
+
+```
+generate_sample_table.sh
+
+Output:
+You must specify a data directory containing fastq(.gz) reads.
+
+ASSUMES FASTQ FILES ARE NAMED AS <sample_name>_L00#_R{1,2}*.fastq(.gz)
+
+Flags:
+    -d  :  Path to directory containing sample fastq(.gz) files (Absolute paths preferred for consistency, but can use relative paths)
+    -n  :  Name or file path for final sample table (with extension) (default: 'sample_table.csv') - will overwrite if file exists
+    -e  :  Name or file path for an existing sample table - will append to the end of the provided table
+
+Select one of '-n' (new sample table) or '-e' (existing sample table).
+If neither provided, a new sample table called 'sample_table.csv' will be created (or overwritten) by default.
+```
+
+General usage:
+
+```
+# Create new sample table 'sample_table.csv' given path to reads directory
+generate_sample_table.sh -d /path/to/reads -n sample_table.csv
+
+# Append to existing sample table 'sample_table.csv' given path to a directory with additional reads
+generate_sample_table.sh -d /path/to/more/reads -e sample_table.csv
+
+```
 
 ### 5. Execute pipeline (optionally explicitly specify `--cores`)
 
