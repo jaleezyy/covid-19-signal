@@ -70,7 +70,7 @@ def set_up():
 		sample = bam.split('/')[0]
 		ln_path = f"{data_root}/{sample}.bam"
 		if not os.path.exists(ln_path):
-				os.link(bam, ln_path)
+			os.link(bam, ln_path)
 
 
 	for primer_trimmed_bam in snakemake.input['primertrimmed_bams']:
@@ -89,14 +89,14 @@ def set_up():
 		sample = consensus.split('/')[0]
 		ln_path = f"{data_root}/{sample}.consensus.fasta"
 		if not os.path.exists(ln_path):
-				os.link(consensus, ln_path)
+			os.link(consensus, ln_path)
 		for line in fileinput.input(ln_path, inplace=True):
-				if line.startswith(">"):
-						new_header = str(">"+sample)
-						new_line = line.replace(line, new_header)
-						print(new_line, end='\n')
-				else:
-						print(line, end='\n')
+			if line.startswith(">"):
+				new_header = str(">"+sample)
+				new_line = line.replace(line, new_header)
+				print(new_line, end='\n')
+			else:
+				print(line, end='\n')
 
 	# os.chdir(os.path.join(exec_dir, 'ncov-tools'))
 	#return exec_dir, result_root, result_dir

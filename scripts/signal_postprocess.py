@@ -624,31 +624,61 @@ def parse_lineage(tsv_filename, sample_names, allow_missing=True):
                               'nextclade_ver': None }
         return { 'samples': samples }
 
-    # Skip first line
-    for line in open(tsv_filename).readlines()[1:]:
-        n = line.split("\t")
-        assert len(n) == 35
+    lineages = pd.read_table(tsv_filename, sep='\t')
+    df = lineages[['isolate',
+                    'pango_lineage',
+                    'nextstrain_clade',
+                    'pangolin_version',
+                    'pangoLEARN_version',
+                    'nextclade_version'
+                    ]]
 
-    # Determine sample name
-        if n[0].startswith("Consensus"):
-            sid = re.findall("_(.*?)\.", n[0])[0]
+    # Pull each row, identify sid 
+    for row in df.itertuples():
+        if row.isolate.startswith("Consensus"):
+            sid = re.findall("_(.*?)\.", row.isolate)[0]
         else:
-            sid = str(n[0])
+            sid = row.isolate
 
         assert sid in sample_names
 
     # Pull Pangolin lineage
-        if n[1] != '':
-            lineage = str(n[1])
-            clade = str(n[9])
-            pangolin = str(n[31])
-            pangolearn = str(n[33])
-            nextclade = str(n[34])
-            samples[sid] = { 'lineage' : lineage,
-                             'clade': clade,
-                             'pangolin_ver': pangolin,
-                             'pangolearn_ver': pangolearn,
-                             'nextclade_ver': nextclade }
+        lineage = str(row.pango_lineage)
+        clade = str(row.nextstrain_clade)
+        pangolin = str(row.pangolin_version)
+        pangolearn = str(row.pangoLEARN_version)
+        nextclade = str(row.nextclade_version)
+        samples[sid] = { 'lineage' : lineage,
+                         'clade': clade,
+                         'pangolin_ver': pangolin,
+                         'pangolearn_ver': pangolearn,
+                         'nextclade_ver': nextclade }
+
+    # # Skip first line
+    # for line in open(tsv_filename).readlines()[1:]:
+        # n = line.split("\t")
+        # assert len(n) == 35
+
+    # # Determine sample name
+        # if n[0].startswith("Consensus"):
+            # sid = re.findall("_(.*?)\.", n[0])[0]
+        # else:
+            # sid = str(n[0])
+
+        # assert sid in sample_names
+
+    # # Pull Pangolin lineage
+        # if n[1] != '':
+            # lineage = str(n[1])
+            # clade = str(n[9])
+            # pangolin = str(n[31])
+            # pangolearn = str(n[33])
+            # nextclade = str(n[34])
+            # samples[sid] = { 'lineage' : lineage,
+                             # 'clade': clade,
+                             # 'pangolin_ver': pangolin,
+                             # 'pangolearn_ver': pangolearn,
+                             # 'nextclade_ver': nextclade }
 
     assert len(samples) == len(sample_names)
     return { 'samples': samples }

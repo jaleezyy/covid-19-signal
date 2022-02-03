@@ -135,7 +135,7 @@ min_qual: 20
 min_len: 20
 
 # Path from snakemake dir to .bed file defining amplicon primer scheme
-scheme_bed: 'resources/primer_schemes/artic_v4/SARS-CoV-2.primer.bed'
+scheme_bed: 'resources/primer_schemes/artic_v3/nCoV-2019.bed'
 
 # Path from snakemake dir to bwa indexed human + viral reference genome
 composite_reference: 'data/composite_human_viral_reference.fna'
@@ -230,6 +230,7 @@ if __name__ == '__main__':
 					subprocess.run(f"snakemake --conda-frontend mamba --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp", shell=True, check=True)
 				except subprocess.CalledProcessError: # likely missing mamba 
 					try:
+						print("Retrying...")
 						subprocess.run(f"snakemake --conda-frontend conda --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp", shell=True, check=True)
 					except subprocess.CalledProcessError:
 						exit(f"Something went wrong running SIGNAL {task}! Check input and try again!")
