@@ -20,7 +20,22 @@ If you use this software please [cite](https://doi.org/10.3390/v12080895):
     Nasir, Jalees A., Robert A. Kozak, Patryk Aftanas, Amogelang R. Raphenya, Kendrick M. Smith, Finlay Maguire, Hassaan Maan et al. "A Comparison of Whole Genome Sequencing of SARS-CoV-2 Using Amplicon-Based Sequencing, Random Hexamers, and Bait Capture." Viruses 12, no. 8 (2020): 895.
     https://doi.org/10.3390/v12080895
 
-## Setup/Execution
+## Contents:
+
+- [Setup Instructions](#setup)
+- [SIGNAL Help Screen](#signal-help-screen)
+- [Executing SIGNAL](#execution)
+  - [Download reference file(s)](#1-download-necessary-database-files)
+  - [Generate configuation file](#2-generate-configuration-file)
+  - [Generate sample table](#3-specify-your-samples-in-csv-format)
+  - [Run pipeline](#4-execute-pipeline)
+  - [Run postprocessing](#5-postprocessing-analyses)
+  - [Run multiple processes](#multiple-operations)
+- [Run using Docker](#docker)
+- [Summaries](#summaries)
+- [Pipeline details](#pipeline-details)
+
+## Setup
 
 ### 0. Clone the git repository (`--recursive` only needed to run `ncov-tools` postprocessing)
 
@@ -87,7 +102,9 @@ optional arguments:
   --dependencies        Download data dependencies (under a created 'data' directory) required for SIGNAL analysis and exit. Note: Will override other flags! (~10 GB storage required)
 ```
 
-### 2. Download necessary database files
+## Execution
+
+### 1. Download necessary database files:
 
 The pipeline requires:
 
@@ -108,28 +125,30 @@ The pipeline requires:
 
 **Note: Downloading the database files requires ~10GB of storage, with up to ~35GB required for all temporary downloads!**
 
-### 3. Configure your `config.yaml` file
+### 2. Generate configuration file:
 
 You can use the `--config-only` flag to generate both `config.yaml` and `sample_table.csv` (see step 4). The directory provided will autogenerate a name for the run.
 
 ```
 python signal.py --config-only --directory /path/to/reads
 
-# outputs: 'reads_config.yaml' and 'reads_sample_table.csv'
+# Outputs: 'reads_config.yaml' and 'reads_sample_table.csv'
 ```
 
 You can also create the configuration file through modifying the `example_config.yaml` to suit your system.
 
-### 4. Specify your samples in CSV format (e.g. `sample_table.csv`)
+**Note: Regardless of method, double-check your configuraation file to ensure the information is correct!**
+
+### 3. Specify your samples in CSV format:
 
 See the example table `example_sample_table.csv` for an idea of how to organise this table.
 
-Using the `--config-only` flag, both configuration file and sample table will be generated (see above in step 3) from a given directory path to reads.
+**Using the `--config-only` flag, both configuration file and sample table will be generated (see above in step 3) from a given directory path to reads.**
 
 Alternatively, you can attempt to use `generate_sample_table.sh` to circumvent manual creation of the table.
 
 ```
-generate_sample_table.sh
+bash generate_sample_table.sh
 
 Output:
 You must specify a data directory containing fastq(.gz) reads.
@@ -153,17 +172,35 @@ generate_sample_table.sh -d /path/to/reads -n sample_table.csv
 
 # Append to existing sample table 'sample_table.csv' given path to a directory with additional reads
 generate_sample_table.sh -d /path/to/more/reads -e sample_table.csv
-
 ```
 
-### 5. Execute pipeline (optionally explicitly specify `--cores`)
+### 4. Execute pipeline:
 
-`snakemake -kp --configfile config.yaml --cores=NCORES --use-conda --conda-prefix=$PWD/.snakemake/conda all`
+For the main `signal.py` script, positional arguments inform the rules of the pipeline to execute with flags supplementing input parameters.
 
-If the `--conda-prefix` is not set as this then all envs will be reinstalled for each
-time you change the `results_dir` in the `config.yaml`.
+The main rules of the pipeline are as followed:
 
-### 6. Postprocessing analyses:
+- `all` = Sequencing pipeline. i.e., take a set of paired reads, perform reference-based assembly to generate a consensus, run lineage assignment, etc.
+- `postprocess` = Summarize the key results including pangolin lineage, specific mutations, etc, after running `all`
+- `ncov_tools` = Create the required conda environment, generate the necessary configuration file, and link needed result files within the `ncov-tools` directory. Manual run of ncov-tools is required.
+
+The generated configuration file from the above steps can be used as input. To run the general pipeline:
+
+`python signal.py --configfile config.yaml --cores 4 all`
+
+is equivalent to running
+
+`snakemake -kp --configfile config.yaml --cores 4 --use-conda --conda-prefix=$PWD/.snakemake/conda all`
+
+You can run the snakemake command as written above, but note that if the `--conda-prefix` is not set as this (i.e., `$PWD/.snakemake/conda`), then all envs will be reinstalled for each time you change the `results_dir` in the `config.yaml`.
+
+Alternatively, you can skip the above configuration and sample table generation steps by simply providing the directory of reads to the main script:
+
+`python signal.py --directory /path/to/reads --cores 4 all`
+
+A configuartion file and sample table will automatically be generated prior to running SIGNAL `all`. FreeBayes variant calling and BreSeq mutational analysis are technically optional tools within the workflow. Using the `--directory` flag, by default, FreeBayes **will run** and BreSeq **will not**. These can be changed by using the `--remove-freebayes` and `--add-breseq` flags, respectively.
+
+### 5. Postprocessing analyses:
 
 `snakemake -p --configfile config.yaml --cores=NCORES --use-conda --conda-prefix=$PWD/.snakemake/conda postprocess`
 
@@ -199,6 +236,8 @@ to include in the tree has been specified using `phylo_include_seqs:` in the mai
 Outputs will be written as specified within the `ncov-tools` folder and documentation. At present, invoking `ncov-tools`
 should be done manually as per its documentation.
 
+### Multiple operations
+
 ### Docker
 
 Alternatively, the pipeline can be deployed using Docker (see `resources/Dockerfile_pipeline` for specification).
@@ -233,7 +272,3 @@ For a step-by-step walkthrough of the pipeline, see [pipeline/README.md](PIPELIN
 A diagram of the workflow is shown below.
 
 ![Workflow Version 8](./resources/Workflow_Version_8.png)
-
-## Possible Artefacts
-
-- @jts: Host derived poly-A reads that sneak through the composite host removal stage can align to the viral poly-A tail giving it enough coverage to be called in the consensus. Having this poly-A tail in the consensus can mess up the later analyses that require MSA. If a sample is causing issues, check for host-derived poly-A reads.
