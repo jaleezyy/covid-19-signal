@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# v1.5.0+
+
 import argparse
 import subprocess, os, sys
 import re
@@ -23,6 +25,7 @@ def create_parser():
 	parser.add_argument('--config-only', action='store_true', help="Generate sample table and configuration file (i.e., config.yaml) and exit. '--directory' required")
 	parser.add_argument('--remove-freebayes', action='store_false', help="Configuration file generator parameter. Set flag to NOT RUN freebayes variant calling (improves overall speed).")
 	parser.add_argument('--add-breseq', action='store_true', help="Configuration file generator parameter. Set flag to RUN optional breseq step (will take more time for analysis to complete).")
+	parser.add_argument('-neg', '--neg-prefix', default='', help="Configuration file generator parameter. Comma-separated list of negative sontrol sample name(s) or prefix(es). For example, 'Blank' will cover Blank1, Blank2, etc. Recommend if running ncov-tools. Blank, if not provided.")
 	parser.add_argument('--dependencies', action='store_true', help="Download data dependencies (under a created 'data' directory) required for SIGNAL analysis and exit. Note: Will override other flags! (~10 GB storage required)")
 	args, unknown = parser.parse_known_args()
 
@@ -112,12 +115,12 @@ def generate_sample_table(project_directory, project_name):
 	"""
 	Bash shell script generalizes the search for R1/R2 files, allowing multiple replicates that SIGNAL supports."
 	"""
-	script=os.path.join(script_path, "generate_sample_table.sh")
+	script=os.path.join(script_path, 'scripts', "generate_sample_table.sh")
 	out_table = project_name + "_sample_table.csv"
 	subprocess.run(['bash', script, '-d', project_directory, '-n', out_table])
 
 def write_config_file(run_name, config_file, opt_tasks):
-### opt_tasks = [args.breseq, args.freebayes] - latter only applies to SIGNAL v1.5.8 and earlier
+### opt_tasks = [args.breseq, args.freebayes, [args.neg_prefix]] - latter only applies to SIGNAL v1.5.8 and earlier
 
 	config = f"""# This file contains a high-level summary of pipeline configuration and inputs.
 # It is ingested by the Snakefile, and also intended to be human-readable.
@@ -191,7 +194,7 @@ amplicon_loc_bed: 'resources/primer_schemes/artic_v4/SARS-CoV-2.scheme.bed'
 phylo_include_seqs: "data/blank.fasta"
 
 # List of negative control sample names or prefixes (i.e., ['Blank'] will cover Blank1, Blank2, etc.)
-negative_control_prefix: []"""
+negative_control_prefix: {opt_tasks[2]}"""
 
 	with open(config_file, 'w') as fh:
 		fh.write(config)
@@ -214,7 +217,7 @@ if __name__ == '__main__':
 		run_name = args.directory.name
 		generate_sample_table(args.directory, run_name)
 		config_file = run_name + "_config.yaml"
-		write_config_file(run_name, config_file, [args.add_breseq, args.remove_freebayes])
+		write_config_file(run_name, config_file, [args.add_breseq, args.remove_freebayes, [pre.replace(" ","") for pre in args.neg_prefix.split(",")]])
 		if args.config_only:
 			exit("Configuration file and sample table generated!")
 	else:
