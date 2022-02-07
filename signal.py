@@ -25,7 +25,7 @@ def create_parser():
 	parser.add_argument('--config-only', action='store_true', help="Generate sample table and configuration file (i.e., config.yaml) and exit. '--directory' required")
 	parser.add_argument('--remove-freebayes', action='store_false', help="Configuration file generator parameter. Set flag to NOT RUN freebayes variant calling (improves overall speed).")
 	parser.add_argument('--add-breseq', action='store_true', help="Configuration file generator parameter. Set flag to RUN optional breseq step (will take more time for analysis to complete).")
-	parser.add_argument('-neg', '--neg-prefix', default='', help="Configuration file generator parameter. Comma-separated list of negative sontrol sample name(s) or prefix(es). For example, 'Blank' will cover Blank1, Blank2, etc. Recommend if running ncov-tools. Blank, if not provided.")
+	parser.add_argument('-neg', '--neg-prefix', default=None, help="Configuration file generator parameter. Comma-separated list of negative sontrol sample name(s) or prefix(es). For example, 'Blank' will cover Blank1, Blank2, etc. Recommend if running ncov-tools. Blank, if not provided.")
 	parser.add_argument('--dependencies', action='store_true', help="Download data dependencies (under a created 'data' directory) required for SIGNAL analysis and exit. Note: Will override other flags! (~10 GB storage required)")
 	args, unknown = parser.parse_known_args()
 
@@ -203,7 +203,9 @@ if __name__ == '__main__':
 	# note: add root_dir to determine the root directory of SIGNAL
 	script_path = os.path.join(os.path.abspath(sys.argv[0]).rsplit("/",1)[0])
 	args, allowed = create_parser()
-
+	#print(args.neg_prefix)
+	#print([pre.replace(" ","") for pre in args.neg_prefix.split(",")])
+	#exit()
 	#sample_data = check_single_replicate_and_resolve_paths(args.directory, run_name)
 	#write_sample_table(sample_data, run_name + "_sample_table.csv")#args.output)
 
@@ -217,7 +219,11 @@ if __name__ == '__main__':
 		run_name = args.directory.name
 		generate_sample_table(args.directory, run_name)
 		config_file = run_name + "_config.yaml"
-		write_config_file(run_name, config_file, [args.add_breseq, args.remove_freebayes, [pre.replace(" ","") for pre in args.neg_prefix.split(",")]])
+		if args.neg_prefix is not None:
+			neg = [pre.replace(" ","") for pre in args.neg_prefix.split(",")]
+		else:
+			neg = [args.neg_prefix]
+		write_config_file(run_name, config_file, [args.add_breseq, args.remove_freebayes, neg])
 		if args.config_only:
 			exit("Configuration file and sample table generated!")
 	else:
