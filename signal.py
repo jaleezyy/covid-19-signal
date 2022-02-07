@@ -10,13 +10,13 @@ from pathlib import Path
 def create_parser():
 	allowed = {'all': False, 'postprocess': False, 'ncov_tools': False}
 
-	parser = argparse.ArgumentParser(prog='signal', description="SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL) aims to take Illumina short-read sequences and perform consensus assembly + variant calling for ongoing surveillance and research efforts towards the emergent coronavirus: Severe Acute Respiratory Syndrome Coronavirus 2 (SARS-CoV-2).")
+	parser = argparse.ArgumentParser(prog='signal.py', description="SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL) aims to take Illumina short-read sequences and perform consensus assembly + variant calling for ongoing surveillance and research efforts towards the emergent coronavirus: Severe Acute Respiratory Syndrome Coronavirus 2 (SARS-CoV-2).")
 	parser.add_argument('all', nargs='*',
 						help="Run SIGNAL with all associated assembly rules. Does not include postprocessing '--configfile' or '--directory' required. The latter will automatically generate a configuration file and sample table. If both provided, then '--configfile' will take priority")
 	parser.add_argument('postprocess', nargs='*',
-						help="Run SIGNAL postprocessing on completed SIGNAL run. '--configfile' is required")
+						help="Run SIGNAL postprocessing on completed SIGNAL run. '--configfile' is required but will be generated if '--directory' is provided")
 	parser.add_argument('ncov_tools', nargs='*',
-						help="Generate configuration file and filesystem setup required for ncov-tools quality control assessment")
+						help="Generate configuration file and filesystem setup required for ncov-tools quality control assessment. '--configfile' is required but will be generated if '--directory' is provided")
 	parser.add_argument('-c', '--configfile', type=check_file, default=None,
 						help="Configuration file (i.e., config.yaml) for SIGNAL analysis")
 	parser.add_argument('-d', '--directory', type=check_directory, default=None,
