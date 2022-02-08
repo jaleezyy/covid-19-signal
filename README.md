@@ -80,7 +80,8 @@ To display the help screen:
 python signal.py -h
 
 Output:
-usage: signal [-h] [-c CONFIGFILE] [-d DIRECTORY] [--cores CORES] [--config-only] [--remove-freebayes] [--add-breseq] [--dependencies] [all ...] [postprocess ...] [ncov_tools ...]
+usage: signal.py [-h] [-c CONFIGFILE] [-d DIRECTORY] [--cores CORES] [--config-only] [--remove-freebayes] [--add-breseq] [-neg NEG_PREFIX] [--dependencies]
+                 [all ...] [postprocess ...] [ncov_tools ...]
 
 SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL) aims to take Illumina short-read sequences and perform consensus assembly + variant calling for ongoing surveillance and research efforts towards
 the emergent coronavirus: Severe Acute Respiratory Syndrome Coronavirus 2 (SARS-CoV-2).
@@ -88,8 +89,9 @@ the emergent coronavirus: Severe Acute Respiratory Syndrome Coronavirus 2 (SARS-
 positional arguments:
   all                   Run SIGNAL with all associated assembly rules. Does not include postprocessing '--configfile' or '--directory' required. The latter will automatically generate a
                         configuration file and sample table. If both provided, then '--configfile' will take priority
-  postprocess           Run SIGNAL postprocessing on completed SIGNAL run. '--configfile' is required
-  ncov_tools            Generate configuration file and filesystem setup required for ncov-tools quality control assessment. '--configfile' is required
+  postprocess           Run SIGNAL postprocessing on completed SIGNAL run. '--configfile' is required but will be generated if '--directory' is provided
+  ncov_tools            Generate configuration file and filesystem setup required for ncov-tools quality control assessment. '--configfile' is required but will be generated if '--directory' is
+                        provided
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -101,6 +103,9 @@ optional arguments:
   --config-only         Generate sample table and configuration file (i.e., config.yaml) and exit. '--directory' required
   --remove-freebayes    Configuration file generator parameter. Set flag to NOT RUN freebayes variant calling (improves overall speed).
   --add-breseq          Configuration file generator parameter. Set flag to RUN optional breseq step (will take more time for analysis to complete).
+  -neg NEG_PREFIX, --neg-prefix NEG_PREFIX
+                        Configuration file generator parameter. Comma-separated list of negative sontrol sample name(s) or prefix(es). For example, 'Blank' will cover Blank1, Blank2, etc. Recommend
+                        if running ncov-tools. Blank, if not provided.
   --dependencies        Download data dependencies (under a created 'data' directory) required for SIGNAL analysis and exit. Note: Will override other flags! (~10 GB storage required)
 ```
 
