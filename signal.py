@@ -203,11 +203,6 @@ if __name__ == '__main__':
 	# note: add root_dir to determine the root directory of SIGNAL
 	script_path = os.path.join(os.path.abspath(sys.argv[0]).rsplit("/",1)[0])
 	args, allowed = create_parser()
-	#print(args.neg_prefix)
-	#print([pre.replace(" ","") for pre in args.neg_prefix.split(",")])
-	#exit()
-	#sample_data = check_single_replicate_and_resolve_paths(args.directory, run_name)
-	#write_sample_table(sample_data, run_name + "_sample_table.csv")#args.output)
 
 	if args.dependencies:
 		print("Downloading necessary reference and dependency files!")

@@ -25,7 +25,7 @@ If you use this software please [cite](https://doi.org/10.3390/v12080895):
 - [Setup Instructions](#setup)
 - [SIGNAL Help Screen](#signal-help-screen)
 - [Executing SIGNAL - Summary](#summary)
-- [Executing SIGNAL - Detailed](#detailed-execution)
+- [Executing SIGNAL - Detailed](#detailed-setup-and-execution)
   - [Download reference file(s)](#1-download-necessary-database-files)
   - [Generate configuation file](#2-generate-configuration-file)
   - [Generate sample table](#3-specify-your-samples-in-csv-format)
@@ -36,7 +36,7 @@ If you use this software please [cite](https://doi.org/10.3390/v12080895):
 - [Data summaries](#data-summaries)
 - [Pipeline details](#pipeline-details)
 
-## Setup
+## Setup:
 
 ### 0. Clone the git repository (`--recursive` only needed to run `ncov-tools` postprocessing)
 
@@ -70,7 +70,7 @@ Additional software dependencies are managed directly by `snakemake` using conda
 - freebayes 1.3.2 ([docs](https://github.com/freebayes/freebayes))
 - ncov-tools postprocessing scripts require additional dependencies (see [file](ncov-tools/workflow/envs/environment.yml)).
 
-## SIGNAL Help Screen
+## SIGNAL Help Screen:
 
 Using the provided `signal.py` script, the majority of SIGNAL functions can be accessed easily.
 
@@ -148,7 +148,7 @@ snakemake -kp --configfile config.yaml --cores NCORES --use-conda --conda-prefix
 snakemake -kp --configfile config.yaml --cores NCORES --use-conda --conda-prefix=$PWD/.snakemake/conda ncov_tools
 ```
 
-## Detailed execution
+## Detailed setup and execution:
 
 ### 1. Download necessary database files:
 
@@ -290,7 +290,7 @@ SIGNAL manages installing the dependencies (within the `conda_prefix`) and will 
 
 Outputs will be written as specified within the `ncov-tools` folder and documentation. At present, invoking `ncov-tools` should be done manually as per its documentation.
 
-### Multiple operations
+### Multiple operations:
 
 Using `signal.py` positional arguments, you can specify SIGNAL to perform multiple rules in succession.
 
@@ -306,7 +306,7 @@ If no configuration file or sample table was generated for a run, you can provid
 
 Overall, this simplifies executing SIGNAL to one line!
 
-### Docker
+### Docker:
 
 Alternatively, the pipeline can be deployed using Docker (see `resources/Dockerfile_pipeline` for specification).
 To pull from dockerhub:
