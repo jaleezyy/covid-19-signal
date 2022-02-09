@@ -176,7 +176,7 @@ The pipeline requires:
 
 ### 2. Generate configuration file:
 
-You can use the `--config-only` flag to generate both `config.yaml` and `sample_table.csv` (see step 4). The directory provided will autogenerate a name for the run.
+You can use the `--config-only` flag to generate both `config.yaml` and `sample_table.csv` (see step 4). The directory provided will be used to auto-generate a name for the run.
 
 ```
 python signal.py --config-only --directory /path/to/reads
@@ -289,9 +289,9 @@ is equivalent to running
 
 `snakemake -kp --configfile config.yaml --cores 1 --use-conda --conda-prefix=$PWD/.snakemake/conda ncov_tools`
 
-SIGNAL manages installing the dependencies (within the `conda_prefix`) and will generate the necessary hard links to required input files from SIGNAL for `ncov-tools` if it has been cloned as a sub-module and a fasta containing sequences to include in the tree has been specified using `phylo_include_seqs:` in the main SIGANL`config.yaml`.
+SIGNAL manages installing the dependencies (within the `conda_prefix`) and will generate the necessary hard links to required input files from SIGNAL for `ncov-tools` if it has been cloned as a sub-module and a fasta containing sequences to include in the tree has been specified using `phylo_include_seqs:` in the main SIGNAL `config.yaml`.
 
-SIGNAL will then execute ncov-tools and the **output will be found wihtin the SIGNAL results directory as `ncov-tools-results`**.
+SIGNAL will then execute ncov-tools and the **output will be found within the SIGNAL results directory, specified in SIGNAL's configuration file, under `ncov-tools-results`**.
 
 ### Multiple operations:
 
@@ -303,7 +303,7 @@ In the above command, SIGNAL `all`, `postprocess`, and `ncov_tools` will run usi
 
 **Note: Regardless of order for positional arguments, or placement of other parameter flags, SIGNAL will always run in the set order priority: `all` > `postprocess` > `ncov_tools`!**
 
-If no configuration file or sample table was generated for a run, you can provide `--directory` with the path to sequecning reads and SIGNAL will auto-generate both required inputs prior to running any rules.
+If no configuration file or sample table was generated for a run, you can provide `--directory` with the path to sequencing reads and SIGNAL will auto-generate both required inputs prior to running any rules.
 
 `python signal.py --directory /path/to/reads --cores NCORES all postprocess ncov_tools`
 
