@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # v1.5.0+
+# signal.py assumes Snakefile is in current working directory (i.e., SIGNAL root)
 
 import argparse
 import subprocess, os, sys
@@ -16,16 +17,16 @@ def create_parser():
 	parser.add_argument('postprocess', nargs='*',
 						help="Run SIGNAL postprocessing on completed SIGNAL run. '--configfile' is required but will be generated if '--directory' is provided")
 	parser.add_argument('ncov_tools', nargs='*',
-						help="Generate configuration file and filesystem setup required for ncov-tools quality control assessment. '--configfile' is required but will be generated if '--directory' is provided")
+						help="Generate configuration file and filesystem setup required and then execute ncov-tools quality control assessment. Requires 'ncov-tools' submodule! '--configfile' is required but will be generated if '--directory' is provided")
 	parser.add_argument('-c', '--configfile', type=check_file, default=None,
 						help="Configuration file (i.e., config.yaml) for SIGNAL analysis")
 	parser.add_argument('-d', '--directory', type=check_directory, default=None,
 						help="Path to directory containing reads. Will be used to generate sample table and configuration file")
 	parser.add_argument('--cores', type=int, default=1, help="Number of cores. Default = 1")
 	parser.add_argument('--config-only', action='store_true', help="Generate sample table and configuration file (i.e., config.yaml) and exit. '--directory' required")
-	parser.add_argument('--remove-freebayes', action='store_false', help="Configuration file generator parameter. Set flag to NOT RUN freebayes variant calling (improves overall speed).")
-	parser.add_argument('--add-breseq', action='store_true', help="Configuration file generator parameter. Set flag to RUN optional breseq step (will take more time for analysis to complete).")
-	parser.add_argument('-neg', '--neg-prefix', default=None, help="Configuration file generator parameter. Comma-separated list of negative sontrol sample name(s) or prefix(es). For example, 'Blank' will cover Blank1, Blank2, etc. Recommend if running ncov-tools. Blank, if not provided.")
+	parser.add_argument('--remove-freebayes', action='store_false', help="Configuration file generator parameter. Set flag to DISABLE freebayes variant calling (improves overall speed)")
+	parser.add_argument('--add-breseq', action='store_true', help="Configuration file generator parameter. Set flag to ENABLE optional breseq step (will take more time for analysis to complete)")
+	parser.add_argument('-neg', '--neg-prefix', default=None, help="Configuration file generator parameter. Comma-separated list of negative sontrol sample name(s) or prefix(es). For example, 'Blank' will cover Blank1, Blank2, etc. Recommend if running ncov-tools. Will be left empty, if not provided")
 	parser.add_argument('--dependencies', action='store_true', help="Download data dependencies (under a created 'data' directory) required for SIGNAL analysis and exit. Note: Will override other flags! (~10 GB storage required)")
 	args, unknown = parser.parse_known_args()
 
@@ -96,6 +97,15 @@ def check_single_replicate_and_resolve_paths(project_directory):
 	print(f"{len(sample_data)} samples detected")
 	return sample_data
 
+def check_submodule(exec_dir):
+	print("Checking for ncov-tools!")
+	if (not os.path.exists(os.path.join(exec_dir, 'ncov-tools'))) or (not os.path.exists(os.path.join(exec_dir, 'ncov-tools', 'workflow', 'Snakefile'))):
+		try:
+			print("Updating ncov-tools!")
+			subprocess.run(['git', 'submodule', 'update', '--init', '--recursive'])
+		except subprocess.CalledProcessError:
+			exit("Could not find nor update the required 'ncov-tools' directory! Manually download/update and try again!")
+		
 def write_sample_table(sample_data, output_table):
 	"""
 	Generate sample table from parsed folder read data
@@ -188,7 +198,7 @@ pango-designation:
 
 # ANYTHING BELOW IS ONLY NEEDED IF USING NCOV-TOOLS SUMMARIES
 # Path from snakemake dir to .bed file defining the actual amplicon locations not the primers
-amplicon_loc_bed: 'resources/primer_schemes/artic_v4/SARS-CoV-2.scheme.bed'
+amplicon_loc_bed: 'resources/primer_schemes/artic_v3/ncov-qc_V3.scheme.bed'
 
 # fasta of sequences to include with pangolin phylogeny
 phylo_include_seqs: "data/blank.fasta"
@@ -233,9 +243,12 @@ if __name__ == '__main__':
 				try:
 					subprocess.run(f"snakemake --conda-frontend mamba --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp", shell=True, check=True)
 				except subprocess.CalledProcessError: # likely missing mamba 
+					if task == "ncov_tools":
+						check_submodule(os.getcwd())
 					try:
 						print("Retrying...")
 						subprocess.run(f"snakemake --conda-frontend conda --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp", shell=True, check=True)
 					except subprocess.CalledProcessError:
 						exit(f"Something went wrong running SIGNAL {task}! Check input and try again!")
-	exit("SIGNAL complete!")
+	
+	exit("SIGNAL completed successfully!")

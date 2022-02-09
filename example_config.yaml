@@ -55,20 +55,20 @@ var_min_freq_threshold: 0.25
 # iVar/freebayes minimum mapQ to call variant (ivar variants: -q)
 var_min_variant_quality: 20
 
-# ONLY NEEDED IF USING NCOV-TOOLS SUMMARIES
-# Path from snakemake dir to .bed file defining the actual amplicon locations not the primers
-amplicon_loc_bed: 'resources/primer_schemes/artic_v3/ncov-qc_V3.scheme.bed'
-
-# fasta of sequences to include with pangolin phylogeny
-phylo_include_seqs: "data/extra_data.fasta"
-
-# List of negative control sample names or prefixes (i.e., ['Blank'] will cover Blank1, Blank2, etc.)
-negative_control_prefix: []
-
 # Versions of software related to lineage calling (use numbers only, i.e., 3.1.1). Dates are accepted for pangolearn. Leave blank for latest version(s).
 pangolin:
 pangolearn:
 constellations:
 scorpio:
 pango-designation:
+
+# ANYTHING BELOW IS ONLY NEEDED IF USING NCOV-TOOLS SUMMARIES
+# Path from snakemake dir to .bed file defining the actual amplicon locations not the primers
+amplicon_loc_bed: 'resources/primer_schemes/artic_v3/ncov-qc_V3.scheme.bed'
+
+# fasta of sequences to include with pangolin phylogeny
+phylo_include_seqs: "data/blank_data.fasta"
+
+# List of negative control sample names or prefixes (i.e., ['Blank'] will cover Blank1, Blank2, etc.)
+negative_control_prefix: []
 

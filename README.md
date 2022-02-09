@@ -90,8 +90,8 @@ positional arguments:
   all                   Run SIGNAL with all associated assembly rules. Does not include postprocessing '--configfile' or '--directory' required. The latter will automatically generate a
                         configuration file and sample table. If both provided, then '--configfile' will take priority
   postprocess           Run SIGNAL postprocessing on completed SIGNAL run. '--configfile' is required but will be generated if '--directory' is provided
-  ncov_tools            Generate configuration file and filesystem setup required for ncov-tools quality control assessment. '--configfile' is required but will be generated if '--directory' is
-                        provided
+  ncov_tools            Generate configuration file and filesystem setup required and then execute ncov-tools quality control assessment. '--configfile' is required but will be generated if '--
+                        directory' is provided
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -101,19 +101,17 @@ optional arguments:
                         Path to directory containing reads. Will be used to generate sample table and configuration file
   --cores CORES         Number of cores. Default = 1
   --config-only         Generate sample table and configuration file (i.e., config.yaml) and exit. '--directory' required
-  --remove-freebayes    Configuration file generator parameter. Set flag to NOT RUN freebayes variant calling (improves overall speed).
-  --add-breseq          Configuration file generator parameter. Set flag to RUN optional breseq step (will take more time for analysis to complete).
+  --remove-freebayes    Configuration file generator parameter. Set flag to DISABLE freebayes variant calling (improves overall speed)
+  --add-breseq          Configuration file generator parameter. Set flag to ENABLE optional breseq step (will take more time for analysis to complete)
   -neg NEG_PREFIX, --neg-prefix NEG_PREFIX
                         Configuration file generator parameter. Comma-separated list of negative sontrol sample name(s) or prefix(es). For example, 'Blank' will cover Blank1, Blank2, etc. Recommend
-                        if running ncov-tools. Blank, if not provided.
+                        if running ncov-tools. Will be left empty, if not provided
   --dependencies        Download data dependencies (under a created 'data' directory) required for SIGNAL analysis and exit. Note: Will override other flags! (~10 GB storage required)
 ```
 
 ## Summary:
 
 `signal.py` simplies the execution of all functions of SIGNAL. At its simplest, SIGNAL can be run with one line, provided only the directory of sequencing reads.
-
-**NOTE: Currently, SIGNAL sets up the configuration file and filesystem for MANUAL execution of ncov-tools**
 
 ```
 # Download dependances (only needs to be run once; ~10GB of storage required)
@@ -137,7 +135,7 @@ python signal.py --configfile config.yaml --cores NCORES all postprocess ncov_to
 python signal.py --directory /path/to/reads --cores NCORES all postprocess ncov_tools
 ```
 
-Each of the steps in SIGNAL can be run **manually** by accessing the individual scripts or running snakemake
+Each of the steps in SIGNAL can be run **manually** by accessing the individual scripts or running snakemake.
 
 ```
 # Download dependances (only needs to be run once; ~10GB of storage required)
@@ -282,7 +280,7 @@ processing and postprocessing into `all` and `postprocess` targets.
 
 Related: because pipeline stages can fail, we run (and recommend running if using the snakemake command to run SIGNAL) `snakemake all` with the `-k` flag ("Go on with independent jobs if a job fails").
 
-Additionally, SIGNAL can prepare output for use with @jts' [ncov-tools](https://github.com/jts/ncov-tools)
+Additionally, SIGNAL can prepare output and execute @jts' [ncov-tools](https://github.com/jts/ncov-tools)
 to generate phylogenies and alternative summaries.
 
 `python signal.py --configfile config.yaml --cores 1 ncov_tools`
@@ -293,7 +291,7 @@ is equivalent to running
 
 SIGNAL manages installing the dependencies (within the `conda_prefix`) and will generate the necessary hard links to required input files from SIGNAL for `ncov-tools` if it has been cloned as a sub-module and a fasta containing sequences to include in the tree has been specified using `phylo_include_seqs:` in the main SIGANL`config.yaml`.
 
-Outputs will be written as specified within the `ncov-tools` folder and documentation. At present, invoking `ncov-tools` should be done manually as per its documentation.
+SIGNAL will then execute ncov-tools and the **output will be found wihtin the SIGNAL results directory as `ncov-tools-results`**.
 
 ### Multiple operations:
 

@@ -148,7 +148,7 @@ rule quast:
 
 rule lineages:
     input:
-        'versions.txt', 
+        'input_versions.txt', 
         'lineage_assignments.tsv'
 
 rule config_sample_log:
@@ -214,9 +214,9 @@ rule postprocess:
 
 
 rule ncov_tools:
-    # can't use the one in the ncov-tool dir as it has to include snakemake
     conda:
         'ncov-tools/workflow/envs/environment.yml'
+    threads: workflow.cores
     params:
         exec_dir = exec_dir,
         sample_csv_filename = os.path.join(exec_dir, config['samples']),
@@ -225,7 +225,8 @@ rule ncov_tools:
         primer_bed = os.path.join(exec_dir, config['scheme_bed']),
         viral_reference_genome = os.path.join(exec_dir, config['viral_reference_genome']),
         phylo_include_seqs = os.path.join(exec_dir, config['phylo_include_seqs']),
-        negative_control_prefix = config['negative_control_prefix']
+        negative_control_prefix = config['negative_control_prefix'],
+        freebayes_run = config['run_freebayes']
     input:
         consensus = expand('{sn}/core/{sn}.consensus.fa', sn=sample_names),
         primertrimmed_bams = expand("{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam", sn=sample_names),
@@ -759,7 +760,7 @@ rule run_lineage_assignment:
     threads: 4
     conda: 'conda_envs/assign_lineages.yaml'
     output:
-        ver_out = 'versions.txt',
+        ver_out = 'input_versions.txt',
         lin_out = 'lineage_assignments.tsv'
     input:
         expand('{sn}/core/{sn}.consensus.fa', sn=sample_names)
@@ -781,9 +782,10 @@ rule run_lineage_assignment_freebayes:
     output:
         'freebayes_lineage_assignments.tsv'
     input:
-        expand('{sn}/freebayes/{sn}.consensus.fasta', sn=sample_names)
+        vers = 'input_versions.txt',
+        consensus = expand('{sn}/freebayes/{sn}.consensus.fasta', sn=sample_names)
     params:
         assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py'),
     shell:
-        'cat {input} > all_freebayes_genomes.fa && '
-        '{params.assignment_script_path} -i all_freebayes_genomes.fa -t {threads} -o {output} --skip'
+        'cat {input.consensus} > all_freebayes_genomes.fa && '
+        '{params.assignment_script_path} -i all_freebayes_genomes.fa -t {threads} -o {output} -p {input.vers} --skip'
