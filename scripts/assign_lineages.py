@@ -23,7 +23,10 @@ def update_latest_pangolin():
     """
     Ensure pangolin is updated to the latest release
     """
-    subprocess.check_output(["pangolin", "--update"])
+    try:
+        subprocess.check_output(["pangolin", "--update"])
+    except subprocess.CalledProcessError:
+        print("Something went wrong updating Pangolin! No changes were made! Attempting to proceed...")
 
 def update_pangolin(vers):
     """
@@ -38,7 +41,6 @@ def update_nextclade():
     Ensure nextclade is updated to the latest release
     """
     subprocess.check_output(["npm", "install", "-g", "@neherlab/nextclade"])
-
 
 def run_nextclade(input_genomes, threads):
     """
