@@ -289,9 +289,9 @@ is equivalent to running
 
 `snakemake -kp --configfile config.yaml --cores 1 --use-conda --conda-prefix=$PWD/.snakemake/conda ncov_tools`
 
-SIGNAL manages installing the dependencies (within the `conda_prefix`) and will generate the necessary hard links to required input files from SIGNAL for `ncov-tools` if it has been cloned as a sub-module and a fasta containing sequences to include in the tree has been specified using `phylo_include_seqs:` in the main SIGNAL `config.yaml`.
+SIGNAL manages installing the dependencies (within the `conda_prefix`) and will generate the necessary hard links to required input files from SIGNAL for `ncov-tools` if it has been cloned as a sub-module (if not found, the script will attempt to pull the submodule) and a fasta containing sequences to include in the tree has been specified using `phylo_include_seqs:` in the main SIGNAL `config.yaml`. If `run_freebayes` is set to `True`, then SIGNAL will attempt to link the FreeBayes consensus FASTA and variant files, if found. Otherwise, the corresponding iVar files will be used instead.
 
-SIGNAL will then execute ncov-tools and the **output will be found within the SIGNAL results directory, specified in SIGNAL's configuration file, under `ncov-tools-results`**.
+SIGNAL will then execute ncov-tools and the **output will be found within the SIGNAL results directory, specified in SIGNAL's configuration file, under `ncov-tools-results`**. Refer to the ncov-tools documentation for information regarding specific output.
 
 ### Multiple operations:
 
