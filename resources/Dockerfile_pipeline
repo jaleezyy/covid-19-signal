@@ -19,7 +19,7 @@ MAINTAINER Finlay Maguire <finlaymaguire@gmail.com>
 RUN apt-get update && apt-get install -y curl wget git build-essential && conda init bash
 
 # install snakemake and system dependencies
-RUN conda --channel conda-forge mamba
+RUN conda install --channel conda-forge mamba
 RUN mamba create --name signal --channel conda-forge --channel bioconda snakemake>5.19.0 pandas conda
 
 # clone the workflow repo (tag later to specific release to match software version)
