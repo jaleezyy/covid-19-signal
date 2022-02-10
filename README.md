@@ -68,6 +68,11 @@ Additional software dependencies are managed directly by `snakemake` using conda
 - breseq 0.35.0 ([docs](https://barricklab.org/twiki/bin/view/Lab/ToolsBacterialGenomeResequencing))
 - ivar 1.3 ([docs](https://github.com/andersen-lab/ivar))
 - freebayes 1.3.2 ([docs](https://github.com/freebayes/freebayes))
+- pangolin (latest; version can be specified by user) [(docs)](https://github.com/cov-lineages/pangolin)
+- pangolearn (latest; version can be specified by user) [(docs)](https://github.com/cov-lineages/pangoLEARN)
+- constellations (latest; version can be specified by user) [(docs)](https://github.com/cov-lineages/constellations)
+- scorpio (latest; version can be specified by user) [(docs)](https://github.com/cov-lineages/scorpio)
+- pango-designation (latest; version can be specified by user) [(docs)](https://github.com/cov-lineages/pango-designation)
 - ncov-tools postprocessing scripts require additional dependencies (see [file](ncov-tools/workflow/envs/environment.yml)).
 
 ## SIGNAL Help Screen:
