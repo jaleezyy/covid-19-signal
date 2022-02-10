@@ -220,7 +220,7 @@ if __name__ == '__main__':
 		exit("Download complete!")
 	
 	if args.configfile is None:
-		assert args.directory is not None, "Please provide '--directory' to proceed! ('--configfile' if a configuration file already exists!"
+		assert args.directory is not None, "Please provide '--directory' to proceed! ('--configfile' if a configuration file already exists!)"
 		run_name = args.directory.name
 		generate_sample_table(args.directory, run_name)
 		config_file = run_name + "_config.yaml"
