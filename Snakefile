@@ -61,6 +61,14 @@ workdir: os.path.abspath(config['result_dir'])
 # get sample names 
 sample_names = sorted(samples['sample'].drop_duplicates().values)
 
+# get lineage calling versions
+versions = {'pangolin': config['pangolin'],
+            'pangolearn': config['pangolearn'],
+            'constellations': config['constellations'],
+            'scorpio': config['scorpio'],
+            'pango-designation': config['pango-designation']
+            }
+
 def get_input_fastq_files(sample_name, r):
     sample_fastqs = samples[samples['sample'] == sample_name]
     if r == '1':
@@ -139,7 +147,8 @@ rule quast:
     input: expand('{sn}/quast/{sn}_quast_report.html', sn=sample_names)
 
 rule lineages:
-    input: 
+    input:
+        'input_versions.txt', 
         'lineage_assignments.tsv'
 
 rule config_sample_log:
@@ -205,9 +214,9 @@ rule postprocess:
 
 
 rule ncov_tools:
-    # can't use the one in the ncov-tool dir as it has to include snakemake
     conda:
         'ncov-tools/workflow/envs/environment.yml'
+    threads: workflow.cores
     params:
         exec_dir = exec_dir,
         sample_csv_filename = os.path.join(exec_dir, config['samples']),
@@ -216,7 +225,8 @@ rule ncov_tools:
         primer_bed = os.path.join(exec_dir, config['scheme_bed']),
         viral_reference_genome = os.path.join(exec_dir, config['viral_reference_genome']),
         phylo_include_seqs = os.path.join(exec_dir, config['phylo_include_seqs']),
-        negative_control_prefix = config['negative_control_prefix']
+        negative_control_prefix = config['negative_control_prefix'],
+        freebayes_run = config['run_freebayes']
     input:
         consensus = expand('{sn}/core/{sn}.consensus.fa', sn=sample_names),
         primertrimmed_bams = expand("{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam", sn=sample_names),
@@ -352,7 +362,7 @@ rule run_trimgalore:
     shell:
         'trim_galore --quality {params.min_qual} --length {params.min_len} '
         ' -o {params.output_prefix} --cores {threads} --fastqc '
-        '--paired {input.raw_r1} {input.raw_r2} 2> {log}'
+        '--paired {input.raw_r1} {input.raw_r2} 2> {log} || touch {output}'
 
 rule run_filtering_of_residual_adapters:
     threads: 2
@@ -563,7 +573,7 @@ rule run_breseq:
         outdir = '{sn}/breseq'
     shell:
         """
-        breseq --reference {params.ref} --num-processors {threads} --polymorphism-prediction --brief-html-output --output {params.outdir} {input} > {log} 2>&1
+        breseq --reference {params.ref} --num-processors {threads} --polymorphism-prediction --brief-html-output --output {params.outdir} {input} > {log} 2>&1 || touch {output}
         """
 
 ################## Based on https://github.com/jts/ncov2019-artic-nf/blob/be26baedcc6876a798a599071bb25e0973261861/modules/illumina.nf ##################
@@ -642,7 +652,6 @@ rule consensus_compare:
 
 ##################  Based on scripts/hisat2.sh and scripts/coverage_stats_avg.sh  ##################
 
-
 rule coverage_depth:
     conda: 'conda_envs/snp_mapping.yaml'
     output:
@@ -666,7 +675,6 @@ rule generate_coverage_plot:
         "python {params.script_path} {input} {output}"
 
 ################################   Based on scripts/kraken2.sh   ###################################
-
 
 rule run_kraken2:
     threads: 1
@@ -698,7 +706,9 @@ rule run_kraken2:
             ' --paired --gzip-compressed'
             ' ../../{input.r1} ../../{input.r2}'
             ' --report {params.labelled_report}'
-            ' 2>../../{log}'
+            ' 2>../../{log} && (cd ../.. && touch {output})'
+            # kraken2 also fails if empty input is provided which will happen
+            # if there are no valid reads e.g., very clean negative control
 
 
 ##################################  Based on scripts/quast.sh   ####################################
@@ -750,14 +760,21 @@ rule run_lineage_assignment:
     threads: 4
     conda: 'conda_envs/assign_lineages.yaml'
     output:
-        'lineage_assignments.tsv'
+        ver_out = 'input_versions.txt',
+        lin_out = 'lineage_assignments.tsv'
     input:
         expand('{sn}/core/{sn}.consensus.fa', sn=sample_names)
     params:
+        pangolin_ver = versions['pangolin'],
+        pangolearn_ver = versions['pangolearn'],
+        constellations_ver = versions['constellations'],
+        scorpio_ver = versions['scorpio'],
+        designation_ver = versions['pango-designation'],
         assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py')
     shell:
+        "echo -e 'pangolin: {params.pangolin_ver}\npangolearn: {params.pangolearn_ver}\nconstellations: {params.constellations_ver}\nscorpio: {params.scorpio_ver}\npango-designation: {params.designation_ver}' > {output.ver_out} && "
         'cat {input} > all_genomes.fa && '
-        '{params.assignment_script_path} -i all_genomes.fa -t {threads} -o {output}'
+        '{params.assignment_script_path} -i all_genomes.fa -t {threads} -o {output.lin_out} -p {output.ver_out}'
 
 rule run_lineage_assignment_freebayes:
     threads: 4
@@ -765,9 +782,10 @@ rule run_lineage_assignment_freebayes:
     output:
         'freebayes_lineage_assignments.tsv'
     input:
-        expand('{sn}/freebayes/{sn}.consensus.fasta', sn=sample_names)
+        vers = 'input_versions.txt',
+        consensus = expand('{sn}/freebayes/{sn}.consensus.fasta', sn=sample_names)
     params:
         assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py'),
     shell:
-        'cat {input} > all_freebayes_genomes.fa && '
-        '{params.assignment_script_path} -i all_freebayes_genomes.fa -t {threads} -o {output}'
+        'cat {input.consensus} > all_freebayes_genomes.fa && '
+        '{params.assignment_script_path} -i all_freebayes_genomes.fa -t {threads} -o {output} -p {input.vers} --skip'
