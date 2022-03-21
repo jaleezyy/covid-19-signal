@@ -60,4 +60,4 @@ platform: illumina
 
 # minimum completeness threshold for inclusion to the SNP tree plot, if no entry
 # is provided the default is set to 0.75
-completeness_threshold: 0.50
+completeness_threshold: 0.70

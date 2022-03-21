@@ -61,6 +61,13 @@ negative_control_prefix: ['ntc', 'water', 'blank', 'neg']
 # Path from snakemake dir to .bed file defining amplicon primer scheme
 # scheme_bed: Echo'd in at the end during script
 
+# Versions of software related to lineage calling (use numbers only, i.e., 3.1.1). Dates are accepted for pangolearn. Leave blank for latest version(s).
+pangolin:
+pangolearn:
+constellations:
+scorpio:
+pango-designation:
+
 # ONLY NEEDED IF USING NCOV-TOOLS SUMMARIES
 # Path from snakemake dir to .bed file defining the actual amplicon locations not the primers
 # amplicon_loc_bed: Echo'd in at the end during script
