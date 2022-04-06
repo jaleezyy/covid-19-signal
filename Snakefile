@@ -66,7 +66,8 @@ versions = {'pangolin': config['pangolin'],
             'pangolearn': config['pangolearn'],
             'constellations': config['constellations'],
             'scorpio': config['scorpio'],
-            'pango-designation': config['pango-designation']
+            'pango-designation': config['pango-designation'],
+            'pangolin-data': config['pangolin-data']
             }
 
 def get_input_fastq_files(sample_name, r):
@@ -770,9 +771,10 @@ rule run_lineage_assignment:
         constellations_ver = versions['constellations'],
         scorpio_ver = versions['scorpio'],
         designation_ver = versions['pango-designation'],
+        data_ver = versions['pangolin-data'],
         assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py')
     shell:
-        "echo -e 'pangolin: {params.pangolin_ver}\npangolearn: {params.pangolearn_ver}\nconstellations: {params.constellations_ver}\nscorpio: {params.scorpio_ver}\npango-designation: {params.designation_ver}' > {output.ver_out} && "
+        "echo -e 'pangolin: {params.pangolin_ver}\nconstellations: {params.constellations_ver}\nscorpio: {params.scorpio_ver}\npangolearn: {params.pangolearn_ver}\npango-designation: {params.designation_ver}\npangolin-data: {params.data_ver}' > {output.ver_out} && "
         'cat {input} > all_genomes.fa && '
         '{params.assignment_script_path} -i all_genomes.fa -t {threads} -o {output.lin_out} -p {output.ver_out}'
 

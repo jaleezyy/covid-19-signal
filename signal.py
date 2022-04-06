@@ -191,10 +191,15 @@ var_min_variant_quality: 20
 
 # Versions of software related to lineage calling (use numbers only, i.e., 3.1.1). Dates are accepted for pangolearn. Leave blank for latest version(s).
 pangolin: 
-pangolearn: 
 constellations:
 scorpio:
+
+# Required for Pangolin <v4.0
+pangolearn: 
 pango-designation:
+
+# Required for Pangolin v4+
+pangolin-data:
 
 # ANYTHING BELOW IS ONLY NEEDED IF USING NCOV-TOOLS SUMMARIES
 # Path from snakemake dir to .bed file defining the actual amplicon locations not the primers
