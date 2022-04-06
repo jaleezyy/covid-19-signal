@@ -128,14 +128,14 @@ def get_lineage(pangolin_csv, sample_name):
         sample_name  --> `str` sample name from argparse
     RETURNS:
         `str` lineage
-        `str` pangoLEARN version
+        `str` pango-designation version
     '''
     df = pd.read_csv(pangolin_csv)
     df_slice = df.loc[df['taxon'] == sample_name]
 
     if not df_slice.empty:
         lineage = df_slice['lineage'].item()
-        pangoV = df_slice['pangoLEARN_version'].item()
+        pangoV = df_slice['version'].item()
 
         return lineage, pangoV
 
@@ -260,7 +260,7 @@ def go(args):
     primer_statement = find_primer_mutations(args.pcr_bed, variant_locations)
 
     # Pangolin Lineages
-    lineage, pangoLearn = get_lineage(args.pangolin, args.sample)
+    lineage, pango_designation_v = get_lineage(args.pangolin, args.sample)
 
     # snpEFF output
     protein_variants = get_protein_variants(args.snpeff_tsv)
@@ -281,7 +281,7 @@ def go(args):
 'diagnostic_primer_mutations' : [primer_statement],
                      'scheme' : [args.scheme],
       'sequencing_technology' : [args.sequencing_technology],
-         'pangoLEARN_version' : [pangoLearn],
+                    'version' : [pango_designation_v],
                 'script_name' : [args.script_name],
                    'revision' : [args.revision]}
         
@@ -297,7 +297,7 @@ def go(args):
     'diagnostic_primer_mutations' : [primer_statement],
                          'scheme' : [args.scheme],
           'sequencing_technology' : [args.sequencing_technology],
-             'pangoLEARN_version' : [pangoLearn],
+                        'version' : [pango_designation_v],
                     'script_name' : [args.script_name],
                        'revision' : [args.revision]}
 
