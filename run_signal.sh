@@ -333,7 +333,7 @@ elif [ "$PRIMER_SCHEME" == "articV3" ]; then
 
 elif [ "$PRIMER_SCHEME" == "articV4" ]; then
     # SIGNAL Parameters
-    echo "scheme_bed: 'resources/primer_schemes/artic_v4/nCoV-2019.primer.bed'" >> $SIGNAL_CONFIG
+    echo "scheme_bed: 'resources/primer_schemes/artic_v4/nCoV-2019.bed'" >> $SIGNAL_CONFIG
     echo "amplicon_loc_bed: 'resources/primer_schemes/artic_v4/ncov-qc_V4.scheme.bed'" >> $SIGNAL_CONFIG
     echo "primer_pairs_tsv: '-f $SCRIPTPATH/resources/primer_pairs/articV4_primer_pairs.tsv'" >> $SIGNAL_CONFIG
 
@@ -343,7 +343,7 @@ elif [ "$PRIMER_SCHEME" == "articV4" ]; then
 
 elif [ "$PRIMER_SCHEME" == "articV4.1" ]; then
     # SIGNAL Parameters
-    echo "scheme_bed: 'resources/primer_schemes/artic_v4.1/nCoV-2019.primer.bed'" >> $SIGNAL_CONFIG
+    echo "scheme_bed: 'resources/primer_schemes/artic_v4.1/nCoV-2019.bed'" >> $SIGNAL_CONFIG
     echo "amplicon_loc_bed: 'resources/primer_schemes/artic_v4.1/ncov-qc_V4.scheme.bed'" >> $SIGNAL_CONFIG
     echo "primer_pairs_tsv: '-f $SCRIPTPATH/resources/primer_pairs/articV4_primer_pairs.tsv'" >> $SIGNAL_CONFIG
 
