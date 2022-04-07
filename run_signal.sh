@@ -34,11 +34,11 @@ CUSTOM=false
 BASE_ENV_PATH="$SCRIPTPATH/.snakemake/conda"
 SIGNAL_ENV="signal"
 USER_SIGNAL=false
-NCOV_ENV="ncov-qc-pangolin3"
+NCOV_ENV="ncov-qc-pangolin4" # pangolin 3 outdated with changes made, env still available though
 USER_NCOV=false
 
 # Values to Check #
-schemeArray=('articV3' 'freed' 'resende' 'V2resende' 'articV4')
+schemeArray=('articV3' 'articV4' 'articV4.1' 'freed' 'freed_V2_nml' 'resende' 'V2resende')
 
 HELP="
 USAGE:
@@ -49,7 +49,7 @@ Flags:
     NEEDED:
     -d  --directory      :  Path to paired fastq file directory
     -p  --primer-scheme  :  Specify input data primer scheme
-                Available Primer Schemes: articV3, articV4, freed, resende, V2resende, custom by passing '--bed' and '--amplicon'
+            Available Primer Schemes: articV3, articV4, articV4.1, freed, freed_V2_nml, resende, V2resende, custom by passing '--bed' and '--amplicon'
 
     SUBSTITUTE (Can be used instead of a primer scheme but must be used together):
     --bed       :  Path to custom primer bed file to be used instead of default schemes
@@ -61,12 +61,12 @@ Flags:
     -m  --metadata        :  Add metadata to the run. Must be in TSV format with atleast a column called 'sample'
     --pdf                 :  If you have pdflatex installed runs ncov-tools pdf output
     --signal-env          :  Name of signal conda env. Default is '$BASE_ENV_PATH/signal'
-    --ncov-tools-env      :  Name of ncov-tools env. Default is '$BASE_ENV_PATH/ncov-qc-pangolin3'
+    --ncov-tools-env      :  Name of ncov-tools env. Default is '$BASE_ENV_PATH/ncov-qc-pangolin4'
                 **NOTE** It is highly recommended to let the script generate the environments as it will
                           only occur once and you won't have to pass the path each time
 
     OTHER:
-    --update  :  Passing --update will update ncov-tools pip dependencies, pangolin and pangoLEARN along with this repo and then exit
+    --update  :  Passing --update will update ncov-tools pip dependencies, pangolin and pangoDATA along with this repo and then exit
 "
 ### END DEFAULTS ###
 
@@ -80,7 +80,7 @@ if [ $# -eq 0 ]; then
 fi
 
 # Set Arguments #
-while [ "$1" = "--directory" -o "$1" = "-d" -o "$1" = "--primer-scheme" -o "$1" = "-p" -o "$1" = "--cores" -o "$1" = "-c" -o "$1" = "--bed" -o "$1" = "--amplicon" -o "$1" = "--run-name" -o "$1" = "-n" -o "$1" = "-m" -o "$1" = "--metadata" -o "$1" = "--pdf" -o "$1" = "--signal-env" -o "$1" = "--ncov-tools-env" -o "$1" = "--update" ];
+while [ $# -gt 0 ];
 do
     if [ "$1" = "--directory" -o "$1" = "-d" ]; then
         shift
@@ -127,6 +127,7 @@ do
         shift
         # Scripts
         cd $SCRIPTPATH
+        printf "\n Updating Repo at $SCRIPTPATH \n"
         git pull
 
         # ncov-tools Environment (not managed by snakemake unfortunately)
@@ -139,7 +140,8 @@ do
         pip install git+https://github.com/jts/ncov-watch.git --upgrade
         exit
     else
-        shift
+        echo "ERROR: $1 is not a known argument"
+        exit 1
     fi
 done
 
@@ -331,13 +333,23 @@ elif [ "$PRIMER_SCHEME" == "articV3" ]; then
 
 elif [ "$PRIMER_SCHEME" == "articV4" ]; then
     # SIGNAL Parameters
-    echo "scheme_bed: 'resources/primer_schemes/artic_v4/nCoV-2019.primer.bed'" >> $SIGNAL_CONFIG
+    echo "scheme_bed: 'resources/primer_schemes/artic_v4/nCoV-2019.bed'" >> $SIGNAL_CONFIG
     echo "amplicon_loc_bed: 'resources/primer_schemes/artic_v4/ncov-qc_V4.scheme.bed'" >> $SIGNAL_CONFIG
     echo "primer_pairs_tsv: '-f $SCRIPTPATH/resources/primer_pairs/articV4_primer_pairs.tsv'" >> $SIGNAL_CONFIG
 
     # NCOV-TOOLS Parameters
     echo "amplicon_bed: $SCRIPTPATH/resources/primer_schemes/artic_v4/ncov-qc_V4.scheme.bed" >> ./ncov-tools/config.yaml
     echo "primer_bed: $SCRIPTPATH/resources/primer_schemes/artic_v4/nCoV-2019.bed" >> ./ncov-tools/config.yaml
+
+elif [ "$PRIMER_SCHEME" == "articV4.1" ]; then
+    # SIGNAL Parameters
+    echo "scheme_bed: 'resources/primer_schemes/artic_v4.1/nCoV-2019.bed'" >> $SIGNAL_CONFIG
+    echo "amplicon_loc_bed: 'resources/primer_schemes/artic_v4.1/ncov-qc_V4.scheme.bed'" >> $SIGNAL_CONFIG
+    echo "primer_pairs_tsv: '-f $SCRIPTPATH/resources/primer_pairs/articV4_primer_pairs.tsv'" >> $SIGNAL_CONFIG
+
+    # NCOV-TOOLS Parameters
+    echo "amplicon_bed: $SCRIPTPATH/resources/primer_schemes/artic_v4.1/ncov-qc_V4.scheme.bed" >> ./ncov-tools/config.yaml
+    echo "primer_bed: $SCRIPTPATH/resources/primer_schemes/artic_v4.1/nCoV-2019.bed" >> ./ncov-tools/config.yaml
 
 elif [ "$PRIMER_SCHEME" == "freed" ]; then
     # SIGNAL Parameters
@@ -348,6 +360,16 @@ elif [ "$PRIMER_SCHEME" == "freed" ]; then
     # NCOV-TOOLS Parameters
     echo "amplicon_bed: $SCRIPTPATH/resources/primer_schemes/freed/ncov-qc_freed.scheme.bed" >> ./ncov-tools/config.yaml
     echo "primer_bed: $SCRIPTPATH/resources/primer_schemes/freed/nCoV-2019.bed" >> ./ncov-tools/config.yaml
+
+elif [ "$PRIMER_SCHEME" == "freed_V2_nml" ]; then
+    # SIGNAL Parameters
+    echo "scheme_bed: 'resources/primer_schemes/freed_V2_nml/nCoV-2019.primer.bed'" >> $SIGNAL_CONFIG
+    echo "amplicon_loc_bed: 'resources/primer_schemes/freed_V2_nml/ncov-qc_freed.scheme.bed'" >> $SIGNAL_CONFIG
+    echo "primer_pairs_tsv: '-f $SCRIPTPATH/resources/primer_pairs/freed_primer_pairs.tsv'" >> $SIGNAL_CONFIG
+
+    # NCOV-TOOLS Parameters
+    echo "amplicon_bed: $SCRIPTPATH/resources/primer_schemes/freed_V2_nml/ncov-qc_freed.scheme.bed" >> ./ncov-tools/config.yaml
+    echo "primer_bed: $SCRIPTPATH/resources/primer_schemes/freed_V2_nml/nCoV-2019.bed" >> ./ncov-tools/config.yaml
 
 elif [ "$PRIMER_SCHEME" == "resende" ]; then
     # SIGNAL Parameters
@@ -460,7 +482,7 @@ do
         --pangolin ${pangolin} \
         --ncov_summary ${ncov_qc} \
         --ncov_negative ${ncov_neg} \
-        --revision v1.5.0 \
+        --revision v1.5.1 \
         --script_name covid-19-signal \
         --sequencing_technology illumina \
         --scheme $PRIMER_SCHEME \

@@ -75,6 +75,10 @@ pango-designation:
     type: string
     default: "None"
     description: "Pango-designation date/version"
+pangolin-data:
+    type: string
+    default: "None"
+    description: "Pangolin-data version"
 required:
     - min_len
     - min_qual

@@ -115,23 +115,41 @@ def collate_output(nextclade, pangolin, output):
     """
     merged_df = pangolin.merge(nextclade, on='isolate', how='outer')
 
-    merged_df = merged_df[['isolate', 'pango_lineage',
-                           'pangolin_conflict', 'pangolin_ambiguity_score',
-                           'pangolin_note', 'scorpio_call', 'scorpio_support',
-                           'scorpio_conflict',
-                           'pangolin_qc', 'nextstrain_clade',
-                           'nextclade_qc', 'nextclade_errors',
-                           'totalGaps', 'totalInsertions', 'totalMissing',
-                           'totalMutations', 'totalNonACGTNs',
-                           'totalPcrPrimerChanges',
-                           'substitutions', 'deletions', 'insertions',
-                           'missing', 'nonACGTNs',
-                           'pcrPrimerChanges', 'aaSubstitutions',
-                           'totalAminoacidSubstitutions',
-                           'aaDeletions', 'totalAminoacidDeletions',
-                           'alignmentStart', 'alignmentEnd', 'alignmentScore',
-                           'pangolin_version', 'pango_version',
-                           'pangoLEARN_version', 'pango_version', 'nextclade_version']]
+    try:
+        merged_df = merged_df[['isolate', 'pango_lineage',
+                               'pangolin_conflict', 'pangolin_ambiguity_score',
+                               'pangolin_note', 'scorpio_call', 'scorpio_support',
+                               'scorpio_conflict',
+                               'pangolin_qc', 'nextstrain_clade',
+                               'nextclade_qc', 'nextclade_errors',
+                               'totalGaps', 'totalInsertions', 'totalMissing',
+                               'totalMutations', 'totalNonACGTNs',
+                               'totalPcrPrimerChanges',
+                               'substitutions', 'deletions', 'insertions',
+                               'missing', 'nonACGTNs',
+                               'pcrPrimerChanges', 'aaSubstitutions',
+                               'totalAminoacidSubstitutions',
+                               'aaDeletions', 'totalAminoacidDeletions',
+                               'alignmentStart', 'alignmentEnd', 'alignmentScore',
+                               'pangolin_version', 'pango_version',
+                               'pangoLEARN_version', 'pango_version', 'nextclade_version']]
+    except KeyError: # adjust for pangolin v4
+        merged_df = merged_df[['isolate', 'pango_lineage',
+                               'pangolin_conflict', 'pangolin_ambiguity_score',
+                               'pangolin_note', 'scorpio_call', 'scorpio_support',
+                               'scorpio_conflict',
+                               'nextstrain_clade',
+                               'nextclade_qc', 'nextclade_errors',
+                               'totalGaps', 'totalInsertions', 'totalMissing',
+                               'totalMutations', 'totalNonACGTNs',
+                               'totalPcrPrimerChanges',
+                               'substitutions', 'deletions', 'insertions',
+                               'missing', 'nonACGTNs',
+                               'pcrPrimerChanges', 'aaSubstitutions',
+                               'totalAminoacidSubstitutions',
+                               'aaDeletions', 'totalAminoacidDeletions',
+                               'alignmentStart', 'alignmentEnd', 'alignmentScore', 
+                               'version','pangolin_version', 'nextclade_version']]
     merged_df.to_csv(output, sep='\t', index=False)
 
 

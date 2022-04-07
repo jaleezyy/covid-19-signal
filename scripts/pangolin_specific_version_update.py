@@ -45,7 +45,13 @@ if __name__ == "__main__":
 		if len(dep_ver) == 0:
 			continue
 
-		dependency, version = dep_ver.split(': ')
+		try:
+			dependency, version = dep_ver.split(': ')
+		except ValueError:
+			continue
+			#print(dep_ver.split(': '))
+			#dependency, version = dep_ver.split(': ')
+		
 		if dependency != "pangolearn" and not version.startswith("v"):
 			version = "v" + version
 
@@ -59,7 +65,7 @@ if __name__ == "__main__":
 	# parse the dependency version file provided, validate real dependencies
 	# tidy up version strings, and then use pip to update
 	valid_deps = ['pangolin', 'pangolearn', 'constellations',
-				  'scorpio', 'pango-designation']
+				  'scorpio', 'pango-designation', 'pangolin-data']
 	print("## Changing installed versions as needed:")
 	with open(args.versions_file) as fh:
 		for line in fh:
@@ -79,9 +85,15 @@ if __name__ == "__main__":
 				if (str(requested_ver) == "vNone") or (dependency == "pangolearn" and str(requested_ver == None)):
 					commit_url = web.urlopen(f"https://github.com/cov-lineages/{dependency}/releases/latest").geturl()
 					requested_ver = commit_url.split("/")[-1] # request version is latest
-					installed_version = installed_ver_dict[dependency]
+					try:
+						installed_version = installed_ver_dict[dependency]
+					except: # due to inconsistency, let's assume not installed
+						installed_version = None
 				else:
-					installed_version = installed_ver_dict[dependency]
+					try:
+						installed_version = installed_ver_dict[dependency]
+					except KeyError:
+						installed_version = None
 			except (web.HTTPError, web.URLError):
 				print(f"Cannot determine latest version of {dependency}! Skipping update!")
 				continue
@@ -91,7 +103,10 @@ if __name__ == "__main__":
 				if requested_ver == installed_version:
 					print(f"{dependency} not updated as requested {requested_ver} already installed")
 				else:
-					print(f"Changing {dependency} from {installed_version} to {requested_ver}")
+					if installed_version is None:
+						print(f"Installing {dependency} {requested_ver}")
+					else:
+						print(f"Changing {dependency} from {installed_version} to {requested_ver}")
 					subprocess.run([sys.executable, '-m', 'pip', 'install',
 								f"git+https://github.com/cov-lineages/{dependency}.git@{requested_ver}"],
 								check=True,
@@ -105,4 +120,4 @@ if __name__ == "__main__":
 	with open('final_versions.txt', 'w+') as out:
 		print("## Pangolin and dependencies now:", file=out)
 		out_ver = subprocess.run(["pangolin", "--all-versions"], check=True, stdout=subprocess.PIPE)
-		print(out_ver.stdout.decode("utf-8"), file=out)
+		print(out_ver.stdout.decode("utf-8").replace("[32m****\nPangolin running in usher mode.\n****[0m", "").strip(), file=out)

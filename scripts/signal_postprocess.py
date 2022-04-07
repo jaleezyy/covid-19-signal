@@ -17,7 +17,7 @@ long_git_id = '$Id: b158164f87c79271ddc9d1083e64e4be1fc26d8e $'
 
 assert long_git_id.startswith('$Id: ')
 #short_git_id = long_git_id[5:12]
-short_git_id = "v1.5.0"
+short_git_id = "v1.5.1"
 
 # Suppresses matplotlib warning (https://github.com/jaleezyy/covid-19-signal/issues/59)
 # Creates a small memory leak, but it's nontrivial to fix, and won't be a practical concern!
@@ -621,18 +621,27 @@ def parse_lineage(tsv_filename, sample_names, allow_missing=True):
             samples[name] = { 'lineage' : None,
                               'clade': None,
                               'pangolin_ver': None,
-                              'pangolearn_ver': None,
+                              'pangodata_ver': None,
                               'nextclade_ver': None }
         return { 'samples': samples }
 
     lineages = pd.read_table(tsv_filename, sep='\t')
-    df = lineages[['isolate',
-                    'pango_lineage',
-                    'nextstrain_clade',
-                    'pangolin_version',
-                    'pangoLEARN_version',
-                    'nextclade_version'
-                    ]]
+    try:
+        df = lineages[['isolate',
+                        'pango_lineage',
+                        'nextstrain_clade',
+                        'pangolin_version',
+                        'pangoLEARN_version',
+                        'nextclade_version'
+                        ]]
+    except KeyError:
+        df = lineages[['isolate',
+                        'pango_lineage',
+                        'nextstrain_clade',
+                        'pangolin_version',
+                        'version',
+                        'nextclade_version'
+                        ]]
 
     # Pull each row, identify sid 
     for row in df.itertuples():
@@ -647,12 +656,15 @@ def parse_lineage(tsv_filename, sample_names, allow_missing=True):
         lineage = str(row.pango_lineage)
         clade = str(row.nextstrain_clade)
         pangolin = str(row.pangolin_version)
-        pangolearn = str(row.pangoLEARN_version)
+        try:
+            pangodata = str(row.pangoLEARN_version)
+        except AttributeError:
+            pangodata = str(row.version)
         nextclade = str(row.nextclade_version)
         samples[sid] = { 'lineage' : lineage,
                          'clade': clade,
                          'pangolin_ver': pangolin,
-                         'pangolearn_ver': pangolearn,
+                         'pangodata_ver': pangodata,
                          'nextclade_ver': nextclade }
 
     assert len(samples) == len(sample_names)
@@ -1329,16 +1341,16 @@ class Sample:
 
         if ivarlin['lineage'] != fblin['lineage'] and fblin['lineage'] is not None:
             assert ivarlin['pangolin_ver'] == fblin['pangolin_ver']
-            assert ivarlin['pangolearn_ver'] == fblin['pangolearn_ver']
+            assert ivarlin['pangodata_ver'] == fblin['pangodata_ver']
             if ivarlin['clade'] == fblin['clade']:
                  self.lineage = { 'lineage': str(ivarlin['lineage'] + " (FB: %s)" %(fblin['lineage'])),
                                  'pangolin_ver': ivarlin['pangolin_ver'],
-                                 'pangolearn_ver': ivarlin['pangolearn_ver'],
+                                 'pangodata_ver': ivarlin['pangodata_ver'],
                                  'clade': ivarlin['clade'] }
             else:
                  self.lineage = { 'lineage': str(ivarlin['lineage'] + " (FB: %s)" %(fblin['lineage'])),
                                  'pangolin_ver': ivarlin['pangolin_ver'],
-                                 'pangolearn_ver': ivarlin['pangolearn_ver'],
+                                 'pangodata_ver': ivarlin['pangodata_ver'],
                                  'clade': str(ivarlin['clade'] + " (FB: %s)" %(fblin['clade'])) }
         else:
             self.lineage = ivarlin
