@@ -82,7 +82,7 @@ if __name__ == "__main__":
 			
 			# Get latest version number to compare with installed when latest version is requested
 			try:
-				if (str(requested_ver) == "vNone") or (dependency == "pangolearn" and str(requested_ver == None)):
+				if (str(requested_ver) == "vNone") or (dependency == "pangolearn" and str(requested_ver) == "None"):
 					commit_url = web.urlopen(f"https://github.com/cov-lineages/{dependency}/releases/latest").geturl()
 					requested_ver = commit_url.split("/")[-1] # request version is latest
 					try:
