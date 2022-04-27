@@ -157,7 +157,6 @@ composite_reference: 'data/composite_human_viral_reference.fna'
 # Also used as 'ivar' reference genome in variant detection + consensus.
 # Used as -r,-g arguments to 'quast'
 # contig needed for hostremoval filtering script
-# contig name used as reference for nextclade dataset
 viral_reference_contig_name: 'MN908947.3'
 viral_reference_genome: 'data/MN908947.3.fasta'
 viral_reference_feature_coords: 'data/MN908947.3.gff3'
