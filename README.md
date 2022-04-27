@@ -75,7 +75,7 @@ Additional software dependencies are managed directly by `snakemake` using conda
 - scorpio (latest; version can be specified by user) [(docs)](https://github.com/cov-lineages/scorpio)
 - pango-designation (latest; version can be specified by user) [(docs)](https://github.com/cov-lineages/pango-designation)
 - nextclade (v1.11.0) [(docs)](https://docs.nextstrain.org/projects/nextclade/en/stable/)
-- ncov-tools postprocessing scripts require additional dependencies (see [file](ncov-tools/workflow/envs/environment.yml)).
+- ncov-tools postprocessing scripts require additional dependencies (see [file](https://github.com/jts/ncov-tools/blob/master/workflow/envs/environment.yml)).
 
 ## SIGNAL Help Screen:
 
