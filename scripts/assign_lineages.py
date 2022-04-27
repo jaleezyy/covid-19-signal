@@ -62,8 +62,6 @@ def update_nextclade_dataset(vers, skip):
         requested_ver = str(line[0].split(":")[1]).strip()
         recomb = str(line[1].split(":")[1]).strip()
 
-    # check if installed, pull current tag
-    
     # check nextclade_ver, if None, assign today's date
     try:
         if requested_ver != "None":
@@ -73,7 +71,7 @@ def update_nextclade_dataset(vers, skip):
         else:
             requested = None
     except AssertionError: # some other input that isn't in yyyy-mm-dd date format
-        print(f"Provided Nextclade dataset version, invalid! Downloading latest...")
+        print(f"Provided Nextclade dataset version invalid! Downloading latest...")
         requested = None
 
     if recomb:
@@ -81,7 +79,7 @@ def update_nextclade_dataset(vers, skip):
     else:
         dataset = 'sars-cov-2-no-recomb'
 
-    # Determine if install required, if so, install dataset using nextclade dataset get
+    # If specific tag requested, attempt to install, otherwise install latest
     accession = 'MN908947'
     if requested is not None:
         try:
