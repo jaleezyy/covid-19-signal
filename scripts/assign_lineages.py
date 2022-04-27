@@ -7,6 +7,7 @@ import time
 import pandas as pd
 import shutil
 import os, sys
+from datetime import datetime
 
 
 def check_file(path: str) -> Path:
@@ -38,17 +39,90 @@ def update_pangolin(vers):
 
 def update_nextclade():
     """
+    DEPRECIATED!
     Ensure nextclade is updated to the latest release
     """
     subprocess.check_output(["npm", "install", "-g", "@neherlab/nextclade"])
 
-def run_nextclade(input_genomes, threads):
+def update_nextclade_dataset(vers, skip):
+    """
+    Ensure nextclade dataset is updated to the latest dataset, placed within scripts.
+    Reference accession will be set by params.accession (viral_reference_contig_name).
+    """
+    output_dir = os.path.join(os.path.dirname(sys.argv[0]), 'nextclade')
+    if skip:
+        return output_dir
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+    with open(vers) as fh:
+        line = fh.readlines()
+        assert len(line) == 2 # should only be nextclade-data and recomb
+        requested_ver = str(line[0].split(":")[1]).strip()
+        recomb = str(line[1].split(":")[1]).strip()
+
+    # check if installed, pull current tag
+    
+    # check nextclade_ver, if None, assign today's date
+    try:
+        if requested_ver != "None":
+            submitted = map(str.strip, requested_ver.split("-"))
+            assert len(submitted) == 3
+            requested = datetime(year=submitted[0], month=submitted[1], day=submitted[2])
+        else:
+            requested = None
+    except AssertionError: # some other input that isn't in yyyy-mm-dd date format
+        print(f"Provided Nextclade dataset version, invalid! Downloading latest...")
+        requested = None
+
+    if recomb:
+        dataset = 'sars-cov-2'
+    else:
+        dataset = 'sars-cov-2-no-recomb'
+
+    # Determine if install required, if so, install dataset using nextclade dataset get
+    accession = 'MN908947'
+    if requested is not None:
+        try:
+            print(f"\nDownloading Nextclade dataset tagged {requested} for reference {accession}!")
+            subprocess.run(f"nextclade dataset get "
+                           f"--name '{dataset}' "
+                           f"--reference '{accession}' "
+                           f"--tag '{requested}T00:00:00Z' "
+                           f"--output-dir '{output_dir}'", shell=True, check=True)
+        except subprocess.CalledProcessError:
+            print(f"\nDatabase not found! Downloading latest Nextclade dataset for reference {accession}...")
+            subprocess.run(f"nextclade dataset get "
+                           f"--name '{dataset}' "
+                           f"--reference '{accession}' "
+                           f"--output-dir '{output_dir}'", shell=True, check=True)
+    else:
+        print(f"\nDownloading latest Nextclade dataset for reference {accession}!")
+        subprocess.run(f"nextclade dataset get "
+                       f"--name '{dataset}' "
+                       f"--reference '{accession}' "
+                       f"--output-dir '{output_dir}'", shell=True, check=True)
+
+    # Obtain final version information for output
+    if requested is None:
+        today = datetime.today().strftime('%Y-%m-%d')
+        requested = f"Latest as of {today}"
+    with open('final_nextclade_versions.txt', 'w+') as out:
+        print("## Nextclade and datasets now:", file=out)
+        nextclade_version = subprocess.run(f"nextclade --version".split(),
+                                       stdout=subprocess.PIPE)
+        print("Nextclade: " + nextclade_version.stdout.decode('utf-8').strip(), file=out)
+        print("Reference: %s" %(accession), file=out)
+        print("Dataset version: %s" %(requested), file=out)
+
+    return output_dir
+
+
+def run_nextclade(input_genomes, dataset, threads):
     """
     Execute nextclade and collect assignments
     """
     output_file = Path(f"nextclade_temp_{time.time()}.csv")
-    subprocess.check_output(f"nextclade -i {input_genomes} -j {threads} "
-                            f"-c {str(output_file)}".split(),
+    subprocess.check_output(f"nextclade -i {input_genomes} -j {threads} --input-dataset {dataset} -c {str(output_file)}".split(),
                             stderr=subprocess.DEVNULL)
     if not output_file.exists():
         raise FileNotFoundError(f"{str(output_file)} not created, check "
@@ -96,12 +170,20 @@ def run_pangolin(input_genomes, threads):
     pangolin_df = pd.read_csv(str(output_path), sep=',')
 
     # tidy up the dataframe
-    pangolin_df = pangolin_df.rename(columns={'taxon': 'isolate',
-                                              'lineage': 'pango_lineage',
-                                              'status': 'pangolin_qc',
-                                              'note': 'pangolin_note',
-                                              'conflict': 'pangolin_conflict',
-                                              'ambiguity_score': 'pangolin_ambiguity_score'})
+    try:
+        pangolin_df = pangolin_df.rename(columns={'taxon': 'isolate',
+                                                  'lineage': 'pango_lineage',
+                                                  'status': 'pangolin_qc',
+                                                  'note': 'pangolin_note',
+                                                  'conflict': 'pangolin_conflict',
+                                                  'ambiguity_score': 'pangolin_ambiguity_score'})
+    except KeyError: # likely associated with Pangolin v4+
+        pangolin_df = pangolin_df.rename(columns={'taxon': 'isolate',
+                                                  'lineage': 'pango_lineage',
+                                                  'qc_status': 'pangolin_qc',
+                                                  'qc_notes': 'pangolin_note',
+                                                  'conflict': 'pangolin_conflict',
+                                                  'ambiguity_score': 'pangolin_ambiguity_score'})
 
     # remove temp output
     shutil.rmtree(output_dir)
@@ -133,16 +215,15 @@ def collate_output(nextclade, pangolin, output):
                                'alignmentStart', 'alignmentEnd', 'alignmentScore',
                                'pangolin_version', 'pango_version',
                                'pangoLEARN_version', 'pango_version', 'nextclade_version']]
-    except KeyError: # adjust for pangolin v4
+    except KeyError: # adjust for pangolin v4 and nextclade v1.1.0+
         merged_df = merged_df[['isolate', 'pango_lineage',
                                'pangolin_conflict', 'pangolin_ambiguity_score',
                                'pangolin_note', 'scorpio_call', 'scorpio_support',
                                'scorpio_conflict',
                                'nextstrain_clade',
                                'nextclade_qc', 'nextclade_errors',
-                               'totalGaps', 'totalInsertions', 'totalMissing',
-                               'totalMutations', 'totalNonACGTNs',
-                               'totalPcrPrimerChanges',
+                               'totalSubstitutions', 'totalDeletions', 'totalInsertions', 'totalMissing',
+                               'totalNonACGTNs', 'totalPcrPrimerChanges',
                                'substitutions', 'deletions', 'insertions',
                                'missing', 'nonACGTNs',
                                'pcrPrimerChanges', 'aaSubstitutions',
@@ -165,6 +246,8 @@ if __name__ == '__main__':
                         help="Output file for collated assignment table")
     parser.add_argument("-p", "--pangolin_ver", type=check_file, required=False, default=None,
                         help="Input file containing version information for PANGOLIN tools")
+    parser.add_argument("-n", "--nextclade_ver", type=check_file, required=False, default=None,
+                        help="Input file containing version information for Nextclade tools")
     parser.add_argument("--skip", action="store_true", help="Skip updates to pangolin and nextclade")
     args = parser.parse_args()
 
@@ -173,9 +256,11 @@ if __name__ == '__main__':
             update_latest_pangolin()
         else:
             update_pangolin(args.pangolin_ver)
-        update_nextclade()
+        nextclade_dataset = update_nextclade_dataset(args.nextclade_ver, False)
+    else:
+        nextclade_dataset = update_nextclade_dataset(args.nextclade_ver, True)
 
     pangolin = run_pangolin(args.input_genomes, args.threads)
-    nextclade = run_nextclade(args.input_genomes, args.threads)
+    nextclade = run_nextclade(args.input_genomes, nextclade_dataset, args.threads)
 
     collate_output(nextclade, pangolin, args.output)

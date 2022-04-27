@@ -157,6 +157,7 @@ composite_reference: 'data/composite_human_viral_reference.fna'
 # Also used as 'ivar' reference genome in variant detection + consensus.
 # Used as -r,-g arguments to 'quast'
 # contig needed for hostremoval filtering script
+# contig name used as reference for nextclade dataset
 viral_reference_contig_name: 'MN908947.3'
 viral_reference_genome: 'data/MN908947.3.fasta'
 viral_reference_feature_coords: 'data/MN908947.3.gff3'
@@ -200,6 +201,11 @@ pango-designation:
 
 # Required for Pangolin v4+
 pangolin-data:
+
+# Required for Nextclade (datasets)
+# Setting nextclade-include-recomb to False will download the recombinant-sequence free version of the Nextclade database
+nextclade-data:
+nextclade-include-recomb: True
 
 # ANYTHING BELOW IS ONLY NEEDED IF USING NCOV-TOOLS SUMMARIES
 # Path from snakemake dir to .bed file defining the actual amplicon locations not the primers
