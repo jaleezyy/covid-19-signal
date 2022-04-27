@@ -69,11 +69,13 @@ Additional software dependencies are managed directly by `snakemake` using conda
 - ivar 1.3 ([docs](https://github.com/andersen-lab/ivar))
 - freebayes 1.3.2 ([docs](https://github.com/freebayes/freebayes))
 - pangolin (latest; version can be specified by user) [(docs)](https://github.com/cov-lineages/pangolin)
+- pangolin-data (latest; version can be specified by user; required for Pangolin v4+) [(docs)](https://github.com/cov-lineages/pangolin-data)
 - pangolearn (latest; version can be specified by user) [(docs)](https://github.com/cov-lineages/pangoLEARN)
 - constellations (latest; version can be specified by user) [(docs)](https://github.com/cov-lineages/constellations)
 - scorpio (latest; version can be specified by user) [(docs)](https://github.com/cov-lineages/scorpio)
 - pango-designation (latest; version can be specified by user) [(docs)](https://github.com/cov-lineages/pango-designation)
-- ncov-tools postprocessing scripts require additional dependencies (see [file](ncov-tools/workflow/envs/environment.yml)).
+- nextclade (v1.11.0) [(docs)](https://docs.nextstrain.org/projects/nextclade/en/stable/)
+- ncov-tools postprocessing scripts require additional dependencies (see [file](https://github.com/jts/ncov-tools/blob/master/workflow/envs/environment.yml)).
 
 ## SIGNAL Help Screen:
 
@@ -236,7 +238,7 @@ The main rules of the pipeline are as followed:
 
 - `all` = Sequencing pipeline. i.e., take a set of paired reads, perform reference-based assembly to generate a consensus, run lineage assignment, etc.
 - `postprocess` = Summarize the key results including pangolin lineage, specific mutations, etc, after running `all`
-- `ncov_tools` = Create the required conda environment, generate the necessary configuration file, and link needed result files within the `ncov-tools` directory. Manual run of ncov-tools is required.
+- `ncov_tools` = Create the required conda environment, generate the necessary configuration file, and link needed result files within the `ncov-tools` directory. `ncov-tools` will then be executed with output found within the SIGNAL directory.
 
 The generated configuration file from the above steps can be used as input. To run the general pipeline:
 
