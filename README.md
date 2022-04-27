@@ -236,7 +236,7 @@ The main rules of the pipeline are as followed:
 
 - `all` = Sequencing pipeline. i.e., take a set of paired reads, perform reference-based assembly to generate a consensus, run lineage assignment, etc.
 - `postprocess` = Summarize the key results including pangolin lineage, specific mutations, etc, after running `all`
-- `ncov_tools` = Create the required conda environment, generate the necessary configuration file, and link needed result files within the `ncov-tools` directory. Manual run of ncov-tools is required.
+- `ncov_tools` = Create the required conda environment, generate the necessary configuration file, and link needed result files within the `ncov-tools` directory. `ncov-tools` will then be executed with output found within the SIGNAL directory.
 
 The generated configuration file from the above steps can be used as input. To run the general pipeline:
 
