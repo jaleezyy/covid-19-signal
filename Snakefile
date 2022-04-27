@@ -69,7 +69,7 @@ versions = {'pangolin': config['pangolin'],
             'pango-designation': config['pango-designation'],
             'pangolin-data': config['pangolin-data'],
             'nextclade-data': config['nextclade-data'],
-            'nextclade-recomb': config['nextclade-recomb']
+            'nextclade-recomb': config['nextclade-include-recomb']
             }
 
 def get_input_fastq_files(sample_name, r):
