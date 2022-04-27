@@ -33,6 +33,8 @@ def update_pangolin(vers):
     """
     Update pangolin to a specific version
     """
+    if vers is None:
+        return None
     script_dir = os.path.dirname(sys.argv[0])
     script = os.path.join(script_dir, "pangolin_specific_version_update.py")
     subprocess.run([script, '--versions_file', vers])
@@ -50,7 +52,7 @@ def update_nextclade_dataset(vers, skip):
     Reference accession will be set by params.accession (viral_reference_contig_name).
     """
     output_dir = os.path.join(os.path.dirname(sys.argv[0]), 'nextclade')
-    if skip:
+    if skip or (vers is None):
         return output_dir
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
@@ -121,8 +123,9 @@ def run_nextclade(input_genomes, dataset, threads):
     """
     Execute nextclade and collect assignments
     """
-    output_file = Path(f"nextclade_temp_{time.time()}.csv")
-    subprocess.check_output(f"nextclade -i {input_genomes} -j {threads} --input-dataset {dataset} -c {str(output_file)}".split(),
+    output_dir = Path(f"tmp_nextclade")
+    output_file = Path(f"{output_dir}/nextclade_temp_{time.time()}.csv")
+    subprocess.check_output(f"nextclade -i {input_genomes} -j {threads} --input-dataset {dataset} -c {str(output_file)} --output-dir {output_dir}".split(),
                             stderr=subprocess.DEVNULL)
     if not output_file.exists():
         raise FileNotFoundError(f"{str(output_file)} not created, check "
@@ -144,7 +147,9 @@ def run_nextclade(input_genomes, dataset, threads):
                                         nextclade_df.columns \
                                         if qc_col.startswith('qc.')], axis=1)
 
+    # remove temp output
     output_file.unlink()
+    shutil.rmtree(output_dir)
 
     return nextclade_df
 
@@ -260,7 +265,10 @@ if __name__ == '__main__':
     else:
         nextclade_dataset = update_nextclade_dataset(args.nextclade_ver, True)
 
+    print("\nRunning Pangolin...")
     pangolin = run_pangolin(args.input_genomes, args.threads)
+    print("Running Nextclade...")
     nextclade = run_nextclade(args.input_genomes, nextclade_dataset, args.threads)
 
+    print("Collating data...")
     collate_output(nextclade, pangolin, args.output)

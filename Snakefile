@@ -792,10 +792,11 @@ rule run_lineage_assignment_freebayes:
     output:
         'freebayes_lineage_assignments.tsv'
     input:
-        vers = 'input_pangolin_versions.txt',
+        p_vers = 'input_pangolin_versions.txt',
+        n_vers = 'input_nextclade_versions.txt',
         consensus = expand('{sn}/freebayes/{sn}.consensus.fasta', sn=sample_names)
     params:
         assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py'),
     shell:
         'cat {input.consensus} > all_freebayes_genomes.fa && '
-        '{params.assignment_script_path} -i all_freebayes_genomes.fa -t {threads} -o {output} -p {input.vers} --skip'
+        '{params.assignment_script_path} -i all_freebayes_genomes.fa -t {threads} -o {output} -p {input.p_vers} -n {input.n_vers} --skip'
