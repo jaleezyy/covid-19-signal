@@ -67,7 +67,9 @@ versions = {'pangolin': config['pangolin'],
             'constellations': config['constellations'],
             'scorpio': config['scorpio'],
             'pango-designation': config['pango-designation'],
-            'pangolin-data': config['pangolin-data']
+            'pangolin-data': config['pangolin-data'],
+            'nextclade-data': config['nextclade-data'],
+            'nextclade-recomb': config['nextclade-include-recomb']
             }
 
 def get_input_fastq_files(sample_name, r):
@@ -95,6 +97,12 @@ if samples['sample'].duplicated().any():
     ruleorder: concat_and_sort > link_raw_data
 else:
     ruleorder: link_raw_data > concat_and_sort
+
+# Determine Pangolin analysis mode
+if config['pangolin_fast']:
+    pango_speed = 'fast'
+else:
+    pango_speed = 'accurate'
 
 ######################################   High-level targets   ######################################
 rule raw_read_data_symlinks:
@@ -149,7 +157,8 @@ rule quast:
 
 rule lineages:
     input:
-        'input_versions.txt', 
+        'input_pangolin_versions.txt',
+        'input_nextclade_versions.txt',
         'lineage_assignments.tsv'
 
 rule config_sample_log:
@@ -761,7 +770,8 @@ rule run_lineage_assignment:
     threads: 4
     conda: 'conda_envs/assign_lineages.yaml'
     output:
-        ver_out = 'input_versions.txt',
+        pango_ver_out = 'input_pangolin_versions.txt',
+        nextclade_ver_out = 'input_nextclade_versions.txt',
         lin_out = 'lineage_assignments.tsv'
     input:
         expand('{sn}/core/{sn}.consensus.fa', sn=sample_names)
@@ -772,11 +782,16 @@ rule run_lineage_assignment:
         scorpio_ver = versions['scorpio'],
         designation_ver = versions['pango-designation'],
         data_ver = versions['pangolin-data'],
+        #accession = config['viral_reference_contig_name'],
+        nextclade_ver = versions['nextclade-data'],
+        nextclade_recomb = versions['nextclade-recomb'],
+        analysis_mode = pango_speed,
         assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py')
     shell:
-        "echo -e 'pangolin: {params.pangolin_ver}\nconstellations: {params.constellations_ver}\nscorpio: {params.scorpio_ver}\npangolearn: {params.pangolearn_ver}\npango-designation: {params.designation_ver}\npangolin-data: {params.data_ver}' > {output.ver_out} && "
+        "echo -e 'pangolin: {params.pangolin_ver}\nconstellations: {params.constellations_ver}\nscorpio: {params.scorpio_ver}\npangolearn: {params.pangolearn_ver}\npango-designation: {params.designation_ver}\npangolin-data: {params.data_ver}' > {output.pango_ver_out} && "
+        "echo -e 'nextclade-dataset: {params.nextclade_ver}\nnextclade-include-recomb: {params.nextclade_recomb}' > {output.nextclade_ver_out} && "
         'cat {input} > all_genomes.fa && '
-        '{params.assignment_script_path} -i all_genomes.fa -t {threads} -o {output.lin_out} -p {output.ver_out}'
+        '{params.assignment_script_path} -i all_genomes.fa -t {threads} -o {output.lin_out} -p {output.pango_ver_out} -n {output.nextclade_ver_out} --mode {params.analysis_mode}'
 
 rule run_lineage_assignment_freebayes:
     threads: 4
@@ -784,10 +799,12 @@ rule run_lineage_assignment_freebayes:
     output:
         'freebayes_lineage_assignments.tsv'
     input:
-        vers = 'input_versions.txt',
+        p_vers = 'input_pangolin_versions.txt',
+        n_vers = 'input_nextclade_versions.txt',
         consensus = expand('{sn}/freebayes/{sn}.consensus.fasta', sn=sample_names)
     params:
-        assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py'),
+        analysis_mode = pango_speed,
+        assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py')
     shell:
         'cat {input.consensus} > all_freebayes_genomes.fa && '
-        '{params.assignment_script_path} -i all_freebayes_genomes.fa -t {threads} -o {output} -p {input.vers} --skip'
+        '{params.assignment_script_path} -i all_freebayes_genomes.fa -t {threads} -o {output} -p {input.p_vers} -n {input.n_vers} --mode {params.analysis_mode} --skip'
