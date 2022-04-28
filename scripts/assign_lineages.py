@@ -66,6 +66,7 @@ def update_nextclade_dataset(vers, skip):
     # check nextclade_ver, if None, assign today's date
     try:
         if requested_ver != "None":
+            # assume yyyy-mm-dd (so only yyyy and mm expected to stay ccnsistent)
             submitted = requested_ver.split("-")
             submitted_date = [s.strip() for s in submitted]
             assert len(submitted_date) == 3
@@ -75,18 +76,18 @@ def update_nextclade_dataset(vers, skip):
                 if submitted_date[2].count("T") == 1: # only applies if starting input was in quotations itself in the config file
                     day = str(submitted_date[2]).split("T")[0].strip()
                     timestamp = str(submitted_date[2]).split("T")[1].split("+", 1)[0].split(":")
-                else:
+                else: 
                     day = str(submitted_date[2]).split(" ")[0].strip()
                     timestamp = str(submitted_date[2]).split(" ")[1].split("+", 1)[0].split(":")
                 tags = [timestamp[0], timestamp[1], timestamp[2].strip("Z")]
-            else:
+            else: # only a date provided, assume timestamp
                 day = str(submitted_date[2])
                 tags = ["12", "00", "00"]
             requested = str("%s-%s-%sT%s:%s:%sZ" %(year, month, day, tags[0], tags[1], tags[2]))
         else:
             requested = None
-    except (AssertionError, TypeError): # some other input that isn't in yyyy-mm-dd date format
-        print(f"\nProvided Nextclade dataset version invalid! Downloading latest...")
+    except (AssertionError, TypeError, ValueError): # some other input that isn't in yyyy-mm-dd date format
+        print(f"\nProvided Nextclade dataset tag invalid! Downloading latest...")
         requested = None
 
     if recomb:
