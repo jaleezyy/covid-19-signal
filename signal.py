@@ -191,7 +191,7 @@ var_min_variant_quality: 20
 
 # Toggle faster Pangolin analysis at the cost of accuracy (uses Pangolearn instead of Usher)
 # Use for significantly larger datasets
-pangolin_fast: True
+pangolin_fast: False
 
 # Versions of software related to lineage calling (use numbers only, i.e., 3.1.1). Dates (YYYY-mm-dd) are accepted for pangolearn. Leave blank for latest version(s).
 pangolin: 
