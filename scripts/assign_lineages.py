@@ -72,18 +72,16 @@ def update_nextclade_dataset(vers, skip):
             year = str(submitted_date[0])
             month = str(submitted_date[1])
             if (len(submitted_date[2].split(" ")) == 2) or (len(submitted_date[2].split("T")) == 2): # date and time part of provided tag
-                if submitted_date[2].count("T") == 1:
+                if submitted_date[2].count("T") == 1: # only applies if starting input was in quotations itself in the config file
                     day = str(submitted_date[2]).split("T")[0].strip()
                     timestamp = str(submitted_date[2]).split("T")[1].split("+", 1)[0].split(":")
                 else:
                     day = str(submitted_date[2]).split(" ")[0].strip()
                     timestamp = str(submitted_date[2]).split(" ")[1].split("+", 1)[0].split(":")
-                print(timestamp)
                 tags = [timestamp[0], timestamp[1], timestamp[2].strip("Z")]
             else:
                 day = str(submitted_date[2])
                 tags = ["12", "00", "00"]
-                print("%s + %s" %(day, tags))
             requested = str("%s-%s-%sT%s:%s:%sZ" %(year, month, day, tags[0], tags[1], tags[2]))
         else:
             requested = None
@@ -170,16 +168,20 @@ def run_nextclade(input_genomes, dataset, threads):
     return nextclade_df
 
 
-def run_pangolin(input_genomes, threads):
+def run_pangolin(input_genomes, threads, mode):
     """
     Execute pangolin and collect assignments
     """
-    
+   # check analysis mode
+    if mode == "fast":
+        analysis = f"--analysis-mode fast "
+    else:
+        analysis = f""
    # check final versions for pangolin
     subprocess.check_output(["pangolin", "--all-versions"])
     
     output_dir = Path(f"pangolin_tmp_{time.time()}")
-    subprocess.check_output(f"pangolin {input_genomes} -t {threads} "
+    subprocess.check_output(f"pangolin {analysis}{input_genomes} -t {threads} "
                             f"-o {str(output_dir)}".split(),
                             stderr=subprocess.DEVNULL)
 
@@ -269,6 +271,7 @@ if __name__ == '__main__':
                         help="Input file containing version information for PANGOLIN tools")
     parser.add_argument("-n", "--nextclade_ver", type=check_file, required=False, default=None,
                         help="Input file containing version information for Nextclade tools")
+    parser.add_argument('--mode', default='accurate', required=False, help="Pangolin analysis mode. Either 'accurate' for Usher or 'fast' for pangolearn")
     parser.add_argument("--skip", action="store_true", help="Skip updates to pangolin and nextclade")
     args = parser.parse_args()
 
@@ -282,7 +285,7 @@ if __name__ == '__main__':
         nextclade_dataset = update_nextclade_dataset(args.nextclade_ver, True)
 
     print("\nRunning Pangolin...")
-    pangolin = run_pangolin(args.input_genomes, args.threads)
+    pangolin = run_pangolin(args.input_genomes, args.threads, args.mode)
     print("Running Nextclade...")
     nextclade = run_nextclade(args.input_genomes, nextclade_dataset, args.threads)
 

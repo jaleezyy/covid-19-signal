@@ -98,6 +98,12 @@ if samples['sample'].duplicated().any():
 else:
     ruleorder: link_raw_data > concat_and_sort
 
+# Determine Pangolin analysis mode
+if config['pangolin_fast']:
+    pango_speed = 'fast'
+else:
+    pango_speed = 'accurate'
+
 ######################################   High-level targets   ######################################
 rule raw_read_data_symlinks:
     input: expand('{sn}/raw_fastq/{sn}_R{r}.fastq.gz', sn=sample_names, r=[1,2])
@@ -779,12 +785,13 @@ rule run_lineage_assignment:
         #accession = config['viral_reference_contig_name'],
         nextclade_ver = versions['nextclade-data'],
         nextclade_recomb = versions['nextclade-recomb'],
+        analysis_mode = pango_speed,
         assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py')
     shell:
         "echo -e 'pangolin: {params.pangolin_ver}\nconstellations: {params.constellations_ver}\nscorpio: {params.scorpio_ver}\npangolearn: {params.pangolearn_ver}\npango-designation: {params.designation_ver}\npangolin-data: {params.data_ver}' > {output.pango_ver_out} && "
         "echo -e 'nextclade-dataset: {params.nextclade_ver}\nnextclade-include-recomb: {params.nextclade_recomb}' > {output.nextclade_ver_out} && "
         'cat {input} > all_genomes.fa && '
-        '{params.assignment_script_path} -i all_genomes.fa -t {threads} -o {output.lin_out} -p {output.pango_ver_out} -n {output.nextclade_ver_out}'
+        '{params.assignment_script_path} -i all_genomes.fa -t {threads} -o {output.lin_out} -p {output.pango_ver_out} -n {output.nextclade_ver_out} --mode {params.analysis_mode}'
 
 rule run_lineage_assignment_freebayes:
     threads: 4
@@ -796,7 +803,8 @@ rule run_lineage_assignment_freebayes:
         n_vers = 'input_nextclade_versions.txt',
         consensus = expand('{sn}/freebayes/{sn}.consensus.fasta', sn=sample_names)
     params:
-        assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py'),
+        analysis_mode = pango_speed,
+        assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py')
     shell:
         'cat {input.consensus} > all_freebayes_genomes.fa && '
-        '{params.assignment_script_path} -i all_freebayes_genomes.fa -t {threads} -o {output} -p {input.p_vers} -n {input.n_vers} --skip'
+        '{params.assignment_script_path} -i all_freebayes_genomes.fa -t {threads} -o {output} -p {input.p_vers} -n {input.n_vers} --mode {params.analysis_mode} --skip'

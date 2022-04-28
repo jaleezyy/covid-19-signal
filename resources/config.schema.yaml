@@ -87,6 +87,10 @@ nextclade-include-recomb:
     type: boolean
     default: True
     description: "optionally download Nextclade dataset with or without recombinant sequences"
+pangolin_fast:
+    type: boolean
+    default: False
+    description: "toggle Pangolin faster analysis which uses pangolearn in place of usher at the cost of accuracy"
 required:
     - min_len
     - min_qual
