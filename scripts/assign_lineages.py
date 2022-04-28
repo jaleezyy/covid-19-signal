@@ -200,12 +200,13 @@ def run_pangolin(input_genomes, threads, mode):
                                                   'status': 'pangolin_qc',
                                                   'note': 'pangolin_note',
                                                   'conflict': 'pangolin_conflict',
-                                                  'ambiguity_score': 'pangolin_ambiguity_score'})
+                                                  'ambiguity_score': 'pangolin_ambiguity_score'}, errors='raise')
     except KeyError: # likely associated with Pangolin v4+
         pangolin_df = pangolin_df.rename(columns={'taxon': 'isolate',
                                                   'lineage': 'pango_lineage',
                                                   'qc_status': 'pangolin_qc',
-                                                  'qc_notes': 'pangolin_note',
+                                                  'qc_notes': 'pangolin_qc_note',
+                                                  'note': 'pangolin_note',
                                                   'conflict': 'pangolin_conflict',
                                                   'ambiguity_score': 'pangolin_ambiguity_score'})
 
@@ -243,7 +244,7 @@ def collate_output(nextclade, pangolin, output):
         merged_df = merged_df[['isolate', 'pango_lineage',
                                'pangolin_conflict', 'pangolin_ambiguity_score',
                                'pangolin_note', 'scorpio_call', 'scorpio_support',
-                               'scorpio_conflict',
+                               'scorpio_conflict', 'pangolin_qc', 'pangolin_qc_note',
                                'nextstrain_clade',
                                'nextclade_qc', 'nextclade_errors',
                                'totalSubstitutions', 'totalDeletions', 'totalInsertions', 'totalMissing',
