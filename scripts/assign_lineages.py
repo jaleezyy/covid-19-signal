@@ -52,6 +52,7 @@ def update_nextclade_dataset(vers, skip):
     Reference accession will be set by params.accession (viral_reference_contig_name).
     """
     output_dir = os.path.join(os.path.dirname(sys.argv[0]), 'nextclade')
+    #output_dir = Path(f"tmp_nextclade")
     if skip or (vers is None):
         return output_dir
     if not os.path.exists(output_dir):
@@ -59,19 +60,35 @@ def update_nextclade_dataset(vers, skip):
     with open(vers) as fh:
         line = fh.readlines()
         assert len(line) == 2 # should only be nextclade-data and recomb
-        requested_ver = str(line[0].split(":")[1]).strip()
-        recomb = str(line[1].split(":")[1]).strip()
+        requested_ver = str(line[0].split(":", 1)[1]).strip()
+        recomb = eval(str(line[1].split(":")[1]).strip())
 
     # check nextclade_ver, if None, assign today's date
     try:
         if requested_ver != "None":
-            submitted = map(str.strip, requested_ver.split("-"))
-            assert len(submitted) == 3
-            requested = datetime(year=submitted[0], month=submitted[1], day=submitted[2])
+            submitted = requested_ver.split("-")
+            submitted_date = [s.strip() for s in submitted]
+            assert len(submitted_date) == 3
+            year = str(submitted_date[0])
+            month = str(submitted_date[1])
+            if (len(submitted_date[2].split(" ")) == 2) or (len(submitted_date[2].split("T")) == 2): # date and time part of provided tag
+                if submitted_date[2].count("T") == 1:
+                    day = str(submitted_date[2]).split("T")[0].strip()
+                    timestamp = str(submitted_date[2]).split("T")[1].split("+", 1)[0].split(":")
+                else:
+                    day = str(submitted_date[2]).split(" ")[0].strip()
+                    timestamp = str(submitted_date[2]).split(" ")[1].split("+", 1)[0].split(":")
+                print(timestamp)
+                tags = [timestamp[0], timestamp[1], timestamp[2].strip("Z")]
+            else:
+                day = str(submitted_date[2])
+                tags = ["12", "00", "00"]
+                print("%s + %s" %(day, tags))
+            requested = str("%s-%s-%sT%s:%s:%sZ" %(year, month, day, tags[0], tags[1], tags[2]))
         else:
             requested = None
-    except AssertionError: # some other input that isn't in yyyy-mm-dd date format
-        print(f"Provided Nextclade dataset version invalid! Downloading latest...")
+    except (AssertionError, TypeError): # some other input that isn't in yyyy-mm-dd date format
+        print(f"\nProvided Nextclade dataset version invalid! Downloading latest...")
         requested = None
 
     if recomb:
@@ -83,20 +100,20 @@ def update_nextclade_dataset(vers, skip):
     accession = 'MN908947'
     if requested is not None:
         try:
-            print(f"\nDownloading Nextclade dataset tagged {requested} for reference {accession}!")
+            print(f"\nDownloading Nextclade {dataset} dataset tagged {requested} for reference {accession}!")
             subprocess.run(f"nextclade dataset get "
                            f"--name '{dataset}' "
                            f"--reference '{accession}' "
-                           f"--tag '{requested}T00:00:00Z' "
+                           f"--tag {requested} "
                            f"--output-dir '{output_dir}'", shell=True, check=True)
         except subprocess.CalledProcessError:
-            print(f"\nDatabase not found! Downloading latest Nextclade dataset for reference {accession}...")
+            print(f"\nDatabase not found! Please check whether {requested} tag exists! Downloading latest Nextclade {dataset} dataset for reference {accession}...")
             subprocess.run(f"nextclade dataset get "
                            f"--name '{dataset}' "
                            f"--reference '{accession}' "
                            f"--output-dir '{output_dir}'", shell=True, check=True)
     else:
-        print(f"\nDownloading latest Nextclade dataset for reference {accession}!")
+        print(f"\nDownloading latest Nextclade {dataset} dataset for reference {accession}!")
         subprocess.run(f"nextclade dataset get "
                        f"--name '{dataset}' "
                        f"--reference '{accession}' "
@@ -112,6 +129,7 @@ def update_nextclade_dataset(vers, skip):
                                        stdout=subprocess.PIPE)
         print("Nextclade: " + nextclade_version.stdout.decode('utf-8').strip(), file=out)
         print("Reference: %s" %(accession), file=out)
+        print("Dataset: %s" %(dataset), file=out)
         print("Dataset version: %s" %(requested), file=out)
 
     return output_dir
