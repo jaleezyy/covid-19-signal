@@ -1,78 +1,96 @@
 $schema: "http://json-schema.org/draft-07/schema#"
-description: "SIGNAL parameters"
-properties:
-    min_len:
-        type: integer
-        description: "minimum read length to retain"
-    min_qual:
-        type: integer
-        description: "minimum quality score to retain"
-    scheme_bed:
-        type: string
-        description: "path to .bed file defining amplicon primer scheme"
-    viral_reference_genome:
-        type: string
-        description: "path to reference fasta for QC, removing non SARS-CoV2 sequences and generating consensus/variants"
-    viral_reference_feature_coords: 
-        type: string
-        description: "path to feature coords on reference viral genome for QC"
-    breseq_reference:
-        type: string
-        description: "path to enhanced reference gbk with clinical sequences"
-    kraken2_db:
-        type: string
-        description: "path to kraken2 database files"
-    mpileup_depth:
-        type: integer
-        default: 100000
-        description: "mpileup depth to use for ivar/samtools consensus and variant calling"
-    var_freq_threshold:
-        type: number
-        default: 0.75
-        description: "ivar frequency threshold to build consensus"
-    var_min_coverage_depth:
-        type: integer
-        default: 10
-        description: "minimum coverage depth to call variant"
-    var_min_freq_threshold:
-        type: number
-        default: 0.25
-        description: "ivar frequency threshold to call variant (ivar variants: -t )"
-    var_min_variant_quality:
-        type: integer
-        default: 20
-        description: "iVar minimum mapQ to call variant (ivar variants: -q)"
-    samples:
-        type: string
-        description: "Sample filepaths/table"
-    result_dir:
-        type: string
-        default: "results"
-        description: "Path to output results"
-    run_breseq:
-        type: boolean
-        default: False
-        description: "optionally run BreSeq mutation analysis"
-    run_freebayes:
-        type: boolean
-        default: True
-        description: "optionally run FreeBayes variant calling and consensus sequence generation"
-    pangolin:
-        default: "None"
-        description: "Pangolin version"
-    pangolearn:
-        default: "None"
-        description: "pangoLEARN version"
-    constellations:
-        default: "None"
-        description: "Constellations version"
-    scorpio:
-        default: "None"
-        description: "Scorpio version"
-    pango-designation:
-        default: "None"
-        description: "Pango-designation date/version"
-
+min_len:
+    type: int
+    description: "minimum read length to retain"
+min_qual:
+    type: int
+    description: "minimum quality score to retain"
+scheme_bed:
+    type: string
+    description: "path to .bed file defining amplicon primer scheme"
+viral_reference_genome:
+    type: string
+    description: "path to reference fasta for QC, removing non SARS-CoV2 sequences and generating consensus/variants"
+viral_reference_feature_coords: 
+    type: string
+    description: "path to feature coords on reference viral genome for QC"
+breseq_reference:
+    type: string
+    description: "path to enhanced reference gbk with clinical sequences"
+kraken2_db:
+    type: string
+    description: "path to kraken2 database files"
+mpileup_depth:
+    type: int
+    default: 100000
+    description: "mpileup depth to use for ivar/samtools consensus and variant calling"
+var_freq_threshold:
+    type: float
+    default: 0.75
+    description: "ivar frequency threshold to build consensus"
+var_min_coverage_depth:
+    type: int
+    default: 10
+    description: "minimum coverage depth to call variant"
+var_min_freq_threshold:
+    type: float
+    default: 0.25
+    description: "ivar frequency threshold to call variant (ivar variants: -t)"
+var_min_variant_quality:
+    type: int
+    default: 20
+    description: "iVar minimum mapQ to call variant (ivar variants: -q)"
+samples:
+    type: string
+    description: "Sample filepaths/table"
+result_dir:
+    type: string
+    default: "results"
+    description: "Path to output results"
+run_breseq:
+    type: boolean
+    default: False
+    description: "optionally run BreSeq mutation analysis"
+run_freebayes:
+    type: boolean
+    default: False
+    description: "optionally run FreeBayes variant calling and consensus sequence generation"
+pangolin:
+    type: string
+    default: "None"
+    description: "Pangolin version"
+pangolearn:
+    type: string
+    default: "None"
+    description: "pangoLEARN version"
+constellations:
+    type: string
+    default: "None"
+    description: "Constellations version"
+scorpio:
+    type: string
+    default: "None"
+    description: "Scorpio version"
+pango-designation:
+    type: string
+    default: "None"
+    description: "Pango-designation date/version"
+pangolin-data:
+    type: string
+    default: "None"
+    description: "Pangolin-data version"
+nextclade-data:
+    type: string
+    default: "None"
+    description: "Nextclade dataset date tag"
+nextclade-include-recomb:
+    type: boolean
+    default: True
+    description: "optionally download Nextclade dataset with or without recombinant sequences"
+pangolin_fast:
+    type: boolean
+    default: False
+    description: "toggle Pangolin faster analysis which uses pangolearn in place of usher at the cost of accuracy"
 required:
     - min_len
     - min_qual

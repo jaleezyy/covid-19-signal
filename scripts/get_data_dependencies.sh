@@ -31,7 +31,7 @@ if [ $database_dir = 0 ] ; then
     exit 1
 fi
 
-echo -e "Warning: \n - final databases require ~10GB of storage\n - building databases temporarily requires a peak of ~35GB of storage and ~2GB of memory \n - script takes up to ~1.5 hours (system depending)"
+echo -e "Warning: \n - final databases require ~10GB of storage\n - building databases temporarily requires a peak of ~35GB of storage and ~4GB of memory \n - script takes up to ~1.5 hours (system depending)"
 
 # make database dir and get abspath to it
 mkdir -p $database_dir
@@ -49,7 +49,6 @@ source $CONDA_BASE/etc/profile.d/conda.sh
 conda create -n data_dependencies -c conda-forge -c bioconda -y kraken2=2.1.1 bwa
 conda activate data_dependencies
 
-
 # get the GRCh38 human genome
 # as per https://lh3.github.io/2017/11/13/which-human-reference-genome-to-use
 curl -s "ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz" > $database_dir/GRC38_no_alt_analysis_set.fna.gz
@@ -60,9 +59,11 @@ gunzip $database_dir/GRC38_no_alt_analysis_set.fna.gz
 cat $database_dir/GRC38_no_alt_analysis_set.fna $database_dir/$accession.fasta > $database_dir/composite_human_viral_reference.fna
 bwa index $database_dir/composite_human_viral_reference.fna
 
+# get kraken2 viral db
+mkdir -p $database_dir/Kraken2/db
+curl -s "https://genome-idx.s3.amazonaws.com/kraken/k2_viral_20210517.tar.gz" > $database_dir/Kraken2/db/k2_viral_20210517.tar.gz
+cd $database_dir/Kraken2/db
+tar xvf k2_viral_20210517.tar.gz
 
-# get kraken2, and clean db after building
-kraken2-build --download-taxonomy --db $database_dir/Kraken2/db --threads 10 --use-ftp
-kraken2-build --download-library viral --db $database_dir/Kraken2/db --threads 10 --use-ftp
-kraken2-build --build --threads 10 --db $database_dir/Kraken2/db
-kraken2-build --clean --threads 10 --db $database_dir/Kraken2/db
+# create blank fasta for 'phylo_include_seqs'
+touch $database_dir/blank.fasta

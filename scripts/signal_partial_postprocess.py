@@ -19,14 +19,25 @@ def check_file(path: str) -> Path:
 
 def parse_lineages(file):
 	lineages = pd.read_table(file, sep='\t')
-	lin_df = lineages[['isolate', 
-						'pango_lineage', 
-						'pangolin_version', 
-						'pangoLEARN_version',
-						'pango_version',
-						'pangolin_qc', 
-						'pangolin_note', 
-						]]
+	try:
+		lin_df = lineages[['isolate', 
+							'pango_lineage', 
+							'pangolin_version', 
+							'pangoLEARN_version',
+							'pango_version',
+							'pangolin_qc', 
+							'pangolin_note', 
+							]]
+	except KeyError:
+		lin_df = lineages[['isolate', 
+							'pango_lineage', 
+							'pangolin_version', 
+							'version',
+							'pangolin_qc',
+							'pangolin_qc_note',
+							'pangolin_note', 
+							]]
+						
 	lin_df['isolate'] = lin_df['isolate'].apply(lambda x: x.split("_")[1].split(".")[0] if x.startswith("Consensus") else x)
 	return lin_df
 	
@@ -66,7 +77,7 @@ def parse_stats(stats):
 	
 def collate_output(lineage, stats, output):
 	merged_df = lineage.merge(stats, on='isolate', how='outer')
-	merged_df.rename(columns={'isolate': 'SAMPLE ID', 'pango_lineage': "LINEAGE", 'pangolin_qc': 'STATUS', 'pangolin_note': "NOTE"}, inplace=True)
+	merged_df.rename(columns={'isolate': 'SAMPLE ID', 'pango_lineage': "LINEAGE", 'pangolin_qc': 'STATUS', 'pangolin_qc_note': "QC NOTE", 'pangolin_note': "NOTE"}, inplace=True)
 	merged_df.to_csv(output, sep='\t', index=False)
 
 
