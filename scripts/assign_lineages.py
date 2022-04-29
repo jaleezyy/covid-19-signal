@@ -255,7 +255,8 @@ def collate_output(nextclade, pangolin, output):
                                'totalAminoacidSubstitutions',
                                'aaDeletions', 'totalAminoacidDeletions',
                                'alignmentStart', 'alignmentEnd', 'alignmentScore', 
-                               'version','pangolin_version', 'nextclade_version']]
+                               'version','pangolin_version', 
+                               'scorpio_version', 'constellation_version', 'nextclade_version']]
     merged_df.to_csv(output, sep='\t', index=False)
 
 
