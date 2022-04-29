@@ -28,11 +28,13 @@ def parse_lineages(file):
 							'pangolin_qc', 
 							'pangolin_note', 
 							]]
-	except KeyError:
+	except KeyError: # Pangolin v4 modifications
 		lin_df = lineages[['isolate', 
 							'pango_lineage', 
 							'pangolin_version', 
 							'version',
+							'scorpio_version',
+							'constellation_version',
 							'pangolin_qc',
 							'pangolin_qc_note',
 							'pangolin_note', 
