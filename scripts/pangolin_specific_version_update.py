@@ -64,8 +64,11 @@ if __name__ == "__main__":
 
 	# parse the dependency version file provided, validate real dependencies
 	# tidy up version strings, and then use pip to update
+	required = []
 	valid_deps = ['pangolin', 'pangolearn', 'constellations',
 				  'scorpio', 'pango-designation', 'pangolin-data']
+	required_v3 = ['pangolin', 'scorpio', 'constellations', 'pangolearn', 'pango-designation'] 
+	required_v4 = ['pangolin', 'scorpio', 'constellations', 'pangolin-data']
 	print("## Changing installed versions as needed:")
 	with open(args.versions_file) as fh:
 		for line in fh:
@@ -73,12 +76,25 @@ if __name__ == "__main__":
 			dependency = line[0].strip()
 			requested_ver = line[1].strip()
 
-			if dependency not in valid_deps:
-				raise ValueError(f"{dependency} is not a valid pangolin "
-								 f"dependency. Must be in {valid_deps}")
+			if dependency == "pangolin" and len(required) == 0:
+				if requested_ver.startswith("3") or requested_ver.startswith("v3"):
+					required = required_v3
+				elif requested_ver.startswith("4") or requested_ver.startswith("v4") or str(requested_ver) == "None":
+					required = required_v4
+				else:
+					required = valid_deps # no change to valid deps
+
+			if dependency not in required:
+				if dependency not in valid_deps:
+					raise ValueError(f"{dependency} is not a valid pangolin "
+									f"dependency. Must be in {required}")
+				else:
+					print(f"{dependency} not required! Skipping...")
+					continue
 
 			if dependency != "pangolearn" and not requested_ver.startswith("v"):
 				requested_ver = "v" + requested_ver
+			
 			
 			# Get latest version number to compare with installed when latest version is requested
 			try:
@@ -117,7 +133,7 @@ if __name__ == "__main__":
 				continue
 
 	# provides pangolin install details after update to specific versions in supplied version file
-	with open('final_versions.txt', 'w+') as out:
+	with open('final_pangolin_versions.txt', 'w+') as out:
 		print("## Pangolin and dependencies now:", file=out)
 		out_ver = subprocess.run(["pangolin", "--all-versions"], check=True, stdout=subprocess.PIPE)
 		print(out_ver.stdout.decode("utf-8").replace("[32m****\nPangolin running in usher mode.\n****[0m", "").strip(), file=out)
