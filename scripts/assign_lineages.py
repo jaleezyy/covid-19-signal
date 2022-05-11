@@ -222,16 +222,15 @@ def collate_output(nextclade, pangolin, output):
     """
     merged_df = pangolin.merge(nextclade, on='isolate', how='outer')
 
-    try:
+    try: # adjust for pangolin v3 and nextclade v1.1.0
         merged_df = merged_df[['isolate', 'pango_lineage',
                                'pangolin_conflict', 'pangolin_ambiguity_score',
                                'pangolin_note', 'scorpio_call', 'scorpio_support',
                                'scorpio_conflict',
                                'pangolin_qc', 'nextstrain_clade',
                                'nextclade_qc', 'nextclade_errors',
-                               'totalGaps', 'totalInsertions', 'totalMissing',
-                               'totalMutations', 'totalNonACGTNs',
-                               'totalPcrPrimerChanges',
+                               'totalInsertions', 'totalMissing',
+                               'totalNonACGTNs','totalPcrPrimerChanges',
                                'substitutions', 'deletions', 'insertions',
                                'missing', 'nonACGTNs',
                                'pcrPrimerChanges', 'aaSubstitutions',
