@@ -28,7 +28,6 @@ def link_ivar(root, replace=False):
 			else:
 				print(line, end='\n')
 
-# more hardcoded, but temporary workaround
 # take sample name from iVar results, redirect to where corresponding FreeBayes should be
 # if FreeBayes file cannot be found, break from loop, replace all with iVar
 def link_freebayes(root):
@@ -71,6 +70,16 @@ def set_up():
 	exec_dir = snakemake.params['exec_dir']
 	result_dir = os.path.basename(snakemake.params['result_dir']) # basename of SIGNAL result directory
 
+	### Pull pangolin version number (i.e., version '3' or '4')
+	pangolin = str(snakemake.params['pangolin']).split(".")[0].lower().strip("v")
+	try:
+		assert pangolin == "3" or pangolin == "4" # directly supported versions
+	except AssertionError:
+		import urllib.request as web
+		commit_url = web.urlopen(f"https://github.com/cov-lineages/pangolin/releases/latest").geturl()
+		pangolin = commit_url.split("/")[-1].split(".")[0].lower().strip("v") 
+		# latest version (should ensure temporary compatibility)
+
 ### Create data directory within ncov-tools
 	data_root = os.path.abspath(os.path.join(exec_dir, 'ncov-tools', "%s" %(result_dir)))
 	if os.path.exists(data_root):
@@ -109,7 +118,8 @@ def set_up():
 			  'tree_include_consensus': f"'{snakemake.params['phylo_include_seqs']}'",
 			  'negative_control_samples': f"{neg_list}",
 			  'mutation_set': 'spike_mutations',
-			  'output_directory': f"{result_dir}_ncovresults"
+			  'output_directory': f"{result_dir}_ncovresults",
+			  'pangolin_version': f"'{pangolin}'"
 			  }
 
 	print("Linking alignment BAMs to ncov-tools!")

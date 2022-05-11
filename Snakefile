@@ -236,7 +236,8 @@ rule ncov_tools:
         viral_reference_genome = os.path.join(exec_dir, config['viral_reference_genome']),
         phylo_include_seqs = os.path.join(exec_dir, config['phylo_include_seqs']),
         negative_control_prefix = config['negative_control_prefix'],
-        freebayes_run = config['run_freebayes']
+        freebayes_run = config['run_freebayes'],
+        pangolin = versions['pangolin']
     input:
         consensus = expand('{sn}/core/{sn}.consensus.fa', sn=sample_names),
         primertrimmed_bams = expand("{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam", sn=sample_names),
