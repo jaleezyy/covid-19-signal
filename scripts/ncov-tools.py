@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import fileinput
 import glob
+import urllib.request as web
 
 def link_ivar(root, replace=False):
 	print("Linking iVar files to ncov-tools!")
@@ -75,7 +76,7 @@ def set_up():
 	try:
 		assert pangolin == "3" or pangolin == "4" # directly supported versions
 	except AssertionError:
-		commit_url = web.urlopen(f"https://github.com/cov-lineages/{dependency}/releases/latest").geturl()
+		commit_url = web.urlopen(f"https://github.com/cov-lineages/pangolin/releases/latest").geturl()
 		pangolin = commit_url.split("/")[-1].split(".")[0].lower().strip("v") 
 		# latest version (should ensure temporary compatibility)
 
@@ -118,7 +119,7 @@ def set_up():
 			  'negative_control_samples': f"{neg_list}",
 			  'mutation_set': 'spike_mutations',
 			  'output_directory': f"{result_dir}_ncovresults",
-			  'pangolin_version': f"{pangolin}"
+			  'pangolin_version': f"'{pangolin}'"
 			  }
 
 	print("Linking alignment BAMs to ncov-tools!")
