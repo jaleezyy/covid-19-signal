@@ -1,3 +1,3 @@
 [submodule "ncov-tools"]
 	path = ncov-tools
-	url = git://github.com/jts/ncov-tools
+	url = https://github.com/jts/ncov-tools
