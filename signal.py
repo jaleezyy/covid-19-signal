@@ -205,11 +205,13 @@ pango-designation:
 # Required for Pangolin v4+
 pangolin-data:
 
-# Required for Nextclade (datasets)
-# Be as specific as possible with the desired tag. Can accept dates (YYYY-mm-dd) alone, but will assume corresponding timestamp (HH:MM:SS) 
+# Required for Nextclade (software & datasets)
+# Software version should use numbers only (i.e., 1.11.0)
+# Be as specific as possible with the desired dataset tag. Can accept dates (YYYY-mm-dd) alone, but will assume corresponding timestamp (HH:MM:SS) 
 # Typical tag format is YYYY-mm-ddTHH:MM:SSZ
-# Leave blank for latest dataset
+# Leave blank for latest versions
 # Setting nextclade-include-recomb to False will download the recombinant-sequence free version of the Nextclade database
+nextclade:
 nextclade-data:
 nextclade-include-recomb: True
 
