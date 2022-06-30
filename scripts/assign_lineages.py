@@ -140,22 +140,22 @@ def update_nextclade_dataset(vers, skip):
 		try:
 			print(f"\nDownloading Nextclade {dataset} dataset tagged {requested} for reference {accession}!")
 			subprocess.run(f"nextclade dataset get "
-						   f"--name '{dataset}' "
-						   f"--reference '{accession}' "
-						   f"--tag {requested} "
-						   f"--output-dir '{output_dir}'", shell=True, check=True)
+						f"--name '{dataset}' "
+						f"--reference '{accession}' "
+						f"--tag {requested} "
+						f"--output-dir '{output_dir}'", shell=True, check=True)
 		except subprocess.CalledProcessError:
 			print(f"\nDatabase not found! Please check whether {requested} tag exists! Downloading latest Nextclade {dataset} dataset for reference {accession}...")
 			subprocess.run(f"nextclade dataset get "
-						   f"--name '{dataset}' "
-						   f"--reference '{accession}' "
-						   f"--output-dir '{output_dir}'", shell=True, check=True)
+						f"--name '{dataset}' "
+						f"--reference '{accession}' "
+						f"--output-dir '{output_dir}'", shell=True, check=True)
 	else:
 		print(f"\nDownloading latest Nextclade {dataset} dataset for reference {accession}!")
 		subprocess.run(f"nextclade dataset get "
-					   f"--name '{dataset}' "
-					   f"--reference '{accession}' "
-					   f"--output-dir '{output_dir}'", shell=True, check=True)
+					f"--name '{dataset}' "
+					f"--reference '{accession}' "
+					f"--output-dir '{output_dir}'", shell=True, check=True)
 
 	# Obtain final version information for output
 	nextclade_version = subprocess.run(f"nextclade --version".split(), stdout=subprocess.PIPE).stdout.decode('utf-8').strip().lower()
@@ -205,12 +205,10 @@ def run_nextclade(input_genomes, dataset, threads, version):
 
 	# tidy up dataframe
 	nextclade_df = nextclade_df.rename(columns={'seqName': 'isolate',
-										  'clade': 'nextstrain_clade',
-										  'qc.overallStatus': 'nextclade_qc',
-										  'errors': 'nextclade_errors'})
-	nextclade_df = nextclade_df.drop([qc_col for qc_col in \
-										nextclade_df.columns \
-										if qc_col.startswith('qc.')], axis=1)
+										'clade': 'nextstrain_clade',
+										'qc.overallStatus': 'nextclade_qc',
+										'errors': 'nextclade_errors'})
+	nextclade_df = nextclade_df.drop([qc_col for qc_col in nextclade_df.columns if qc_col.startswith('qc.')], axis=1)
 
 	# remove temp output
 	output_file.unlink()
@@ -239,26 +237,26 @@ def run_pangolin(input_genomes, threads, mode):
 	output_path = output_dir / "lineage_report.csv"
 	if not output_path.exists():
 		raise FileNotFoundError(f"{str(output_path)} not created, check "
-								 "pangolin install")
+								"pangolin install")
 
 	pangolin_df = pd.read_csv(str(output_path), sep=',')
 
 	# tidy up the dataframe
 	try:
 		pangolin_df = pangolin_df.rename(columns={'taxon': 'isolate',
-												  'lineage': 'pango_lineage',
-												  'status': 'pangolin_qc',
-												  'note': 'pangolin_note',
-												  'conflict': 'pangolin_conflict',
-												  'ambiguity_score': 'pangolin_ambiguity_score'}, errors='raise')
+												'lineage': 'pango_lineage',
+												'status': 'pangolin_qc',
+												'note': 'pangolin_note',
+												'conflict': 'pangolin_conflict',
+												'ambiguity_score': 'pangolin_ambiguity_score'}, errors='raise')
 	except KeyError: # likely associated with Pangolin v4+
 		pangolin_df = pangolin_df.rename(columns={'taxon': 'isolate',
-												  'lineage': 'pango_lineage',
-												  'qc_status': 'pangolin_qc',
-												  'qc_notes': 'pangolin_qc_note',
-												  'note': 'pangolin_note',
-												  'conflict': 'pangolin_conflict',
-												  'ambiguity_score': 'pangolin_ambiguity_score'})
+												'lineage': 'pango_lineage',
+												'qc_status': 'pangolin_qc',
+												'qc_notes': 'pangolin_qc_note',
+												'note': 'pangolin_note',
+												'conflict': 'pangolin_conflict',
+												'ambiguity_score': 'pangolin_ambiguity_score'})
 
 	# remove temp output
 	shutil.rmtree(output_dir)
@@ -274,45 +272,45 @@ def collate_output(nextclade, pangolin, output):
 
 	try: # adjust for pangolin v3 and nextclade v1.1.0
 		merged_df = merged_df[['isolate', 'pango_lineage',
-							   'pangolin_conflict', 'pangolin_ambiguity_score',
-							   'pangolin_note', 'scorpio_call', 'scorpio_support',
-							   'scorpio_conflict',
-							   'pangolin_qc', 'nextstrain_clade',
-							   'nextclade_qc', 'nextclade_errors',
-							   'totalInsertions', 'totalMissing',
-							   'totalNonACGTNs','totalPcrPrimerChanges',
-							   'substitutions', 'deletions', 'insertions',
-							   'missing', 'nonACGTNs',
-							   'pcrPrimerChanges', 'aaSubstitutions',
-							   'totalAminoacidSubstitutions',
-							   'aaDeletions', 'totalAminoacidDeletions',
-							   'alignmentStart', 'alignmentEnd', 'alignmentScore',
-							   'pangolin_version', 'pango_version',
-							   'pangoLEARN_version', 'pango_version', 'nextclade_version']]
+							'pangolin_conflict', 'pangolin_ambiguity_score',
+							'pangolin_note', 'scorpio_call', 'scorpio_support',
+							'scorpio_conflict',
+							'pangolin_qc', 'nextstrain_clade',
+							'nextclade_qc', 'nextclade_errors',
+							'totalInsertions', 'totalMissing',
+							'totalNonACGTNs','totalPcrPrimerChanges',
+							'substitutions', 'deletions', 'insertions',
+							'missing', 'nonACGTNs',
+							'pcrPrimerChanges', 'aaSubstitutions',
+							'totalAminoacidSubstitutions',
+							'aaDeletions', 'totalAminoacidDeletions',
+							'alignmentStart', 'alignmentEnd', 'alignmentScore',
+							'pangolin_version', 'pango_version',
+							'pangoLEARN_version', 'pango_version', 'nextclade_version']]
 	except KeyError: # adjust for pangolin v4 and nextclade v1.1.0+
 		merged_df = merged_df[['isolate', 'pango_lineage',
-							   'pangolin_conflict', 'pangolin_ambiguity_score',
-							   'pangolin_note', 'scorpio_call', 'scorpio_support',
-							   'scorpio_conflict', 'pangolin_qc', 'pangolin_qc_note',
-							   'nextstrain_clade',
-							   'nextclade_qc', 'nextclade_errors',
-							   'totalSubstitutions', 'totalDeletions', 'totalInsertions', 'totalMissing',
-							   'totalNonACGTNs', 'totalPcrPrimerChanges',
-							   'substitutions', 'deletions', 'insertions',
-							   'missing', 'nonACGTNs',
-							   'pcrPrimerChanges', 'aaSubstitutions',
-							   'totalAminoacidSubstitutions',
-							   'aaDeletions', 'totalAminoacidDeletions',
-							   'alignmentStart', 'alignmentEnd', 'alignmentScore', 
-							   'version','pangolin_version', 
-							   'scorpio_version', 'constellation_version', 'nextclade_version']]
+							'pangolin_conflict', 'pangolin_ambiguity_score',
+							'pangolin_note', 'scorpio_call', 'scorpio_support',
+							'scorpio_conflict', 'pangolin_qc', 'pangolin_qc_note',
+							'nextstrain_clade',
+							'nextclade_qc', 'nextclade_errors',
+							'totalSubstitutions', 'totalDeletions', 'totalInsertions', 'totalMissing',
+							'totalNonACGTNs', 'totalPcrPrimerChanges',
+							'substitutions', 'deletions', 'insertions',
+							'missing', 'nonACGTNs',
+							'pcrPrimerChanges', 'aaSubstitutions',
+							'totalAminoacidSubstitutions',
+							'aaDeletions', 'totalAminoacidDeletions',
+							'alignmentStart', 'alignmentEnd', 'alignmentScore', 
+							'version','pangolin_version', 
+							'scorpio_version', 'constellation_version', 'nextclade_version']]
 	merged_df.to_csv(output, sep='\t', index=False)
 
 
 if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser('Assign pangolin and nextstrain lienages '
-									 'for a set of SARS-CoV-2 genomes')
+									'for a set of SARS-CoV-2 genomes')
 	parser.add_argument("-i", "--input_genomes", type=check_file, required=True,
 						help="Concatenated fasta containing consensus genomes")
 	parser.add_argument("-t", "--threads", default=8, type=int,
