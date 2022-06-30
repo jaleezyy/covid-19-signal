@@ -52,7 +52,7 @@ def update_nextclade_dataset(vers, skip):
 	Reference accession will be set by params.accession (viral_reference_contig_name).
 	"""
 	output_dir = os.path.join(os.path.dirname(sys.argv[0]), 'nextclade')
-	nextclade_version = nextclade_version = subprocess.run(f"nextclade --version".split(),
+	nextclade_version = subprocess.run(f"nextclade --version".split(),
 						stdout=subprocess.PIPE).stdout.decode('utf-8').strip().lower()
 	if nextclade_version.startswith("nextclade"):
 		nextclade_version = nextclade_version.split()[1]
@@ -64,15 +64,18 @@ def update_nextclade_dataset(vers, skip):
 	with open(vers) as fh:
 		line = fh.readlines()
 		assert len(line) == 3 # should only be nextclade, nextclade-data, and recomb
-		software_ver = str(line[1].split(":", 1)[1]).strip().lstrip('v')
+		software_ver = str(line[0].split(":", 1)[1]).strip().lstrip('v')
 		requested_ver = str(line[1].split(":", 1)[1]).strip()
 		recomb = eval(str(line[2].split(":")[1]).strip())
 
 	# check current version of nextclade, if failed, we stick with the latest
 	# search conda for latest version, this will be the default
 	# PackagesNotFoundError for invalid version
+	print("\n## Existing nextclade install:")
+	print("Nextclade: " + nextclade_version + "\n")
+	print("## Changing installed versions as needed:")
 	try:
-		if software_ver != "None:" # specific version requested, check if available
+		if software_ver != "None": # specific version requested, check if available
 			try:
 				softrequest = subprocess.check_output(f"conda search -c bioconda -f nextclade={software_ver}".split()).decode('utf-8').strip().split()[-3]
 				# check if already installed
@@ -80,7 +83,7 @@ def update_nextclade_dataset(vers, skip):
 					print(f"Nextclade {softrequest} already installed! Skipping update!")
 				else:
 					print(f"Changing Nextclade from {nextclade_version} to {softrequest}!")
-					subprocess.run(f"conda install -c bioconda nextclade={softrequest}", shell=True, check=True)
+					subprocess.run(f"conda install -q -y -c bioconda nextclade={softrequest}", shell=True, check=True)
 			except subprocess.CalledProcessError:
 				print("Cannot find version requested, will ensure latest version!")
 				softrequest = subprocess.check_output(f"conda search -c bioconda -f nextclade".split()).decode('utf-8').strip().split()[-3]
@@ -88,14 +91,17 @@ def update_nextclade_dataset(vers, skip):
 				if softrequest == nextclade_version:
 					print(f"Nextclade {softrequest} already installed! Skipping update!")
 				else:
-					subprocess.run(f"conda install -c bioconda nextclade={softrequest}", shell=True, check=True)
+					subprocess.run(f"conda install -q -y -c bioconda nextclade={softrequest}", shell=True, check=True)
 		else:
 			print(f"Installing latest version of Nextclade!")
-			subprocess.run(f"conda install -c bioconda nextclade={softrequest}", shell=True, check=True)
-			nextclade_version = nextclade_version = subprocess.run(f"nextclade --version".split(), stdout=subprocess.PIPE).stdout.decode('utf-8').strip().lower()
-			if nextclade_version.startswith("nextclade"):
-			nextclade_version = nextclade_version.split()[1]
-			print(f"Nextclade {nextclade_version} installed!")
+			softrequest = subprocess.check_output(f"conda search -c bioconda -f nextclade".split()).decode('utf-8').strip().split()[-3]
+			if softrequest == nextclade_version:
+				print(f"Nextclade {softrequest} already installed! Skipping update!")
+			else:
+				subprocess.run(f"conda install -q -y -c bioconda nextclade={softrequest}", shell=True, check=True)
+				nextclade_version = nextclade_version = subprocess.run(f"nextclade --version".split(), stdout=subprocess.PIPE).stdout.decode('utf-8').strip().lower()
+				if nextclade_version.startswith("nextclade"):
+					nextclade_version = nextclade_version.split()[1]
 	except subprocess.CalledProcessError:
 		print(f"Something went wrong updating Nextclade! Skipping update!")
 
