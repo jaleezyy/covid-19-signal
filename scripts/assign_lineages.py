@@ -99,9 +99,6 @@ def update_nextclade_dataset(vers, skip):
 				print(f"Nextclade {softrequest} already installed! Skipping update!")
 			else:
 				subprocess.run(f"conda install -q -y -c bioconda nextclade={softrequest}", shell=True, check=True)
-				nextclade_version = nextclade_version = subprocess.run(f"nextclade --version".split(), stdout=subprocess.PIPE).stdout.decode('utf-8').strip().lower()
-				if nextclade_version.startswith("nextclade"):
-					nextclade_version = nextclade_version.split()[1]
 	except subprocess.CalledProcessError:
 		print(f"Something went wrong updating Nextclade! Skipping update!")
 
@@ -161,20 +158,21 @@ def update_nextclade_dataset(vers, skip):
 					   f"--output-dir '{output_dir}'", shell=True, check=True)
 
 	# Obtain final version information for output
+	nextclade_version = subprocess.run(f"nextclade --version".split(), stdout=subprocess.PIPE).stdout.decode('utf-8').strip().lower()
+	if nextclade_version.startswith("nextclade"):
+		nextclade_version = nextclade_version.split()[1]
 	if requested is None:
 		today = datetime.today().strftime('%Y-%m-%d')
 		requested = f"Latest as of {today}"
 	with open('final_nextclade_versions.txt', 'w+') as out:
-		print("## Nextclade and datasets now:")
-		nextclade_version = subprocess.run(f"nextclade --version".split(),
-									stdout=subprocess.PIPE)
-		print("Nextclade: " + nextclade_version.stdout.decode('utf-8').strip())
+		print("\n## Nextclade and datasets now:")
+		print("Nextclade: " + nextclade_version)
 		print("Reference: %s" %(accession))
 		print("Dataset: %s" %(dataset))
 		print("Dataset version: %s" %(requested))
 		# Output to file
 		print("## Nextclade and datasets now:", file=out)
-		print("Nextclade: " + nextclade_version.stdout.decode('utf-8').strip(), file=out)
+		print("Nextclade: " + nextclade_version, file=out)
 		print("Reference: %s" %(accession), file=out)
 		print("Dataset: %s" %(dataset), file=out)
 		print("Dataset version: %s" %(requested), file=out)
@@ -188,18 +186,22 @@ def run_nextclade(input_genomes, dataset, threads, version):
 	"""
 	output_dir = Path(f"tmp_nextclade")
 	output_file = Path(f"{output_dir}/nextclade_temp_{time.time()}.csv")
-	subprocess.check_output(f"nextclade run -i {input_genomes} -j {threads} --input-dataset {dataset} -c {str(output_file)} --output-dir {output_dir}".split(),
-							stderr=subprocess.DEVNULL)
+	# run altered commands for Nextclade v1 and v2+
+	if version.startswith("1"):
+		subprocess.check_output(f"nextclade -i {input_genomes} -j {threads} --input-dataset {dataset} -c {str(output_file)} --output-dir {output_dir}".split(), stderr=subprocess.DEVNULL)
+	elif version.startswith("2"):
+		subprocess.check_output(f"nextclade run -j {threads} --input-dataset {dataset} -c {str(output_file)} {input_genomes}".split(), stderr=subprocess.DEVNULL)
+	else:
+		print("Unknown version of nextclade!")
 	if not output_file.exists():
 		raise FileNotFoundError(f"{str(output_file)} not created, check "
 								 "nextclade install")
 	nextclade_df = pd.read_csv(str(output_file), sep=";")
 
 	# get version information
-	nextclade_version = subprocess.run(f"nextclade --version".split(),
-									   stdout=subprocess.PIPE)
-	nextclade_version = nextclade_version.stdout.decode('utf-8').strip()
-	nextclade_df['nextclade_version'] = f"nextclade {nextclade_version}"
+	#nextclade_version = subprocess.run(f"nextclade --version".split(), stdout=subprocess.PIPE)
+	#nextclade_version = nextclade_version.stdout.decode('utf-8').strip()
+	nextclade_df['nextclade_version'] = f"nextclade {version}"
 
 	# tidy up dataframe
 	nextclade_df = nextclade_df.rename(columns={'seqName': 'isolate',

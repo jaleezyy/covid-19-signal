@@ -266,7 +266,7 @@ if __name__ == '__main__':
 						check_submodule(os.getcwd())
 					try:
 						print("Retrying...")
-						subprocess.run(f"snakemake --conda-frontend conda --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp", shell=True, check=True)
+						subprocess.run(f"snakemake --conda-frontend conda --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp --rerun-incomplete", shell=True, check=True)
 					except subprocess.CalledProcessError:
 						exit(f"Something went wrong running SIGNAL {task}! Check input and try again!")
 	
