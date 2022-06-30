@@ -59,6 +59,7 @@ versions = {'pangolin': config['pangolin'],
             'scorpio': config['scorpio'],
             'pango-designation': config['pango-designation'],
             'pangolin-data': config['pangolin-data'],
+            'nextclade': config['nextclade'],
             'nextclade-data': config['nextclade-data'],
             'nextclade-recomb': config['nextclade-include-recomb']
             }
@@ -210,13 +211,14 @@ rule run_lineage_assignment:
         scorpio_ver = versions['scorpio'],
         designation_ver = versions['pango-designation'],
         data_ver = versions['pangolin-data'],
-        nextclade_ver = versions['nextclade-data'],
+        nextclade_ver = versions['nextclade'],
+        nextclade_data = versions['nextclade-data'],
         nextclade_recomb = versions['nextclade-recomb'],
         analysis_mode = pango_speed,
         assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py')
     shell:
         "echo -e 'pangolin: {params.pangolin_ver}\nconstellations: {params.constellations_ver}\nscorpio: {params.scorpio_ver}\npangolearn: {params.pangolearn_ver}\npango-designation: {params.designation_ver}\npangolin-data: {params.data_ver}' > {output.pango_ver_out} && "
-        "echo -e 'nextclade-dataset: {params.nextclade_ver}\nnextclade-include-recomb: {params.nextclade_recomb}' > {output.nextclade_ver_out} && "
+        "echo -e 'nextclade: {params.nextclade_ver}\nnextclade-dataset: {params.nextclade_data}\nnextclade-include-recomb: {params.nextclade_recomb}' > {output.nextclade_ver_out} && "
         'cat {input} > all_genomes.fa && '
         '{params.assignment_script_path} -i all_genomes.fa -t {threads} -o {output.lin_out} -p {output.pango_ver_out} -n {output.nextclade_ver_out} --mode {params.analysis_mode}'
 
