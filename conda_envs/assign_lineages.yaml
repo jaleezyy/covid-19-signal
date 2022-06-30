@@ -14,7 +14,7 @@ dependencies:
   - usher
   - pandas
   - pysam==0.16.0.1
-  - nextclade-1.11.0
+  - nextclade=1.11.0
   - pip:
     - git+https://github.com/cov-lineages/pangoLEARN.git
     - git+https://github.com/cov-lineages/scorpio.git
