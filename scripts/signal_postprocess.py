@@ -17,7 +17,7 @@ long_git_id = '$Id: b158164f87c79271ddc9d1083e64e4be1fc26d8e $'
 
 assert long_git_id.startswith('$Id: ')
 #short_git_id = long_git_id[5:12]
-short_git_id = "v1.5.5"
+short_git_id = "v1.5.6"
 
 # Suppresses matplotlib warning (https://github.com/jaleezyy/covid-19-signal/issues/59)
 # Creates a small memory leak, but it's nontrivial to fix, and won't be a practical concern!

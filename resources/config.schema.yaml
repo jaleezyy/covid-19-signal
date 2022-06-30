@@ -79,6 +79,10 @@ pangolin-data:
     type: string
     default: "None"
     description: "Pangolin-data version"
+nextclade:
+    type: string
+    default: "None"
+    description: "Nextclade version"
 nextclade-data:
     type: string
     default: "None"

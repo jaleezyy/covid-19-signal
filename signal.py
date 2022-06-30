@@ -205,11 +205,13 @@ pango-designation:
 # Required for Pangolin v4+
 pangolin-data:
 
-# Required for Nextclade (datasets)
-# Be as specific as possible with the desired tag. Can accept dates (YYYY-mm-dd) alone, but will assume corresponding timestamp (HH:MM:SS) 
+# Required for Nextclade (software & datasets)
+# Software version should use numbers only (i.e., 1.11.0)
+# Be as specific as possible with the desired dataset tag. Can accept dates (YYYY-mm-dd) alone, but will assume corresponding timestamp (HH:MM:SS) 
 # Typical tag format is YYYY-mm-ddTHH:MM:SSZ
-# Leave blank for latest dataset
+# Leave blank for latest versions
 # Setting nextclade-include-recomb to False will download the recombinant-sequence free version of the Nextclade database
+nextclade:
 nextclade-data:
 nextclade-include-recomb: True
 
@@ -264,7 +266,7 @@ if __name__ == '__main__':
 						check_submodule(os.getcwd())
 					try:
 						print("Retrying...")
-						subprocess.run(f"snakemake --conda-frontend conda --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp", shell=True, check=True)
+						subprocess.run(f"snakemake --conda-frontend conda --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp --rerun-incomplete", shell=True, check=True)
 					except subprocess.CalledProcessError:
 						exit(f"Something went wrong running SIGNAL {task}! Check input and try again!")
 	
