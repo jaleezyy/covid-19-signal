@@ -238,7 +238,8 @@ rule ncov_tools:
         phylo_include_seqs = os.path.join(exec_dir, config['phylo_include_seqs']),
         negative_control_prefix = config['negative_control_prefix'],
         freebayes_run = config['run_freebayes'],
-        pangolin = versions['pangolin']
+        pangolin = versions['pangolin'],
+        mode = pango_speed
     input:
         consensus = expand('{sn}/core/{sn}.consensus.fa', sn=sample_names),
         primertrimmed_bams = expand("{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam", sn=sample_names),
