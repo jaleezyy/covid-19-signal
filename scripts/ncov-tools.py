@@ -119,7 +119,8 @@ def set_up():
 			  'negative_control_samples': f"{neg_list}",
 			  'mutation_set': 'spike_mutations',
 			  'output_directory': f"{result_dir}_ncovresults",
-			  'pangolin_version': f"'{pangolin}'"
+			  'pangolin_version': f"'{pangolin}'",
+			  'pango_analysis_mode': f"'{snakemake.params['mode']}'"
 			  }
 
 	print("Linking alignment BAMs to ncov-tools!")
