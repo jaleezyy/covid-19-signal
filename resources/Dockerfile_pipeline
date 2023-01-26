@@ -1,5 +1,5 @@
 # base image 
-FROM --platform=linux/x86_64 continuumio/miniconda3
+FROM continuumio/miniconda3
 
 # metadata
 LABEL base.image="miniconda3"
@@ -29,6 +29,6 @@ RUN git clone https://github.com/jaleezyy/covid-19-signal
 WORKDIR covid-19-signal
 
 # install all snakemake rule conda envs using dummy snakemake file
-RUN conda config --set channel_priority strict
+RUN conda config --set channel_priority flexible
 RUN conda run -n signal snakemake --verbose --conda-frontend mamba --use-conda --conda-prefix=$HOME/.snakemake -s resources/dependencies --cores 1
 
