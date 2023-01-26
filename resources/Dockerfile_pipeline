@@ -1,5 +1,5 @@
 # base image 
-FROM continuumio/miniconda3
+FROM --platform=linux/x86_64 continuumio/miniconda3
 
 # metadata
 LABEL base.image="miniconda3"
