@@ -78,9 +78,13 @@ def parse_stats(stats):
 					length = 1
 				genome_frac = round((covered/length)*100, 2)
 				
-				if (sample_name not in info_pair) or (info_pair[sample_name] == " "):
+				if sample_name not in info_pair:
 					info_pair[sample_name] = genome_frac
 					info["Genome Fraction (%)"].append(f"{genome_frac}")
+				elif info_pair[sample_name] == " ": # previously blank
+					info_pair[sample_name] = genome_frac # update
+					pos = info["isolate"].index(sample_name)
+					info["Genome Fraction (%)"][pos] = (f"{genome_frac}")
 				else:
 					pass # data already found
 			### STATS
@@ -95,9 +99,13 @@ def parse_stats(stats):
 					length = 1
 				genome_frac = round((covered/length)*100, 2)
 				
-				if (sample_name not in info_pair) or (info_pair[sample_name] == " "):
+				if sample_name not in info_pair:
 					info_pair[sample_name] = genome_frac
 					info["Genome Fraction (%)"].append(f"{genome_frac}")
+				elif info_pair[sample_name] == " ": # previously blank
+					info_pair[sample_name] = genome_frac # update
+					pos = info["isolate"].index(sample_name)
+					info["Genome Fraction (%)"][pos] = (f"{genome_frac}")
 				else:
 					pass # data already found
 			### DEFAULT
