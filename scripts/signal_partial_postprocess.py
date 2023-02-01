@@ -45,6 +45,7 @@ def parse_lineages(file):
 	
 def parse_stats(stats):
 	info = defaultdict(list)
+	info_pair = {} # lets us check if isolate: genome_fraction exists in info
 	missing = set()
 	for file in stats:
 		sample_name = os.path.basename(file).split("_")[0] # intended sample name
@@ -52,13 +53,18 @@ def parse_stats(stats):
 			print(f"Missing {file}")
 			missing.add(f"{sample_name}")
 			continue
+		# elif len(info) > 0: # something was added from the last file (no need to check the other)
+			# return quast_df
 		else:
+			print(f"Opening {file}")
 			with open(file) as data:
 				file_red = data.readlines()
-			if any(s.startswith("Assembly\t") and (match := s) for s in file_red):
-				info['isolate'].append(match.split("\t")[1].split(".")[0].strip("\n")) ### QUAST ONLY
+			# if any(s.startswith("Assembly\t") and (match := s) for s in file_red):
+				# sample_name = match.split("\t")[1].split(".")[0].strip("\n")
+			if sample_name in info["isolate"]:
+				pass # do not add again, mainly for subsequent loops
 			else:
-				info['isolate'].append(f"{sample_name}") ### DEFAULT
+				info['isolate'].append(f"{sample_name}")
 			### QUAST
 			if any(s.startswith("Genome fraction (%)\t") for s in file_red): # and (match := s) for s in file_red):
 				#info["Genome Fraction (%)"].append(match.split("\t")[1].strip("\n")) ### QUAST
@@ -72,7 +78,11 @@ def parse_stats(stats):
 					length = 1
 				genome_frac = round((covered/length)*100, 2)
 				
-				info["Genome Fraction (%)"].append(f"{genome_frac}")
+				if (sample_name not in info_pair) or (info_pair[sample_name] == " "):
+					info_pair[sample_name] = genome_frac
+					info["Genome Fraction (%)"].append(f"{genome_frac}")
+				else:
+					pass # data already found
 			### STATS
 			elif any(s.startswith("[Alignment Statistics]") for s in file_red):
 				if any(c.startswith("Covered Bases: ") and (match_cov := c) for c in file_red):
@@ -85,12 +95,20 @@ def parse_stats(stats):
 					length = 1
 				genome_frac = round((covered/length)*100, 2)
 				
-				info["Genome Fraction (%)"].append(f"{genome_frac}")
+				if (sample_name not in info_pair) or (info_pair[sample_name] == " "):
+					info_pair[sample_name] = genome_frac
+					info["Genome Fraction (%)"].append(f"{genome_frac}")
+				else:
+					pass # data already found
 			### DEFAULT
-			else:
-				info["Genome Fraction (%)"].append(" ")
-
-			quast_df = pd.DataFrame(info, columns=['isolate', 'Genome Fraction (%)'])
+			else: # file not in proper format, cannot pull 
+				if sample_name not in info_pair: # if found from previous file, ignore
+					info_pair[sample_name] = " "
+					info["Genome Fraction (%)"].append(" ")
+				else:
+					pass
+		assert len(info["isolate"]) == len(info["Genome Fraction (%)"])
+		quast_df = pd.DataFrame(info, columns=['isolate', 'Genome Fraction (%)'])
 		
 	if len(info) == 0 and len(missing) > 0: # nothing was added after each file, put default values
 		for sample_name in missing:
