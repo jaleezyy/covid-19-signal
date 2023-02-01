@@ -45,34 +45,58 @@ def parse_lineages(file):
 	
 def parse_stats(stats):
 	info = defaultdict(list)
+	missing = set()
 	for file in stats:
 		sample_name = os.path.basename(file).split("_")[0] # intended sample name
-		if check_file(file) is False: # if missing or incomplete, replace with default values
-			print(f"Adding {file}")
-			info['isolate'].append(f"{sample_name}")
-			info["Genome Fraction (%)"].append(" ")
-			quast_df = pd.DataFrame(info, columns=['isolate', 'Genome Fraction (%)'])
+		if check_file(file) is False: # if missing or incomplete
+			print(f"Missing {file}")
+			missing.add(f"{sample_name}")
+			continue
 		else:
 			with open(file) as data:
 				file_red = data.readlines()
 			if any(s.startswith("Assembly\t") and (match := s) for s in file_red):
-				info['isolate'].append(match.split("\t")[1].split(".")[0].strip("\n")) ### QUAST
+				info['isolate'].append(match.split("\t")[1].split(".")[0].strip("\n")) ### QUAST ONLY
 			else:
 				info['isolate'].append(f"{sample_name}") ### DEFAULT
-			
-			if any(s.startswith("Genome fraction (%)\t") and (match := s) for s in file_red):
-				info["Genome Fraction (%)"].append(match.split("\t")[1].strip("\n")) ### QUAST
-			elif any(c.startswith("Covered Bases: ") and (match_cov := c) for c in file_red):
-				covered = int(match_cov.split(": ")[1].strip("\n")) ### STATS
-				if any(r.startswith("Reference Length: ") and (match_len := r) for r in file_red):
-					length = int(match_len.split(": ")[1].strip("\n")) ### STATS
+			### QUAST
+			if any(s.startswith("Genome fraction (%)\t") for s in file_red): # and (match := s) for s in file_red):
+				#info["Genome Fraction (%)"].append(match.split("\t")[1].strip("\n")) ### QUAST
+				if any(t.startswith("Total aligned length\t") and (match_aligned := t) for t in file_red): # define as the total number of aligned bases in the assembly
+					covered = int(match_aligned.split("\t")[1].strip("\n"))
+				else:
+					covered = 0
+				if any(r.startswith("Reference length\t") and (match_len := r) for r in file_red):
+					length = int(match_len.split("\t")[1].strip("\n"))
+				else:
+					length = 1
 				genome_frac = round((covered/length)*100, 2)
 				
 				info["Genome Fraction (%)"].append(f"{genome_frac}")
+			### STATS
+			elif any(s.startswith("[Alignment Statistics]") for s in file_red):
+				if any(c.startswith("Covered Bases: ") and (match_cov := c) for c in file_red):
+					covered = int(match_cov.split(": ")[1].strip("\n"))
+				else:
+					covered = 0
+				if any(r.startswith("Reference Length: ") and (match_len := r) for r in file_red):
+					length = int(match_len.split(": ")[1].strip("\n"))
+				else:
+					length = 1
+				genome_frac = round((covered/length)*100, 2)
+				
+				info["Genome Fraction (%)"].append(f"{genome_frac}")
+			### DEFAULT
 			else:
-				info["Genome Fraction (%)"].append(" ") ### DEFAULT
+				info["Genome Fraction (%)"].append(" ")
 
-	quast_df = pd.DataFrame(info, columns=['isolate', 'Genome Fraction (%)'])
+			quast_df = pd.DataFrame(info, columns=['isolate', 'Genome Fraction (%)'])
+		
+	if len(info) == 0 and len(missing) > 0: # nothing was added after each file, put default values
+		for sample_name in missing:
+			info['isolate'].append(f"{sample_name}")
+			info["Genome Fraction (%)"].append(" ")
+			quast_df = pd.DataFrame(info, columns=['isolate', 'Genome Fraction (%)'])
 
 		
 	return quast_df

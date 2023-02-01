@@ -120,7 +120,8 @@ rule all:
     input:
         rules.consensus.input,
         rules.config_sample_log.input,
-        rules.lineages.input
+        rules.lineages.input,
+        rules.quast.input
 
 rule postprocess:
     conda: 
@@ -129,14 +130,15 @@ rule postprocess:
         #sample_csv_filename = os.path.join(exec_dir, config['samples']),
         input_lineage = 'lineage_assignments.tsv',
         postprocess_script_path = os.path.join(exec_dir, 'scripts', 'signal_partial_postprocess.py'),
-        stats = expand('{sn}/input_data/{sn}_stats.txt', sn=sample_names)
+        stats = expand('{sn}/input_data/{sn}_stats.txt', sn=sample_names),
+        quast = expand('{sn}/quast/{sn}_quast_report.tsv', sn=sample_names)
     input:
         #quast = expand('{sn}/quast/{sn}_quast_report.tsv', sn=sample_names)
         #stats = expand('{sn}', sn=sample_names)
         #stats = expand('{sn}/input_data/{sn}_stats.txt', sn=sample_names)
         
     shell:
-        '{params.postprocess_script_path} -i {params.input_lineage} -q {params.stats}'
+        '{params.postprocess_script_path} -i {params.input_lineage} -q {params.stats} {params.quast}'
 
 
 rule ncov_tools:
@@ -188,7 +190,7 @@ rule link_raw_data:
         outdir = '{sn}/input_data'
     shell:
         "sed 's/>consensus sequence_BreakPoint_1/>{params.sample}/g' {input} > {output} && "
-        "cp $(dirname {input})/{params.sample}_*StatInfo.txt {params.outdir}/{params.sample}_stats.txt 2>/dev/null || echo 'No stats file found!'"
+        "cp $(dirname {input})/{params.sample}_*StatInfo.txt {params.outdir}/{params.sample}_stats.txt 2>/dev/null || echo 'WARNING: No stats file found!'"
         #TODO: correct format, dummy approach for initial testing
         #'ln -s {input} {output}'
 
