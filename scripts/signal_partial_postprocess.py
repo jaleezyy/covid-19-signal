@@ -79,10 +79,10 @@ def parse_stats(stats):
 				genome_frac = round((covered/length)*100, 2)
 				
 				if sample_name not in info_pair:
-					info_pair[sample_name] = genome_frac
+					info_pair[sample_name] = f"{genome_frac}"
 					info["Genome Fraction (%)"].append(f"{genome_frac}")
 				elif info_pair[sample_name] == " ": # previously blank
-					info_pair[sample_name] = genome_frac # update
+					info_pair[sample_name] = f"{genome_frac}" # update
 					pos = info["isolate"].index(sample_name)
 					info["Genome Fraction (%)"][pos] = (f"{genome_frac}")
 				else:
@@ -100,10 +100,10 @@ def parse_stats(stats):
 				genome_frac = round((covered/length)*100, 2)
 				
 				if sample_name not in info_pair:
-					info_pair[sample_name] = genome_frac
+					info_pair[sample_name] = f"{genome_frac}"
 					info["Genome Fraction (%)"].append(f"{genome_frac}")
 				elif info_pair[sample_name] == " ": # previously blank
-					info_pair[sample_name] = genome_frac # update
+					info_pair[sample_name] = f"{genome_frac}" # update
 					pos = info["isolate"].index(sample_name)
 					info["Genome Fraction (%)"][pos] = (f"{genome_frac}")
 				else:
@@ -124,7 +124,12 @@ def parse_stats(stats):
 			info["Genome Fraction (%)"].append(" ")
 			quast_df = pd.DataFrame(info, columns=['isolate', 'Genome Fraction (%)'])
 
-		
+	# add a check for each value in the column and corresponding pairs
+	for i,j in zip(info['isolate'], info["Genome Fraction (%)"]):
+		try:
+			assert info_pair[i] == j # check that the value found for i,j matches stored values
+		except AssertionError:
+			print("WARNING: Genome Fraction values may not correlate with the correct isolate!")
 	return quast_df
 	
 def collate_output(lineage, stats, output):
