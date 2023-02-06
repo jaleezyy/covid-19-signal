@@ -85,10 +85,10 @@ def parse_stats(stats):
 					info_pair[sample_name] = f"{genome_frac}" # update
 					pos = info["isolate"].index(sample_name)
 					info["Genome Fraction (%)"][pos] = (f"{genome_frac}")
-				print(str(sample_name))
-				print(str(genome_frac))
 				else:
 					pass # data already found
+				print(str(sample_name))
+				print(str(genome_frac))
 			### STATS
 			elif any(s.startswith("[Alignment Statistics]") for s in file_red):
 				if any(c.startswith("Covered Bases: ") and (match_cov := c) for c in file_red):
