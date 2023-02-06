@@ -130,8 +130,7 @@ def parse_stats(stats):
 			assert info_pair[i] == j # check that the value found for i,j matches stored values
 		except AssertionError:
 			print("WARNING: Genome Fraction values may not correlate with the correct isolate!")
-	print(quast_df)
-	exit()
+			
 	return quast_df
 	
 def collate_output(lineage, stats, output):
