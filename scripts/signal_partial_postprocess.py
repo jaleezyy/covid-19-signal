@@ -112,7 +112,7 @@ def parse_stats(stats):
 			else: # file not in proper format, cannot pull 
 				if sample_name not in info_pair: # if found from previous file, ignore
 					info_pair[sample_name] = "Improper pull"
-					info["Genome Fraction (%)"].append(" ")
+					info["Genome Fraction (%)"].append("Improper pull!")
 				else:
 					pass
 		assert len(info["isolate"]) == len(info["Genome Fraction (%)"])
