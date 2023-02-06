@@ -85,6 +85,8 @@ def parse_stats(stats):
 					info_pair[sample_name] = f"{genome_frac}" # update
 					pos = info["isolate"].index(sample_name)
 					info["Genome Fraction (%)"][pos] = (f"{genome_frac}")
+				print(str(sample_name))
+				print(str(genome_frac))
 				else:
 					pass # data already found
 			### STATS
@@ -111,8 +113,8 @@ def parse_stats(stats):
 			### DEFAULT
 			else: # file not in proper format, cannot pull 
 				if sample_name not in info_pair: # if found from previous file, ignore
-					info_pair[sample_name] = "Improper pull"
-					info["Genome Fraction (%)"].append("Improper pull!")
+					info_pair[sample_name] = " "
+					info["Genome Fraction (%)"].append(" ")
 				else:
 					pass
 		assert len(info["isolate"]) == len(info["Genome Fraction (%)"])
@@ -121,7 +123,7 @@ def parse_stats(stats):
 	if len(info) == 0 and len(missing) > 0: # nothing was added after each file, put default values
 		for sample_name in missing:
 			info['isolate'].append(f"{sample_name}")
-			info["Genome Fraction (%)"].append("No information found!")
+			info["Genome Fraction (%)"].append(" ")
 			quast_df = pd.DataFrame(info, columns=['isolate', 'Genome Fraction (%)'])
 
 	# add a check for each value in the column and corresponding pairs
