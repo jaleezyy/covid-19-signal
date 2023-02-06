@@ -41,6 +41,7 @@ def parse_lineages(file):
 							]]
 						
 	lin_df['isolate'] = lin_df['isolate'].apply(lambda x: x.split("_")[1].split(".")[0] if x.startswith("Consensus") else x)
+	lin_df['isolate'] = lin_df['isolate'].apply(lambda x: x.split("/")[0] if "/" in x else x)
 	return lin_df
 	
 def parse_stats(stats):
