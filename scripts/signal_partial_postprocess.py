@@ -87,8 +87,6 @@ def parse_stats(stats):
 					info["Genome Fraction (%)"][pos] = (f"{genome_frac}")
 				else:
 					pass # data already found
-				print(str(sample_name))
-				print(str(genome_frac))
 			### STATS
 			elif any(s.startswith("[Alignment Statistics]") for s in file_red):
 				if any(c.startswith("Covered Bases: ") and (match_cov := c) for c in file_red):
@@ -132,6 +130,8 @@ def parse_stats(stats):
 			assert info_pair[i] == j # check that the value found for i,j matches stored values
 		except AssertionError:
 			print("WARNING: Genome Fraction values may not correlate with the correct isolate!")
+	print(quast_df)
+	exit()
 	return quast_df
 	
 def collate_output(lineage, stats, output):
