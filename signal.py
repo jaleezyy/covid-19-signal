@@ -242,7 +242,7 @@ if __name__ == '__main__':
 	unlock = ''
 	
 	if args.version:
-		exit(f"{version}", 0)
+		exit(f"{version}")
 	
 	if args.dependencies:
 		print("Downloading necessary reference and dependency files!")
