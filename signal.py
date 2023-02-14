@@ -28,6 +28,10 @@ def create_parser():
 	parser.add_argument('--add-breseq', action='store_true', help="Configuration file generator parameter. Set flag to ENABLE optional breseq step (will take more time for analysis to complete)")
 	parser.add_argument('-neg', '--neg-prefix', default=None, help="Configuration file generator parameter. Comma-separated list of negative sontrol sample name(s) or prefix(es). For example, 'Blank' will cover Blank1, Blank2, etc. Recommended if running ncov-tools. Will be left empty, if not provided")
 	parser.add_argument('--dependencies', action='store_true', help="Download data dependencies (under a created 'data' directory) required for SIGNAL analysis and exit. Note: Will override other flags! (~10 GB storage required)")
+	parser.add_argument('--rerun-incomplete', action='store_true', help="Snakemake parameter. Re-run any incomplete samples from a previously failed run")
+	parser.add_argument('--unlock', action='store_true', help="Snakemake parameter. Remove a lock on the working directory after a failed run"
+	parser.add_argument('--verbose', action='store_true', help="Snakemake parameter. Display snakemake debugging output")
+	parser.add_argument('-v', '--version', action='store_true', help="Display version number")
 	args, unknown = parser.parse_known_args()
 
 	provided = []
@@ -232,7 +236,14 @@ if __name__ == '__main__':
 	# note: add root_dir to determine the root directory of SIGNAL
 	script_path = os.path.join(os.path.abspath(sys.argv[0]).rsplit("/",1)[0])
 	args, allowed = create_parser()
-
+	version = 'v1.5.8'
+	verbose = ''
+	rerun = ''
+	unlock = ''
+	
+	if args.version:
+		exit(f"{version}", 0)
+	
 	if args.dependencies:
 		print("Downloading necessary reference and dependency files!")
 		download_dependences()
@@ -256,17 +267,20 @@ if __name__ == '__main__':
 	if not any([allowed[x] for x in allowed]):
 		exit("No task specified! Please provide at least one of 'all', 'postprocess', or 'ncov_tools'! See 'signal.py -h' for details!")
 	else:
+		if args.verbose: verbose = "--verbose"
+		if args.rerun_incomplete: rerun = '--rerun-incomplete'
+		if args.unlock: unlock = '--unlock'
 		for task in allowed:
 			if allowed[task] is True:
 				print(f"Running SIGNAL {task}!")
 				try:
-					subprocess.run(f"snakemake --conda-frontend mamba --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp", shell=True, check=True)
+					subprocess.run(f"snakemake --conda-frontend mamba --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp {unlock} {verbose} {rerun}", shell=True, check=True)
 				except subprocess.CalledProcessError: # likely missing mamba 
 					if task == "ncov_tools":
 						check_submodule(os.getcwd())
 					try:
 						print("Retrying...")
-						subprocess.run(f"snakemake --conda-frontend conda --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp --rerun-incomplete", shell=True, check=True)
+						subprocess.run(f"snakemake --conda-frontend conda --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp {unlock} {verbose} --rerun-incomplete", shell=True, check=True)
 					except subprocess.CalledProcessError:
 						exit(f"Something went wrong running SIGNAL {task}! Check input and try again!")
 	
