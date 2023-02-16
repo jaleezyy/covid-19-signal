@@ -239,12 +239,7 @@ if __name__ == '__main__':
 	script_path = os.path.join(os.path.abspath(sys.argv[0]).rsplit("/",1)[0])
 	args, allowed = create_parser()
 	version = 'v1.5.8'
-	#alt_options = {'verbose': '', 'rerun': '', 'unlock': '', 'meta': '', 'dry': ''}
-	verbose = ''
-	rerun = ''
-	unlock = ''
-	force = ''
-	dry = ''
+	alt_options = []
 	
 	if args.version:
 		exit(f"{version}")
@@ -272,22 +267,25 @@ if __name__ == '__main__':
 	if not any([allowed[x] for x in allowed]):
 		exit("No task specified! Please provide at least one of 'all', 'postprocess', or 'ncov_tools'! See 'signal.py -h' for details!")
 	else:
-		if args.verbose: verbose = "--verbose"
-		if args.rerun_incomplete: rerun = '--rerun-incomplete'
-		if args.unlock: unlock = '--unlock'
-		if args.forceall: force = '--forceall'
-		if args.dry_run: dry = '--dry-run'
+		if args.verbose: alt_options.append('--verbose')
+		if args.unlock: alt_options.append('--unlock')
+		if args.forceall: alt_options.append('--forceall')
+		if args.dry_run: alt_options.append('--dry-run')
+		if args.rerun_incomplete: alt_options.append('--rerun-incomplete')
+		opt = " ".join(alt_options)
 		for task in allowed:
 			if allowed[task] is True:
 				print(f"Running SIGNAL {task}!")
 				try:
-					subprocess.run(f"snakemake --conda-frontend mamba --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp {unlock} {force} {verbose} {dry} {rerun}", shell=True, check=True)
+					subprocess.run(f"snakemake --conda-frontend mamba --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp {opt}", shell=True, check=True)
 				except subprocess.CalledProcessError: # likely missing mamba 
 					if task == "ncov_tools":
 						check_submodule(os.getcwd())
+					if opt.split(" ")[-1] == '--rerun-incomplete': # remove redundant flag
+						opt = " ".join(opt.split(" ")[:-1])
 					try:
 						print("Retrying...")
-						subprocess.run(f"snakemake --conda-frontend conda --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp {unlock} {force} {verbose} {dry} --rerun-incomplete", shell=True, check=True)
+						subprocess.run(f"snakemake --conda-frontend conda --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp --rerun-incomplete {opt}", shell=True, check=True)
 					except subprocess.CalledProcessError:
 						exit(f"Something went wrong running SIGNAL {task}! Check input and try again!")
 	
