@@ -24,6 +24,12 @@ def create_parser():
 	parser.add_argument('--config-only', action='store_true', help="Generate sample table and configuration file (i.e., config.yaml) and exit. '--directory' required")
 	parser.add_argument('-neg', '--neg-prefix', default=None, help="Configuration file generator parameter. Comma-separated list of negative sontrol sample name(s) or prefix(es). For example, 'Blank' will cover Blank1, Blank2, etc. Recommend if running ncov-tools. Will be left empty, if not provided")
 	parser.add_argument('--dependencies', action='store_true', help="Download data dependencies (under a created 'data' directory) required for SIGNAL analysis and exit. Note: Will override other flags! (~10 GB storage required)")
+	parser.add_argument('-ri', '--rerun-incomplete', action='store_true', help="Snakemake parameter. Re-run any incomplete samples from a previously failed run")
+	parser.add_argument('--unlock', action='store_true', help="Snakemake parameter. Remove a lock on the working directory after a failed run")
+	parser.add_argument('-F', '--forceall', action='store_true', help='Snakemake parameter. Force the re-run of all rules regardless of prior output')
+	parser.add_argument('-n', '--dry-run', action='store_true', help='Snakemake parameter. Do not execute anything and only display what would be done')
+	parser.add_argument('--verbose', action='store_true', help="Snakemake parameter. Display snakemake debugging output")
+	parser.add_argument('-v', '--version', action='store_true', help="Display version number")
 	args, unknown = parser.parse_known_args()
 
 	provided = []
@@ -233,6 +239,16 @@ if __name__ == '__main__':
 		print("Downloading necessary reference and dependency files!")
 		download_dependences()
 		exit("Download complete!")
+		version = 'v1.5.8.hhs'
+		#alt_options = {'verbose': '', 'rerun': '', 'unlock': '', 'meta': '', 'dry': ''}
+		verbose = ''
+		rerun = ''
+		unlock = ''
+		force = ''
+		dry = ''
+
+	if args.version:
+		exit(f"{version}")
 	
 	if args.configfile is None:
 		assert args.directory is not None, "Please provide '--directory' to proceed! ('--configfile' if a configuration file already exists!)"
@@ -252,15 +268,20 @@ if __name__ == '__main__':
 	if not any([allowed[x] for x in allowed]):
 		exit("No task specified! Please provide at least one of 'all' or 'postprocess'! See 'signal.py -h' for details!")
 	else:
+		if args.verbose: verbose = "--verbose"
+		if args.rerun_incomplete: rerun = '--rerun-incomplete'
+		if args.unlock: unlock = '--unlock'
+		if args.forceall: force = '--forceall'
+		if args.dry_run: dry = '--dry-run'
 		for task in allowed:
 			if allowed[task] is True:
 				print(f"Running SIGNAL {task}!")
 				try:
-					subprocess.run(f"snakemake --conda-frontend mamba --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp", shell=True, check=True)
+					subprocess.run(f"snakemake --conda-frontend mamba --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp {unlock} {force} {verbose} {dry} {rerun}", shell=True, check=True)
 				except subprocess.CalledProcessError: # likely missing mamba 
 					try:
 						print("Retrying...")
-						subprocess.run(f"snakemake --conda-frontend conda --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp --rerun-incomplete", shell=True, check=True)
+						subprocess.run(f"snakemake --conda-frontend conda --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp {unlock} {force} {verbose} {dry} --rerun-incomplete", shell=True, check=True)
 					except subprocess.CalledProcessError:
 						exit(f"Something went wrong running SIGNAL {task}! Check input and try again!")
 	
