@@ -235,7 +235,7 @@ if __name__ == '__main__':
 	script_path = os.path.join(os.path.abspath(sys.argv[0]).rsplit("/",1)[0])
 	args, allowed = create_parser()
 	version = 'v1.5.8.hhs'
-	alt_options = {}
+	alt_options = []
 	
 	if args.version:
 		exit(f"{version}")
@@ -263,12 +263,12 @@ if __name__ == '__main__':
 	if not any([allowed[x] for x in allowed]):
 		exit("No task specified! Please provide at least one of 'all' or 'postprocess'! See 'signal.py -h' for details!")
 	else:
-		if args.verbose: alt_options['verbose'] = '--verbose' 
-		if args.unlock: alt_options['unlock'] = '--unlock' 
-		if args.forceall: alt_options['force'] = '--forceall' 
-		if args.dry_run: alt_options['dry'] = '--dry-run'
-		if args.rerun_incomplete: alt_options['rerun'] = '--rerun-incomplete'
-		opt = " ".join([alt_options[o] for o in alt_options])
+		if args.verbose: alt_options.append('--verbose')
+		if args.unlock: alt_options.append('--unlock')
+		if args.forceall: alt_options.append('--forceall')
+		if args.dry_run: alt_options.append('--dry-run')
+		if args.rerun_incomplete: alt_options.append('--rerun-incomplete')
+		opt = " ".join(alt_options)
 		for task in allowed:
 			if allowed[task] is True:
 				print(f"Running SIGNAL {task}!")
