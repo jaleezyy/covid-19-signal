@@ -47,14 +47,14 @@ If you use this software please [cite](https://doi.org/10.3390/v12080895):
         wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
         bash Miniconda3-latest-Linux-x86_64.sh # follow instructions
         source $(conda info --base)/etc/profile.d/conda.sh
-        conda create -n signal -c conda-forge -c bioconda -c defaults snakemake pandas conda
+        conda create -n signal -c conda-forge -c bioconda -c defaults snakemake pandas conda mamba
         conda activate signal
 
 There are some issues with `conda` failing to install newer versions of snakemake
 so alternatively install `mamba` and use that (snakemake has beta support for it within the workflow)
 
         conda install -c conda-forge mamba
-        mamba create -c conda-forge -c bioconda -n signal snakemake pandas conda
+        mamba create -c conda-forge -c bioconda -n signal snakemake pandas conda mamba
         conda activate signal
 
 Additional software dependencies are managed directly by `snakemake` using conda environment files:
