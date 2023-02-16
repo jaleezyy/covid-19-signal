@@ -87,17 +87,22 @@ To display the help screen:
 python signal.py -h
 
 Output:
-usage: signal.py [-h] [-c CONFIGFILE] [-d DIRECTORY] [--cores CORES] [--config-only] [--remove-freebayes] [--add-breseq] [-neg NEG_PREFIX] [--dependencies]
+usage: signal.py [-h] [-c CONFIGFILE] [-d DIRECTORY] [--cores CORES] [--config-only] [--remove-freebayes] [--add-breseq]
+                 [-neg NEG_PREFIX] [--dependencies] [-ri] [--unlock] [-F] [-n] [--verbose] [-v]
                  [all ...] [postprocess ...] [ncov_tools ...]
 
-SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL) aims to take Illumina short-read sequences and perform consensus assembly + variant calling for ongoing surveillance and research efforts towards
-the emergent coronavirus: Severe Acute Respiratory Syndrome Coronavirus 2 (SARS-CoV-2).
+SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL) aims to take Illumina short-read sequences and perform consensus assembly +
+variant calling for ongoing surveillance and research efforts towards the emergent coronavirus: Severe Acute Respiratory Syndrome
+Coronavirus 2 (SARS-CoV-2).
 
 positional arguments:
-  all                   Run SIGNAL with all associated assembly rules. Does not include postprocessing '--configfile' or '--directory' required. The latter will automatically generate a
-                        configuration file and sample table. If both provided, then '--configfile' will take priority
-  postprocess           Run SIGNAL postprocessing on completed SIGNAL run. '--configfile' is required but will be generated if '--directory' is provided
-  ncov_tools            Generate configuration file and filesystem setup required and then execute ncov-tools quality control assessment. '--configfile' is required but will be generated if '--
+  all                   Run SIGNAL with all associated assembly rules. Does not include postprocessing '--configfile' or '--
+                        directory' required. The latter will automatically generate a configuration file and sample table. If
+                        both provided, then '--configfile' will take priority
+  postprocess           Run SIGNAL postprocessing on completed SIGNAL run. '--configfile' is required but will be generated if '
+                        --directory' is provided
+  ncov_tools            Generate configuration file and filesystem setup required and then execute ncov-tools quality control
+                        assessment. Requires 'ncov-tools' submodule! '--configfile' is required but will be generated if '--
                         directory' is provided
 
 optional arguments:
@@ -108,12 +113,23 @@ optional arguments:
                         Path to directory containing reads. Will be used to generate sample table and configuration file
   --cores CORES         Number of cores. Default = 1
   --config-only         Generate sample table and configuration file (i.e., config.yaml) and exit. '--directory' required
-  --remove-freebayes    Configuration file generator parameter. Set flag to DISABLE freebayes variant calling (improves overall speed)
-  --add-breseq          Configuration file generator parameter. Set flag to ENABLE optional breseq step (will take more time for analysis to complete)
+  --remove-freebayes    Configuration file generator parameter. Set flag to DISABLE freebayes variant calling (improves overall
+                        speed)
+  --add-breseq          Configuration file generator parameter. Set flag to ENABLE optional breseq step (will take more time for
+                        analysis to complete)
   -neg NEG_PREFIX, --neg-prefix NEG_PREFIX
-                        Configuration file generator parameter. Comma-separated list of negative sontrol sample name(s) or prefix(es). For example, 'Blank' will cover Blank1, Blank2, etc. Recommend
-                        if running ncov-tools. Will be left empty, if not provided
-  --dependencies        Download data dependencies (under a created 'data' directory) required for SIGNAL analysis and exit. Note: Will override other flags! (~10 GB storage required)
+                        Configuration file generator parameter. Comma-separated list of negative sontrol sample name(s) or
+                        prefix(es). For example, 'Blank' will cover Blank1, Blank2, etc. Recommended if running ncov-tools. Will
+                        be left empty, if not provided
+  --dependencies        Download data dependencies (under a created 'data' directory) required for SIGNAL analysis and exit.
+                        Note: Will override other flags! (~10 GB storage required)
+  -ri, --rerun-incomplete
+                        Snakemake parameter. Re-run any incomplete samples from a previously failed run
+  --unlock              Snakemake parameter. Remove a lock on the working directory after a failed run
+  -F, --forceall        Snakemake parameter. Force the re-run of all rules regardless of prior output
+  -n, --dry-run         Snakemake parameter. Do not execute anything and only display what would be done
+  --verbose             Snakemake parameter. Display snakemake debugging output
+  -v, --version         Display version number
 ```
 
 ## Summary:
