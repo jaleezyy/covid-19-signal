@@ -196,16 +196,16 @@ var_min_variant_quality: 20
 pangolin_fast: False
 
 # Versions of software related to lineage calling (use numbers only, i.e., 3.1.1). Dates (YYYY-mm-dd) are accepted for pangolearn. Leave blank for latest version(s).
-pangolin: 4.0.4
-constellations: 0.1.4
-scorpio: 0.3.16
+pangolin: 4.2
+constellations: 0.1.10
+scorpio: 0.3.17
 
 # Required for Pangolin <v4.0
 pangolearn: 2022-02-28
 pango-designation: 1.2.132
 
 # Required for Pangolin v4+
-pangolin-data: 1.3
+pangolin-data: 1.18
 
 # Required for Nextclade (software & datasets)
 # Software version should use numbers only (i.e., 1.11.0)
@@ -234,22 +234,17 @@ if __name__ == '__main__':
 	# note: add root_dir to determine the root directory of SIGNAL
 	script_path = os.path.join(os.path.abspath(sys.argv[0]).rsplit("/",1)[0])
 	args, allowed = create_parser()
-
+	version = 'v1.5.8.hhs'
+	alt_options = {}
+	
+	if args.version:
+		exit(f"{version}")
+	
 	if args.dependencies:
 		print("Downloading necessary reference and dependency files!")
 		download_dependences()
 		exit("Download complete!")
-		version = 'v1.5.8.hhs'
-		#alt_options = {'verbose': '', 'rerun': '', 'unlock': '', 'meta': '', 'dry': ''}
-		verbose = ''
-		rerun = ''
-		unlock = ''
-		force = ''
-		dry = ''
-
-	if args.version:
-		exit(f"{version}")
-	
+		
 	if args.configfile is None:
 		assert args.directory is not None, "Please provide '--directory' to proceed! ('--configfile' if a configuration file already exists!)"
 		run_name = args.directory.name
@@ -268,20 +263,23 @@ if __name__ == '__main__':
 	if not any([allowed[x] for x in allowed]):
 		exit("No task specified! Please provide at least one of 'all' or 'postprocess'! See 'signal.py -h' for details!")
 	else:
-		if args.verbose: verbose = "--verbose"
-		if args.rerun_incomplete: rerun = '--rerun-incomplete'
-		if args.unlock: unlock = '--unlock'
-		if args.forceall: force = '--forceall'
-		if args.dry_run: dry = '--dry-run'
+		if args.verbose: alt_options['verbose'] = '--verbose' 
+		if args.unlock: alt_options['unlock'] = '--unlock' 
+		if args.forceall: alt_options['force'] = '--forceall' 
+		if args.dry_run: alt_options['dry'] = '--dry-run'
+		if args.rerun_incomplete: alt_options['rerun'] = '--rerun-incomplete'
+		opt = " ".join([alt_options[o] for o in alt_options])
 		for task in allowed:
 			if allowed[task] is True:
 				print(f"Running SIGNAL {task}!")
 				try:
-					subprocess.run(f"snakemake --conda-frontend mamba --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp {unlock} {force} {verbose} {dry} {rerun}", shell=True, check=True)
+					subprocess.run(f"snakemake --conda-frontend mamba --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp {opt}", shell=True, check=True)
 				except subprocess.CalledProcessError: # likely missing mamba 
+					if opt.split(" ")[-1] == '--rerun-incomplete': # remove redundant flag
+						opt = " ".join(opt.split(" ")[:-1])
 					try:
 						print("Retrying...")
-						subprocess.run(f"snakemake --conda-frontend conda --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp {unlock} {force} {verbose} {dry} --rerun-incomplete", shell=True, check=True)
+						subprocess.run(f"snakemake --conda-frontend conda --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp --rerun-incomplete {opt}", shell=True, check=True)
 					except subprocess.CalledProcessError:
 						exit(f"Something went wrong running SIGNAL {task}! Check input and try again!")
 	
