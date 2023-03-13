@@ -9,7 +9,7 @@ import re
 from pathlib import Path
 
 def create_parser():
-	allowed = {'all': False, 'postprocess': False, 'ncov_tools': False}
+	allowed = {'install': False, 'all': False, 'postprocess': False, 'ncov_tools': False}
 
 	parser = argparse.ArgumentParser(prog='signal.py', description="SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL) aims to take Illumina short-read sequences and perform consensus assembly + variant calling for ongoing surveillance and research efforts towards the emergent coronavirus: Severe Acute Respiratory Syndrome Coronavirus 2 (SARS-CoV-2).")
 	parser.add_argument('all', nargs='*',
@@ -18,6 +18,8 @@ def create_parser():
 						help="Run SIGNAL postprocessing on completed SIGNAL run. '--configfile' is required but will be generated if '--directory' is provided")
 	parser.add_argument('ncov_tools', nargs='*',
 						help="Generate configuration file and filesystem setup required and then execute ncov-tools quality control assessment. Requires 'ncov-tools' submodule! '--configfile' is required but will be generated if '--directory' is provided")
+	parser.add_argument('install', nargs='*',
+						help="Install individual rule environments and ensure SIGNAL is functional")
 	parser.add_argument('-c', '--configfile', type=check_file, default=None,
 						help="Configuration file (i.e., config.yaml) for SIGNAL analysis")
 	parser.add_argument('-d', '--directory', type=check_directory, default=None,
@@ -28,16 +30,18 @@ def create_parser():
 	parser.add_argument('--add-breseq', action='store_true', help="Configuration file generator parameter. Set flag to ENABLE optional breseq step (will take more time for analysis to complete)")
 	parser.add_argument('-neg', '--neg-prefix', default=None, help="Configuration file generator parameter. Comma-separated list of negative sontrol sample name(s) or prefix(es). For example, 'Blank' will cover Blank1, Blank2, etc. Recommended if running ncov-tools. Will be left empty, if not provided")
 	parser.add_argument('--dependencies', action='store_true', help="Download data dependencies (under a created 'data' directory) required for SIGNAL analysis and exit. Note: Will override other flags! (~10 GB storage required)")
+	parser.add_argument('--data', default='data', help="Data dependencies parameter. Set location for data dependancies. If '--dependancies' is run, a folder will be created in the specified directory. If '--config-only' or '--directory' is used, the value will be applied to the configuration file. Default = 'data'")
 	parser.add_argument('-ri', '--rerun-incomplete', action='store_true', help="Snakemake parameter. Re-run any incomplete samples from a previously failed run")
 	parser.add_argument('--unlock', action='store_true', help="Snakemake parameter. Remove a lock on the working directory after a failed run")
 	parser.add_argument('-F', '--forceall', action='store_true', help='Snakemake parameter. Force the re-run of all rules regardless of prior output')
 	parser.add_argument('-n', '--dry-run', action='store_true', help='Snakemake parameter. Do not execute anything and only display what would be done')
+	### add --quiet
 	parser.add_argument('--verbose', action='store_true', help="Snakemake parameter. Display snakemake debugging output")
 	parser.add_argument('-v', '--version', action='store_true', help="Display version number")
 	args, unknown = parser.parse_known_args()
 
 	provided = []
-	for opt in allowed: # ['all', 'postprocess', 'ncov_tools']
+	for opt in allowed: # ['install', 'all', 'postprocess', 'ncov_tools']
 		if len(getattr(args, opt)) > 0:
 			provided = provided + getattr(args, opt)
 			getattr(args, opt).clear()
@@ -122,8 +126,8 @@ def write_sample_table(sample_data, output_table):
 		for sample in sample_data:
 			out_fh.write(",".join(sample) + '\n')
 
-def download_dependences():
-	dir_name = 'data'
+def download_dependences(data):
+	dir_name = data
 	script = os.path.join(script_path, 'scripts', 'get_data_dependencies.sh')
 	subprocess.run(['bash', script, '-d', dir_name, '-a', 'MN908947.3'])
 
@@ -135,7 +139,7 @@ def generate_sample_table(project_directory, project_name):
 	out_table = project_name + "_sample_table.csv"
 	subprocess.run(['bash', script, '-d', project_directory, '-n', out_table])
 
-def write_config_file(run_name, config_file, opt_tasks):
+def write_config_file(run_name, config_file, data_directory, opt_tasks):
 ### opt_tasks = [args.breseq, args.freebayes, [args.neg_prefix]] - latter only applies to SIGNAL v1.5.8 and earlier
 
 	config = f"""# This file contains a high-level summary of pipeline configuration and inputs.
@@ -157,26 +161,26 @@ min_len: 20
 scheme_bed: 'resources/primer_schemes/artic_v3/nCoV-2019.bed'
 
 # Path from snakemake dir to bwa indexed human + viral reference genome
-composite_reference: 'data/composite_human_viral_reference.fna'
+composite_reference: "{data_directory}/composite_human_viral_reference.fna"
 
 # Used as bwa reference genome when removing host sequences.
 # Also used as 'ivar' reference genome in variant detection + consensus.
 # Used as -r,-g arguments to 'quast'
 # contig needed for hostremoval filtering script
 viral_reference_contig_name: 'MN908947.3'
-viral_reference_genome: 'data/MN908947.3.fasta'
-viral_reference_feature_coords: 'data/MN908947.3.gff3'
+viral_reference_genome: "{data_directory}/MN908947.3.fasta"
+viral_reference_feature_coords: "{data_directory}/MN908947.3.gff3"
 
 # breseq_reference must be defined if run_breseq == True
 run_breseq: {opt_tasks[0]}
 # Used as --reference argument to 'breseq'
-breseq_reference: 'data/MN908947.3.gbk'
+breseq_reference: "{data_directory}/MN908947.3.gbk"
 
 # run freebayes for variant and consensus calling (as well as ivar)
 run_freebayes: {opt_tasks[1]}
 
 # Used as --db argument to 'kraken2'
-kraken2_db: 'data/Kraken2/db'
+kraken2_db: "{data_directory}/Kraken2/db"
 
 # For Ivar's amplicon filter 
 # https://github.com/andersen-lab/ivar/commit/7027563fd75581c78dabc6040ebffdee2b24abe6
@@ -226,7 +230,7 @@ nextclade-include-recomb: True
 amplicon_loc_bed: 'resources/primer_schemes/artic_v3/ncov-qc_V3.scheme.bed'
 
 # fasta of sequences to include with pangolin phylogeny
-phylo_include_seqs: "data/blank.fasta"
+phylo_include_seqs: "{data_directory}/blank.fasta"
 
 # List of negative control sample names or prefixes (i.e., ['Blank'] will cover Blank1, Blank2, etc.)
 negative_control_prefix: {opt_tasks[2]}"""
@@ -234,11 +238,14 @@ negative_control_prefix: {opt_tasks[2]}"""
 	with open(config_file, 'w') as fh:
 		fh.write(config)
 
+def test_signal(data):
+	pass
+
 if __name__ == '__main__':
 	# note: add root_dir to determine the root directory of SIGNAL
 	script_path = os.path.join(os.path.abspath(sys.argv[0]).rsplit("/",1)[0])
 	args, allowed = create_parser()
-	version = 'v1.5.9'
+	version = 'v1.6.0'
 	alt_options = []
 	
 	if args.version:
@@ -246,7 +253,7 @@ if __name__ == '__main__':
 	
 	if args.dependencies:
 		print("Downloading necessary reference and dependency files!")
-		download_dependences()
+		download_dependences(args.data)
 		exit("Download complete!")
 	
 	if args.configfile is None:
@@ -258,7 +265,7 @@ if __name__ == '__main__':
 			neg = [pre.replace(" ","") for pre in args.neg_prefix.split(",")]
 		else:
 			neg = [args.neg_prefix]
-		write_config_file(run_name, config_file, [args.add_breseq, args.remove_freebayes, neg])
+		write_config_file(run_name, config_file, args.data, [args.add_breseq, args.remove_freebayes, neg])
 		if args.config_only:
 			exit("Configuration file and sample table generated!")
 	else:
@@ -274,7 +281,7 @@ if __name__ == '__main__':
 		if args.rerun_incomplete: alt_options.append('--rerun-incomplete')
 		opt = " ".join(alt_options)
 		for task in allowed:
-			if allowed[task] is True:
+			if (allowed[task] is True) and (task != 'install'):
 				print(f"Running SIGNAL {task}!")
 				try:
 					subprocess.run(f"snakemake --conda-frontend mamba --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp {opt}", shell=True, check=True)
@@ -288,5 +295,9 @@ if __name__ == '__main__':
 						subprocess.run(f"snakemake --conda-frontend conda --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp --rerun-incomplete {opt}", shell=True, check=True)
 					except subprocess.CalledProcessError:
 						exit(f"Something went wrong running SIGNAL {task}! Check input and try again!")
+			else:
+				print(f"Installing SIGNAL environments!")
+				
+				exit()
 	
 	exit("SIGNAL completed successfully!")
