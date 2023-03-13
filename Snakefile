@@ -129,21 +129,25 @@ rule clean_reads:
 rule consensus:
     input: expand('{sn}/core/{sn}.consensus.fa', sn=sample_names)
 
+rule core_genomes:
+    input: 'all_genomes.fa'
+
 rule ivar_variants:
     input: expand('{sn}/core/{sn}_ivar_variants.tsv', sn=sample_names)
 
 rule breseq:
     input: expand('{sn}/breseq/output/index.html', sn=sample_names)
 
+
 rule freebayes:
-    input: 
+    input:
+        'all_freebayes_genomes.fa',
         expand('{sn}/freebayes/{sn}.consensus.fasta', sn=sample_names),
         expand('{sn}/freebayes/{sn}.variants.norm.vcf', sn=sample_names),
         'freebayes_lineage_assignments.tsv',
         expand('{sn}/freebayes/quast/{sn}_quast_report.html', sn=sample_names),
         expand('{sn}/freebayes/{sn}_consensus_compare.vcf', sn=sample_names)
 
-    
 rule coverage:
     input: expand('{sn}/coverage/{sn}_depth.txt', sn=sample_names)
 
@@ -158,6 +162,7 @@ rule quast:
 
 rule lineages:
     input:
+        rules.core_genomes.input,
         'input_pangolin_versions.txt',
         'input_nextclade_versions.txt',
         'lineage_assignments.tsv'
@@ -769,6 +774,9 @@ rule run_quast_freebayes:
          'quast {input} -r {params.genome} -g {params.fcoords} --output-dir {params.outdir} --threads {threads} >{log} && '
          'for f in {params.unlabelled_reports}; do mv $f ${{f/report/{params.sample_name}}}; done'
 
+rule collect_core_genomes:
+    
+
 rule run_lineage_assignment:
     threads: 4
     conda: 'conda_envs/assign_lineages.yaml'
@@ -796,6 +804,9 @@ rule run_lineage_assignment:
         "echo -e 'nextclade: {params.nextclade_ver}\nnextclade-dataset: {params.nextclade_data}\nnextclade-include-recomb: {params.nextclade_recomb}' > {output.nextclade_ver_out} && "
         'cat {input} > all_genomes.fa && '
         '{params.assignment_script_path} -i all_genomes.fa -t {threads} -o {output.lin_out} -p {output.pango_ver_out} -n {output.nextclade_ver_out} --mode {params.analysis_mode}'
+
+rule collect_freebayes_genomes:
+    
 
 rule run_lineage_assignment_freebayes:
     threads: 4
