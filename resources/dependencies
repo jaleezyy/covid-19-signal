@@ -4,6 +4,8 @@ rule all:
         "ivar",
         "snp_mapping",
         "trim_qc",
+        "assign_lineages",
+        "freebayes",
         "postprocessing"
     shell: "rm {input}"
 
@@ -25,6 +27,16 @@ rule snp_mapping:
 rule trim_qc:
     conda: "../conda_envs/trim_qc.yaml"
     output: "trim_qc"
+    shell: "touch {output}"
+
+rule assign_lineages:
+    conda: "../conda_envs/assign_lineages.yaml"
+    output: "assign_lineages"
+    shell: "touch {output}"
+
+rule freebayes:
+    conda: "../conda_envs/freebayes.yaml"
+    output: "freebayes"
     shell: "touch {output}"
 
 rule postprocessing:
