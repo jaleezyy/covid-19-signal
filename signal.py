@@ -28,14 +28,14 @@ def create_parser():
 	parser.add_argument('--config-only', action='store_true', help="Generate sample table and configuration file (i.e., config.yaml) and exit. '--directory' required")
 	parser.add_argument('--remove-freebayes', action='store_false', help="Configuration file generator parameter. Set flag to DISABLE freebayes variant calling (improves overall speed)")
 	parser.add_argument('--add-breseq', action='store_true', help="Configuration file generator parameter. Set flag to ENABLE optional breseq step (will take more time for analysis to complete)")
-	parser.add_argument('-neg', '--neg-prefix', default=None, help="Configuration file generator parameter. Comma-separated list of negative sontrol sample name(s) or prefix(es). For example, 'Blank' will cover Blank1, Blank2, etc. Recommended if running ncov-tools. Will be left empty, if not provided")
+	parser.add_argument('-neg', '--neg-prefix', default=None, help="Configuration file generator parameter. Comma-separated list of negative control sample name(s) or prefix(es). For example, 'Blank' will cover Blank1, Blank2, etc. Recommended if running ncov-tools. Will be left empty, if not provided")
 	parser.add_argument('--dependencies', action='store_true', help="Download data dependencies (under a created 'data' directory) required for SIGNAL analysis and exit. Note: Will override other flags! (~10 GB storage required)")
 	parser.add_argument('--data', default='data', help="Data dependencies parameter. Set location for data dependancies. If '--dependancies' is run, a folder will be created in the specified directory. If '--config-only' or '--directory' is used, the value will be applied to the configuration file. Default = 'data'")
 	parser.add_argument('-ri', '--rerun-incomplete', action='store_true', help="Snakemake parameter. Re-run any incomplete samples from a previously failed run")
 	parser.add_argument('--unlock', action='store_true', help="Snakemake parameter. Remove a lock on the working directory after a failed run")
 	parser.add_argument('-F', '--forceall', action='store_true', help='Snakemake parameter. Force the re-run of all rules regardless of prior output')
 	parser.add_argument('-n', '--dry-run', action='store_true', help='Snakemake parameter. Do not execute anything and only display what would be done')
-	### add --quiet
+	parser.add_argument('-q', '--quiet', action='store_true', help="Snakemake parameter. Do not output any progress or rule information. If used with '--dry-run`, it will just display a summary of the DAG of jobs")
 	parser.add_argument('--verbose', action='store_true', help="Snakemake parameter. Display snakemake debugging output")
 	parser.add_argument('-v', '--version', action='store_true', help="Display version number")
 	args, unknown = parser.parse_known_args()
@@ -275,13 +275,17 @@ if __name__ == '__main__':
 		exit("No task specified! Please provide at least one of 'all', 'postprocess', or 'ncov_tools'! See 'signal.py -h' for details!")
 	else:
 		if args.verbose: alt_options.append('--verbose')
+		if args.quiet: alt_options.append('--quiet')
 		if args.unlock: alt_options.append('--unlock')
 		if args.forceall: alt_options.append('--forceall')
 		if args.dry_run: alt_options.append('--dry-run')
 		if args.rerun_incomplete: alt_options.append('--rerun-incomplete')
 		opt = " ".join(alt_options)
 		for task in allowed:
-			if (allowed[task] is True) and (task != 'install'):
+			if allowed[task] is True:
+				if task == 'install':
+					print(f"Installing SIGNAL environments!")
+					exit()
 				print(f"Running SIGNAL {task}!")
 				try:
 					subprocess.run(f"snakemake --conda-frontend mamba --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp {opt}", shell=True, check=True)
@@ -294,10 +298,7 @@ if __name__ == '__main__':
 						print("Retrying...")
 						subprocess.run(f"snakemake --conda-frontend conda --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp --rerun-incomplete {opt}", shell=True, check=True)
 					except subprocess.CalledProcessError:
-						exit(f"Something went wrong running SIGNAL {task}! Check input and try again!")
-			else:
-				print(f"Installing SIGNAL environments!")
-				
+						exit(f"Something went wrong running SIGNAL {task}! Check input and logs and try again!")
 				exit()
 	
-	exit("SIGNAL completed successfully!")
+	exit("SIGNAL run complete! Check corresponding snakemake logs for any details!")
