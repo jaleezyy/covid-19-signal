@@ -4,8 +4,8 @@ rule all:
         "ivar",
         "snp_mapping",
         "trim_qc",
-        "assign_lineages.yaml",
-        "freebayes.yaml",
+        "assign_lineages",
+        "freebayes",
         "postprocessing"
     shell: "rm {input}"
 
