@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-set -e # exit if pipeline returns non-zero status
-set -o pipefail # return value of last command to exit with non-zero status
+#set -e # exit if pipeline returns non-zero status
+#set -o pipefail # return value of last command to exit with non-zero status
 source ~/.bashrc
 
 if [ -z "$CONDA_EXE" ] ; then
