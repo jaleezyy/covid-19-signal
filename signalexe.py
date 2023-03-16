@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# v1.5.0+
-# signal.py assumes Snakefile is in current working directory (i.e., SIGNAL root)
+# v1.6.0+
+# signalexe.py assumes Snakefile is in current working directory (i.e., SIGNAL root)
 
 import signal
 import argparse
@@ -17,7 +17,7 @@ if platform.system() != 'Linux':
 def create_parser():
 	allowed = {'install': False, 'all': False, 'postprocess': False, 'ncov_tools': False}
 
-	parser = argparse.ArgumentParser(prog='signal.py', description="SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL) aims to take Illumina short-read sequences and perform consensus assembly + variant calling for ongoing surveillance and research efforts towards the emergent coronavirus: Severe Acute Respiratory Syndrome Coronavirus 2 (SARS-CoV-2).")
+	parser = argparse.ArgumentParser(prog='signalexe.py', description="SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL) aims to take Illumina short-read sequences and perform consensus assembly + variant calling for ongoing surveillance and research efforts towards the emergent coronavirus: Severe Acute Respiratory Syndrome Coronavirus 2 (SARS-CoV-2).")
 	parser.add_argument('all', nargs='*',
 						help="Run SIGNAL with all associated assembly rules. Does not include postprocessing '--configfile' or '--directory' required. The latter will automatically generate a configuration file and sample table. If both provided, then '--configfile' will take priority")
 	parser.add_argument('postprocess', nargs='*',
@@ -25,7 +25,7 @@ def create_parser():
 	parser.add_argument('ncov_tools', nargs='*',
 						help="Generate configuration file and filesystem setup required and then execute ncov-tools quality control assessment. Requires 'ncov-tools' submodule! '--configfile' is required but will be generated if '--directory' is provided")
 	parser.add_argument('install', nargs='*',
-						help="Install individual rule environments and ensure SIGNAL is functional. The only parameters operable will be '--data' and '--skip-test'. Will override other operations!")
+						help="Install individual rule environments and ensure SIGNAL is functional. The only parameter operable will be '--data'. Will override other operations!")
 	parser.add_argument('-c', '--configfile', type=check_file, default=None,
 						help="Configuration file (i.e., config.yaml) for SIGNAL analysis")
 	parser.add_argument('-d', '--directory', type=check_directory, default=None,
@@ -36,8 +36,8 @@ def create_parser():
 	parser.add_argument('--add-breseq', action='store_true', help="Configuration file generator parameter. Set flag to ENABLE optional breseq step (will take more time for analysis to complete)")
 	parser.add_argument('-neg', '--neg-prefix', default=None, help="Configuration file generator parameter. Comma-separated list of negative control sample name(s) or prefix(es). For example, 'Blank' will cover Blank1, Blank2, etc. Recommended if running ncov-tools. Will be left empty, if not provided")
 	parser.add_argument('--dependencies', action='store_true', help="Download data dependencies (under a created 'data' directory) required for SIGNAL analysis and exit. Note: Will override other parameters! (~10 GB storage required)")
-	parser.add_argument('--data', default='data', help="SIGNAL install and data dependencies parameter. Set location for data dependancies. When used with 'SIGNAL install', any tests run will use the dependencies located at this directory. If '--dependancies' is run, a folder will be created in the specified directory. If '--config-only' or '--directory' is used, the value will be applied to the configuration file. Default = 'data'")
-	parser.add_argument('--skip-test', action='store_true', help='SIGNAL install parameter. Skip SIGNAL testing after environment installation using curated test data')
+	parser.add_argument('--data', default='data', help="SIGNAL install and data dependencies parameter. Set location for data dependancies. If '--dependancies' is run, a folder will be created in the specified directory. If '--config-only' or '--directory' is used, the value will be applied to the configuration file. (Upcoming feature): When used with 'SIGNAL install', any tests run will use the dependencies located at this directory. Default = 'data'")
+	#parser.add_argument('--enable-test', action='store_true', help='SIGNAL install parameter. Add SIGNAL testing after environment installation using curated test data')
 	parser.add_argument('-ri', '--rerun-incomplete', action='store_true', help="Snakemake parameter. Re-run any incomplete samples from a previously failed run")
 	parser.add_argument('-ii', '--ignore-incomplete', action='store_true', help='Snakemake parameter. Do not check for incomplete output files')
 	parser.add_argument('--unlock', action='store_true', help="Snakemake parameter. Remove a lock on the working directory after a failed run")
@@ -251,10 +251,10 @@ def install_signal(frontend, data='data'):
 	assert os.path.exists(dep_snakefile)
 	try:
 		subprocess.run(f"snakemake -s {dep_snakefile} --conda-frontend {frontend} --cores 1 --use-conda --conda-prefix=$PWD/.snakemake/conda --quiet", shell=True, check=True)
-	except subprocess.CalledProcessError: # likely missing mamba 
+	except subprocess.CalledProcessError: 
 		exit("Installation of environments failed!")
 	
-	# Test SIGNAL with data
+	### TODO: Test SIGNAL with curated data
 	if os.path.exists(data):
 		pass
 	
@@ -273,7 +273,7 @@ if __name__ == '__main__':
 	
 	if allowed['install']:
 		install_signal(conda_frontend, args.data)
-		exit()
+		exit("Installation of environments completed successfully!")
 	
 	if args.dependencies:
 		print("Downloading necessary reference and dependency files!")
@@ -296,7 +296,7 @@ if __name__ == '__main__':
 		config_file = args.configfile
 	
 	if not any([allowed[x] for x in allowed]):
-		exit("No task specified! Please provide at least one of 'all', 'postprocess', or 'ncov_tools'! See 'signal.py -h' for details!")
+		exit("No task specified! Please provide at least one of 'all', 'postprocess', or 'ncov_tools'! See 'signalexe.py -h' for details!")
 	else:
 		if args.verbose: alt_options.append('--verbose')
 		if args.quiet: alt_options.append('--quiet')
@@ -323,12 +323,12 @@ if __name__ == '__main__':
 							print(f"Some jobs failed while running SIGNAL {task}! Check snakemake logs and the ncov-tools directory for additional details!")
 							continue
 					elif task == 'all':
-						print(f"Some jobs failed while running SIGNAL {task}! Samples that failed assembly can be found in 'failed_samples.log'! Otherwise, check your inputs and logs and try again!")
+						print(f"Some jobs failed while running SIGNAL {task}! This does NOT necessarily mean your run was erroneous! Samples that failed assembly can be found in 'failed_samples.log'! If no such file exists or is blank, check your inputs and logs and try again!")
 						continue
 					elif task == 'postprocess':
-						print(f"Some jobs failed while running SIGNAL {task}! Some output files may be missing! Check SIGNAL results and try again!")
+						print(f"Some jobs failed while running SIGNAL {task}! Some output files may be missing! Check SIGNAL results and logs and try again!")
 						continue
 					else:
-						print(f"Some jobs failed while running SIGNAL {task}! Check SIGNAL inputs and results and try again!")
+						print(f"Some jobs failed while running SIGNAL {task}! Check SIGNAL inputs, logs, and results and try again!")
 	
 	exit("SIGNAL run complete! Check corresponding snakemake logs for any details!")
