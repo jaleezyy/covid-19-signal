@@ -286,7 +286,6 @@ if __name__ == '__main__':
 		
 	if (args.configfile is None) and (not allowed['install']):
 		assert args.directory is not None, "Please provide '--directory' to proceed! ('--configfile' if a configuration file already exists!)"
-			sys.exit(1)
 		run_name = args.directory.name
 		generate_sample_table(args.directory, run_name)
 		config_file = run_name + "_config.yaml"
