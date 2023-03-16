@@ -120,7 +120,8 @@ def check_submodule(exec_dir):
 			print("Updating ncov-tools!")
 			subprocess.run(['git', 'submodule', 'update', '--init', '--recursive'])
 		except subprocess.CalledProcessError:
-			exit("Could not find nor update the required 'ncov-tools' directory! Manually download/update and try again!")
+			print("Could not find nor update the required 'ncov-tools' directory! Manually download/update and try again!")
+			sys.exit(1)
 		
 def write_sample_table(sample_data, output_table):
 	"""
@@ -252,7 +253,8 @@ def install_signal(frontend, data='data'):
 	try:
 		subprocess.run(f"snakemake -s {dep_snakefile} --conda-frontend {frontend} --cores 1 --use-conda --conda-prefix=$PWD/.snakemake/conda --quiet", shell=True, check=True)
 	except subprocess.CalledProcessError: 
-		exit("Installation of environments failed!")
+		print("Installation of environments failed!")
+		sys.exit(1)
 	
 	### TODO: Test SIGNAL with curated data
 	if os.path.exists(data):
@@ -267,21 +269,26 @@ if __name__ == '__main__':
 	alt_options = []
 	
 	if args.version:
-		exit(f"{version}")
+		print(f"{version}")
+		sys.exit(0)
 	
 	conda_frontend = check_frontend() # 'mamba' or 'conda'
 	
 	if allowed['install']:
 		install_signal(conda_frontend, args.data)
-		exit("Installation of environments completed successfully!")
+		print("Installation of environments completed successfully!")
+		sys.exit(0)
 	
 	if args.dependencies:
 		print("Downloading necessary reference and dependency files!")
 		download_dependences(args.data)
-		exit("Download complete!")
+		print("Complete!")
+		sys.exit(0)
 		
 	if args.configfile is None:
-		assert args.directory is not None, "Please provide '--directory' to proceed! ('--configfile' if a configuration file already exists!)"
+		if args.directory is None, 
+			print("Please provide '--directory' to proceed! ('--configfile' if a configuration file already exists!")
+			sys.exit(1)
 		run_name = args.directory.name
 		generate_sample_table(args.directory, run_name)
 		config_file = run_name + "_config.yaml"
@@ -291,12 +298,14 @@ if __name__ == '__main__':
 			neg = [args.neg_prefix]
 		write_config_file(run_name, config_file, args.data, [args.add_breseq, args.remove_freebayes, neg])
 		if args.config_only:
-			exit("Configuration file and sample table generated!")
+			print("Configuration file and sample table generated!")
+			sys.exit(0)
 	else:
 		config_file = args.configfile
 	
 	if not any([allowed[x] for x in allowed]):
-		exit("No task specified! Please provide at least one of 'all', 'postprocess', or 'ncov_tools'! See 'signalexe.py -h' for details!")
+		print("No task specified! Please provide at least one of 'all', 'postprocess', or 'ncov_tools'! See 'signalexe.py -h' for details!")
+		sys.exit(1)
 	else:
 		if args.verbose: alt_options.append('--verbose')
 		if args.quiet: alt_options.append('--quiet')
@@ -331,4 +340,5 @@ if __name__ == '__main__':
 					else:
 						print(f"Some jobs failed while running SIGNAL {task}! Check SIGNAL inputs, logs, and results and try again!")
 	
-	exit("SIGNAL run complete! Check corresponding snakemake logs for any details!")
+	print("SIGNAL run complete! Check corresponding snakemake logs for any details!")
+	sys.exit(0)
