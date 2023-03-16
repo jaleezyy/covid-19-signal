@@ -251,7 +251,7 @@ def install_signal(frontend, data='data'):
 	dep_snakefile = os.path.join(script_path, 'resources', 'dependencies')
 	assert os.path.exists(dep_snakefile)
 	try:
-		subprocess.run(f"snakemake -s {dep_snakefile} --conda-frontend {frontend} --cores 1 --use-conda --conda-prefix=$PWD/.snakemake/conda --quiet", shell=True, check=True)
+		subprocess.run(f"snakemake -s {dep_snakefile} --conda-frontend {frontend} --cores 1 --use-conda --conda-prefix=$PWD/.snakemake/conda", shell=True, check=True)
 	except subprocess.CalledProcessError: 
 		print("Installation of environments failed!")
 		sys.exit(1)
