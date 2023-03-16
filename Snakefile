@@ -242,7 +242,8 @@ rule ncov_tools:
         negative_control_prefix = config['negative_control_prefix'],
         freebayes_run = config['run_freebayes'],
         pangolin = versions['pangolin'],
-        mode = pango_speed
+        mode = pango_speed,
+        failed = os.path.join(result_dir, 'failed_samples.log') 
     input:
         consensus = expand('{sn}/core/{sn}.consensus.fa', sn=sample_names),
         primertrimmed_bams = expand("{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam", sn=sample_names),
