@@ -133,7 +133,7 @@ def write_sample_table(sample_data, output_table):
 		for sample in sample_data:
 			out_fh.write(",".join(sample) + '\n')
 
-def download_dependences(dir_name):
+def download_dependencies(dir_name):
 	script = os.path.join(script_path, 'scripts', 'get_data_dependencies.sh')
 	subprocess.run(['bash', script, '-d', dir_name, '-a', 'MN908947.3'])
 
@@ -281,10 +281,10 @@ if __name__ == '__main__':
 	
 	if args.dependencies:
 		print("Downloading necessary reference and dependency files!")
-		download_dependences(args.data)
+		download_dependencies(args.data)
 		print("Complete!")
 		
-	if (args.configfile is None) and (not allowed['install']):
+	if args.configfile is None:
 		assert args.directory is not None, "Please provide '--directory' to proceed! ('--configfile' if a configuration file already exists!)"
 		run_name = args.directory.name
 		generate_sample_table(args.directory, run_name)
