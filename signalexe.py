@@ -286,7 +286,7 @@ if __name__ == '__main__':
 		sys.exit(0)
 		
 	if args.configfile is None:
-		if args.directory is None, 
+		if args.directory is None: 
 			print("Please provide '--directory' to proceed! ('--configfile' if a configuration file already exists!")
 			sys.exit(1)
 		run_name = args.directory.name
