@@ -3,10 +3,16 @@
 # v1.5.0+
 # signal.py assumes Snakefile is in current working directory (i.e., SIGNAL root)
 
+import signal
 import argparse
 import subprocess, os, sys
 import re
 from pathlib import Path
+import platform
+
+# for compatibility between platforms
+if platform.system() != 'Linux':
+	signal.SIGHUP = 1
 
 def create_parser():
 	allowed = {'install': False, 'all': False, 'postprocess': False, 'ncov_tools': False}
@@ -57,7 +63,14 @@ def create_parser():
 			print(f"Ignoring unknown command: {val}")
 
 	return args, allowed
-	
+
+def check_frontend():
+	try:
+		subprocess.check_call(['mamba', 'list'], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+		return 'mamba'
+	except subprocess.CalledProcessError:
+		return 'conda'
+
 def check_directory(path: str) -> Path:
 	"""
 	Check an input directory exists and is readable
@@ -230,16 +243,16 @@ negative_control_prefix: {opt_tasks[2]}"""
 	with open(config_file, 'w') as fh:
 		fh.write(config)
 
-def install_signal(data='data'):
+def install_signal(frontend, data='data'):
 	"""
 	Install SIGNAL dependencies per rule and test using a sample dataset, if desired
 	"""
-	dep_snakefile = os.path.join(script_path, 'resources', 'dependancies')
+	dep_snakefile = os.path.join(script_path, 'resources', 'dependencies')
 	assert os.path.exists(dep_snakefile)
 	try:
-		subprocess.run(f"snakemake -s {dep_snakefile} --conda-frontend mamba --cores 1 --use-conda --conda-prefix=$PWD/.snakemake/conda --quiet")
+		subprocess.run(f"snakemake -s {dep_snakefile} --conda-frontend {frontend} --cores 1 --use-conda --conda-prefix=$PWD/.snakemake/conda --quiet", shell=True, check=True)
 	except subprocess.CalledProcessError: # likely missing mamba 
-		subprocess.run(f"snakemake -s {dep_snakefile} --conda-frontend conda --cores 1 --use-conda --conda-prefix=$PWD/.snakemake/conda --quiet")
+		exit("Installation of environments failed!")
 	
 	# Test SIGNAL with data
 	if os.path.exists(data):
@@ -256,8 +269,10 @@ if __name__ == '__main__':
 	if args.version:
 		exit(f"{version}")
 	
+	conda_frontend = check_frontend() # 'mamba' or 'conda'
+	
 	if allowed['install']:
-		install_signal(args.data)
+		install_signal(conda_frontend, args.data)
 		exit()
 	
 	if args.dependencies:
@@ -293,29 +308,27 @@ if __name__ == '__main__':
 		opt = " ".join(alt_options)
 		for task in allowed:
 			if (allowed[task] is True) and (task != 'install'):
-				if task == 'install':
-					print(f"Installing SIGNAL environments!")
-					exit()
 				print(f"Running SIGNAL {task}!")
 				try:
-					subprocess.run(f"snakemake --conda-frontend mamba --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp {opt}", shell=True, check=True)
-				except subprocess.CalledProcessError: # likely missing mamba 
+					subprocess.run(f"snakemake --conda-frontend {conda_frontend} --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp {opt}", shell=True, check=True)
+				except subprocess.CalledProcessError:
 					if task == "ncov_tools":
 						check_submodule(os.getcwd())
-					if opt.split(" ")[-1] == '--rerun-incomplete': # remove redundant flag
-						opt = " ".join(opt.split(" ")[:-1])
-					try:
-						print("Retrying...")
-						subprocess.run(f"snakemake --conda-frontend conda --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp --rerun-incomplete {opt}", shell=True, check=True)
-					except subprocess.CalledProcessError:
-						if task == 'all':
-							print(f"Some jobs failed while running SIGNAL {task}! Samples that failed assembly can be found in 'failed_samples.log'! Otherwise, check your inputs and logs and try again!")
-						elif task == 'postprocess':
-							print(f"Some jobs failed while running SIGNAL {task}! Some output files may be missing! Check SIGNAL results and try again!")
-						elif task == 'ncov_tools':
+						if opt.split(" ")[-1] == '--rerun-incomplete': # remove redundant flag
+							opt = " ".join(opt.split(" ")[:-1])
+						try:
+							print("Retrying...ncov-tools!")
+							subprocess.run(f"snakemake --conda-frontend {conda_frontend} --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp --rerun-incomplete {opt}", shell=True, check=True)
+						except subprocess.CalledProcessError:
 							print(f"Some jobs failed while running SIGNAL {task}! Check snakemake logs and the ncov-tools directory for additional details!")
-						else:
-							print(f"Some jobs failed while running SIGNAL {task}! Check inputs and logs and try again!")
-				exit()
+							continue
+					elif task == 'all':
+						print(f"Some jobs failed while running SIGNAL {task}! Samples that failed assembly can be found in 'failed_samples.log'! Otherwise, check your inputs and logs and try again!")
+						continue
+					elif task == 'postprocess':
+						print(f"Some jobs failed while running SIGNAL {task}! Some output files may be missing! Check SIGNAL results and try again!")
+						continue
+					else:
+						print(f"Some jobs failed while running SIGNAL {task}! Check SIGNAL inputs and results and try again!")
 	
 	exit("SIGNAL run complete! Check corresponding snakemake logs for any details!")
