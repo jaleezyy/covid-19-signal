@@ -283,6 +283,7 @@ if __name__ == '__main__':
 		print("Downloading necessary reference and dependency files!")
 		download_dependencies(args.data)
 		print("Complete!")
+		sys.exit(0)
 		
 	if args.configfile is None:
 		assert args.directory is not None, "Please provide '--directory' to proceed! ('--configfile' if a configuration file already exists!)"
