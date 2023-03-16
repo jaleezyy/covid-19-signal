@@ -6,7 +6,7 @@ import subprocess
 import fileinput
 import glob
 
-def link_ivar(root, replace=False, neg, failed):
+def link_ivar(root, neg, failed, replace=False):
 	print("Linking iVar files to ncov-tools!")
 
 	for variants in snakemake.input['variants']:
@@ -44,7 +44,7 @@ def link_freebayes(root, neg, failed):
 		expected_path = os.path.join(sample, 'freebayes', sample+'.variants.norm.vcf')
 		if not os.path.exists(expected_path):
 			print("Missing FreeBayes variant file! Switching to iVar input!")
-			link_ivar(root, True, neg, failed)
+			link_ivar(root, neg, failed, replace=True)
 			break
 		else:
 			ln_path = f"{root}/{sample}.variants.vcf"
@@ -58,7 +58,7 @@ def link_freebayes(root, neg, failed):
 		expected_path = os.path.join(sample, 'freebayes', sample+'.consensus.fasta')
 		if not os.path.exists(expected_path):
 			print("Missing FreeBayes variant file! Switching to iVar input!")
-			link_ivar(root, True, neg, failed)
+			link_ivar(root, neg, failed, replace=True)
 			break
 		else:
 			ln_path = f"{root}/{sample}.consensus.fasta"
@@ -113,6 +113,7 @@ def set_up():
 			failed_list = [i.strip() for i in fail.readlines()[1:]]
 	else:
 		failed_list = []
+	print("Failed samples found include: %s" %(failed_list))
 
 ### config.yaml parameters
 	config = {'data_root': f"'{data_root}'",
@@ -159,7 +160,7 @@ def set_up():
 		link_freebayes(data_root, neg_list, failed_list)
 		config['variants_pattern'] = "'{data_root}/{sample}.variants.vcf'"
 	else:
-		link_ivar(data_root, neg_list, failed_list)
+		link_ivar(data_root, neg_list, failed_list, replace=False)
 
 	with open(os.path.join(exec_dir, 'ncov-tools', 'config.yaml'), 'w') as fh:
 		for key, value in config.items():

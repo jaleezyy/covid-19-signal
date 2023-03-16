@@ -48,7 +48,7 @@ RESULTS=$PWD
 cd ../ncov-tools
 
 # run ncov-tools
-snakemake -s workflow/Snakefile --cores ${CORES} all
+snakemake -k -s workflow/Snakefile --cores ${CORES} all
 
 # move ncovresults to SIGNAL results directory
 mv ${SIGNAL}'_ncovresults' ${RESULTS}/ncov-tools-results
