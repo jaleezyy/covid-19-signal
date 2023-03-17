@@ -1,9 +1,7 @@
 rule all:
     input:
         "assembly_qc",
-        "ivar",
-        "snp_mapping",
-        "trim_qc",
+        "assign_lineages",
         "postprocessing"
     shell: "rm {input}"
 
@@ -12,20 +10,30 @@ rule assembly_qc:
     output: "assembly_qc"
     shell: "touch {output}"
 
-rule ivar:
-    conda: "../conda_envs/ivar.yaml"
-    output: "ivar"
+#rule ivar:
+#    conda: "../conda_envs/ivar.yaml"
+#    output: "ivar"
+#    shell: "touch {output}"
+
+#rule snp_mapping:
+#    conda: "../conda_envs/snp_mapping.yaml"
+#    output: "snp_mapping"
+#    shell: "touch {output}"
+
+#rule trim_qc:
+#    conda: "../conda_envs/trim_qc.yaml"
+#    output: "trim_qc"
+#    shell: "touch {output}"
+
+rule assign_lineages:
+    conda: "../conda_envs/assign_lineages.yaml"
+    output: "assign_lineages"
     shell: "touch {output}"
 
-rule snp_mapping:
-    conda: "../conda_envs/snp_mapping.yaml"
-    output: "snp_mapping"
-    shell: "touch {output}"
-
-rule trim_qc:
-    conda: "../conda_envs/trim_qc.yaml"
-    output: "trim_qc"
-    shell: "touch {output}"
+#rule freebayes:
+#    conda: "../conda_envs/freebayes.yaml"
+#    output: "freebayes"
+#    shell: "touch {output}"
 
 rule postprocessing:
     conda: "../conda_envs/postprocessing.yaml"

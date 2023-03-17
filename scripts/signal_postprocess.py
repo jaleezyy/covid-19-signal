@@ -16,7 +16,8 @@ import matplotlib.pyplot as plt
 long_git_id = '$Id: b158164f87c79271ddc9d1083e64e4be1fc26d8e $'
 
 assert long_git_id.startswith('$Id: ')
-short_git_id = long_git_id[5:12]
+#short_git_id = long_git_id[5:12]
+short_git_id = "v1.6.0"
 
 # Suppresses matplotlib warning (https://github.com/jaleezyy/covid-19-signal/issues/59)
 # Creates a small memory leak, but it's nontrivial to fix, and won't be a practical concern!
@@ -620,35 +621,51 @@ def parse_lineage(tsv_filename, sample_names, allow_missing=True):
             samples[name] = { 'lineage' : None,
                               'clade': None,
                               'pangolin_ver': None,
-                              'pangolearn_ver': None,
+                              'pangodata_ver': None,
                               'nextclade_ver': None }
         return { 'samples': samples }
 
-    # Skip first line
-    for line in open(tsv_filename).readlines()[1:]:
-        n = line.split("\t")
-        assert len(n) == 35
+    lineages = pd.read_table(tsv_filename, sep='\t')
+    try:
+        df = lineages[['isolate',
+                        'pango_lineage',
+                        'nextstrain_clade',
+                        'pangolin_version',
+                        'pangoLEARN_version',
+                        'nextclade_version'
+                        ]]
+    except KeyError:
+        df = lineages[['isolate',
+                        'pango_lineage',
+                        'nextstrain_clade',
+                        'pangolin_version',
+                        'version',
+                        'nextclade_version'
+                        ]]
 
-    # Determine sample name
-        if n[0].startswith("Consensus"):
-            sid = re.findall("_(.*?)\.", n[0])[0]
+    # Pull each row, identify sid 
+    for row in df.itertuples():
+        if row.isolate.startswith("Consensus"):
+            sid = re.findall("_(.*?)\.", row.isolate)[0]
         else:
-            sid = str(n[0])
+            sid = str(row.isolate)
 
         assert sid in sample_names
 
     # Pull Pangolin lineage
-        if n[1] != '':
-            lineage = str(n[1])
-            clade = str(n[9])
-            pangolin = str(n[31])
-            pangolearn = str(n[33])
-            nextclade = str(n[34])
-            samples[sid] = { 'lineage' : lineage,
-                             'clade': clade,
-                             'pangolin_ver': pangolin,
-                             'pangolearn_ver': pangolearn,
-                             'nextclade_ver': nextclade }
+        lineage = str(row.pango_lineage)
+        clade = str(row.nextstrain_clade)
+        pangolin = str(row.pangolin_version)
+        try:
+            pangodata = str(row.pangoLEARN_version)
+        except AttributeError:
+            pangodata = str(row.version)
+        nextclade = str(row.nextclade_version)
+        samples[sid] = { 'lineage' : lineage,
+                         'clade': clade,
+                         'pangolin_ver': pangolin,
+                         'pangodata_ver': pangodata,
+                         'nextclade_ver': nextclade }
 
     assert len(samples) == len(sample_names)
     return { 'samples': samples }
@@ -1319,21 +1336,21 @@ class Sample:
         self.ivar = parse_ivar_variants(f"{name}/core/{name}_ivar_variants.tsv")
         self.freebayes = parse_freebayes_variants(f"{name}/freebayes/{name}.variants.norm.vcf")
         self.compare = parse_consensus_compare(f"{name}/freebayes/{name}_consensus_compare.vcf")
-        self.breseq = parse_breseq_output(f"{name}/breseq/{name}_output/index.html")
+        self.breseq = parse_breseq_output(f"{name}/breseq/output/index.html")
 
 
         if ivarlin['lineage'] != fblin['lineage'] and fblin['lineage'] is not None:
             assert ivarlin['pangolin_ver'] == fblin['pangolin_ver']
-            assert ivarlin['pangolearn_ver'] == fblin['pangolearn_ver']
+            assert ivarlin['pangodata_ver'] == fblin['pangodata_ver']
             if ivarlin['clade'] == fblin['clade']:
                  self.lineage = { 'lineage': str(ivarlin['lineage'] + " (FB: %s)" %(fblin['lineage'])),
                                  'pangolin_ver': ivarlin['pangolin_ver'],
-                                 'pangolearn_ver': ivarlin['pangolearn_ver'],
+                                 'pangodata_ver': ivarlin['pangodata_ver'],
                                  'clade': ivarlin['clade'] }
             else:
                  self.lineage = { 'lineage': str(ivarlin['lineage'] + " (FB: %s)" %(fblin['lineage'])),
                                  'pangolin_ver': ivarlin['pangolin_ver'],
-                                 'pangolearn_ver': ivarlin['pangolearn_ver'],
+                                 'pangodata_ver': ivarlin['pangodata_ver'],
                                  'clade': str(ivarlin['clade'] + " (FB: %s)" %(fblin['clade'])) }
         else:
             self.lineage = ivarlin
