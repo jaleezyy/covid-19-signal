@@ -11,7 +11,7 @@ HELP="""
 Usage:
 bash get_signal_results.sh -s <SIGNAL_results_dir> -d <destination_dir> [-m] [-c]
 
-This scripts aims to copy (rsync by default) or move (mv) select output from SIGNAL 'all', 'postprocess', and 'ncov_tools'.
+This scripts aims to copy (rsync by default, or cp) or move (mv) select output from SIGNAL 'all', 'postprocess', and 'ncov_tools'.
 
 The following files will be transferred over to the specified destination directory (if found):
 SIGNAL 'all' & 'postprocess':
