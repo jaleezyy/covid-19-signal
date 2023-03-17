@@ -56,6 +56,7 @@ so alternatively install `mamba` and use that (snakemake has beta support for it
         conda install -c conda-forge mamba
         mamba create -c conda-forge -c bioconda -n signal snakemake pandas conda mamba
         conda activate signal
+        # mamba activate signal is equivalent
 
 Additional software dependencies are managed directly by `snakemake` using conda environment files:
 
@@ -79,31 +80,27 @@ Additional software dependencies are managed directly by `snakemake` using conda
 
 ## SIGNAL Help Screen:
 
-Using the provided `signal.py` script, the majority of SIGNAL functions can be accessed easily.
+Using the provided `signalexe.py` script, the majority of SIGNAL functions can be accessed easily.
 
 To display the help screen:
 
 ```
-python signal.py -h
+python signalexe.py -h
 
-Output:
-usage: signal.py [-h] [-c CONFIGFILE] [-d DIRECTORY] [--cores CORES] [--config-only] [--remove-freebayes] [--add-breseq]
-                 [-neg NEG_PREFIX] [--dependencies] [-ri] [--unlock] [-F] [-n] [--verbose] [-v]
-                 [all ...] [postprocess ...] [ncov_tools ...]
+usage: signalexe.py [-h] [-c CONFIGFILE] [-d DIRECTORY] [--cores CORES] [--config-only] [--remove-freebayes] [--add-breseq] [-neg NEG_PREFIX] [--dependencies] [--data DATA] [-ri] [-ii] [--unlock]
+                    [-F] [-n] [--quiet] [--verbose] [-v]
+                    [all ...] [postprocess ...] [ncov_tools ...] [install ...]
 
-SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL) aims to take Illumina short-read sequences and perform consensus assembly +
-variant calling for ongoing surveillance and research efforts towards the emergent coronavirus: Severe Acute Respiratory Syndrome
-Coronavirus 2 (SARS-CoV-2).
+SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL) aims to take Illumina short-read sequences and perform consensus assembly + variant calling for ongoing surveillance and research efforts towards
+the emergent coronavirus: Severe Acute Respiratory Syndrome Coronavirus 2 (SARS-CoV-2).
 
 positional arguments:
-  all                   Run SIGNAL with all associated assembly rules. Does not include postprocessing '--configfile' or '--
-                        directory' required. The latter will automatically generate a configuration file and sample table. If
-                        both provided, then '--configfile' will take priority
-  postprocess           Run SIGNAL postprocessing on completed SIGNAL run. '--configfile' is required but will be generated if '
-                        --directory' is provided
-  ncov_tools            Generate configuration file and filesystem setup required and then execute ncov-tools quality control
-                        assessment. Requires 'ncov-tools' submodule! '--configfile' is required but will be generated if '--
-                        directory' is provided
+  all                   Run SIGNAL with all associated assembly rules. Does not include postprocessing '--configfile' or '--directory' required. The latter will automatically generate a
+                        configuration file and sample table. If both provided, then '--configfile' will take priority
+  postprocess           Run SIGNAL postprocessing on completed SIGNAL run. '--configfile' is required but will be generated if '--directory' is provided
+  ncov_tools            Generate configuration file and filesystem setup required and then execute ncov-tools quality control assessment. Requires 'ncov-tools' submodule! '--configfile' is required
+                        but will be generated if '--directory' is provided
+  install               Install individual rule environments and ensure SIGNAL is functional. The only parameter operable will be '--data'. Will override other operations!
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -113,49 +110,57 @@ optional arguments:
                         Path to directory containing reads. Will be used to generate sample table and configuration file
   --cores CORES         Number of cores. Default = 1
   --config-only         Generate sample table and configuration file (i.e., config.yaml) and exit. '--directory' required
-  --remove-freebayes    Configuration file generator parameter. Set flag to DISABLE freebayes variant calling (improves overall
-                        speed)
-  --add-breseq          Configuration file generator parameter. Set flag to ENABLE optional breseq step (will take more time for
-                        analysis to complete)
+  --remove-freebayes    Configuration file generator parameter. Set flag to DISABLE freebayes variant calling (improves overall speed)
+  --add-breseq          Configuration file generator parameter. Set flag to ENABLE optional breseq step (will take more time for analysis to complete)
   -neg NEG_PREFIX, --neg-prefix NEG_PREFIX
-                        Configuration file generator parameter. Comma-separated list of negative sontrol sample name(s) or
-                        prefix(es). For example, 'Blank' will cover Blank1, Blank2, etc. Recommended if running ncov-tools. Will
-                        be left empty, if not provided
-  --dependencies        Download data dependencies (under a created 'data' directory) required for SIGNAL analysis and exit.
-                        Note: Will override other flags! (~10 GB storage required)
+                        Configuration file generator parameter. Comma-separated list of negative control sample name(s) or prefix(es). For example, 'Blank' will cover Blank1, Blank2, etc.
+                        Recommended if running ncov-tools. Will be left empty, if not provided
+  --dependencies        Download data dependencies (under a created 'data' directory) required for SIGNAL analysis and exit. Note: Will override other parameters! (~10 GB storage required)
+  --data DATA           SIGNAL install and data dependencies parameter. Set location for data dependancies. If '--dependancies' is run, a folder will be created in the specified directory. If '--
+                        config-only' or '--directory' is used, the value will be applied to the configuration file. (Upcoming feature): When used with 'SIGNAL install', any tests run will use the
+                        dependencies located at this directory. Default = 'data'
   -ri, --rerun-incomplete
                         Snakemake parameter. Re-run any incomplete samples from a previously failed run
+  -ii, --ignore-incomplete
+                        Snakemake parameter. Do not check for incomplete output files
   --unlock              Snakemake parameter. Remove a lock on the working directory after a failed run
   -F, --forceall        Snakemake parameter. Force the re-run of all rules regardless of prior output
   -n, --dry-run         Snakemake parameter. Do not execute anything and only display what would be done
+  --quiet               Snakemake parameter. Do not output any progress or rule information. If used with '--dry-run`, it will just display a summary of the DAG of jobs
   --verbose             Snakemake parameter. Display snakemake debugging output
   -v, --version         Display version number
 ```
 
 ## Summary:
 
-`signal.py` simplies the execution of all functions of SIGNAL. At its simplest, SIGNAL can be run with one line, provided only the directory of sequencing reads.
+`signalexe.py` simplies the execution of all functions of SIGNAL. At its simplest, SIGNAL can be run with one line, provided only the directory of sequencing reads.
 
 ```
 # Download dependances (only needs to be run once; ~10GB of storage required)
-python signal.py --dependencies
+# --data flag allows you to rename and relocate dependencies directory
+python signalexe.py --data data --dependencies
 
-# Generate configuration file and sample table (--neg_prefix can be used to note negative controls)
-python signal.py --config-only --directory /path/to/reads
+# Generate configuration file and sample table
+# --neg_prefix can be used to note negative controls
+# --data can be used to specify location of data dependencies
+python signalexe.py --config-only --directory /path/to/reads
 
 # Execute pipeline (step-by-step; --cores defaults to 1 if not provided)
-python signal.py --configfile config.yaml --cores NCORES aLL
-python signal.py --configfile config.yaml --cores NCORES postprocess
-python signal.py --configfile config.yaml --cores NCORES ncov_tools
+# --data can be used to specify location of data dependencies
+python signalexe.py --configfile config.yaml --cores NCORES all
+python signalexe.py --configfile config.yaml --cores NCORES postprocess
+python signalexe.py --configfile config.yaml --cores NCORES ncov_tools
 
 # ALTERNATIVE
 # Execute pipeline (one line)
-python signal.py --configfile config.yaml --cores NCORES all postprocess ncov_tools
+# --data can be used to specify location of data dependencies
+python signalexe.py --configfile config.yaml --cores NCORES all postprocess ncov_tools
 
 # ALTERNATIVE
 # Execute pipeline (one line; no prior configuration file or sample table steps)
 # --directory can be used in place of --configfile to automatically generate a configuration file
-python signal.py --directory /path/to/reads --cores NCORES all postprocess ncov_tools
+# --data can be used to specify location of data dependencies
+python signalexe.py --directory /path/to/reads --cores NCORES all postprocess ncov_tools
 ```
 
 Each of the steps in SIGNAL can be run **manually** by accessing the individual scripts or running snakemake.
@@ -187,8 +192,9 @@ The pipeline requires:
 - kraken2 viral database
 - Human GRCh38 reference fasta (for composite human-viral BWA index)
 
-       python signal.py --dependencies
+       python signalexe.py --dependencies
        # defaults to a directory called `data` in repository root
+       # --data can be used to rename and relocate the resultant directory
 
        OR
 
@@ -197,14 +203,24 @@ The pipeline requires:
 
 **Note: Downloading the database files requires ~10GB of storage, with up to ~35GB required for all temporary downloads!**
 
+### 1.5 Prepare per-rule conda environments:
+
+SIGNAL uses controlled conda environments for individual steps in the workflow. These are generally produced upon first execution of SIGNAL with input data; however, an option to install the per-rule environments is available through the `signalexe.py` script.
+
+       python signalexe.py install
+
+       # Will install per-rule environments
+       # Later versions of SIGNAL will include a testing module with curated data to ensure  function
+
 ### 2. Generate configuration file:
 
 You can use the `--config-only` flag to generate both `config.yaml` and `sample_table.csv` (see step 4). The directory provided will be used to auto-generate a name for the run.
 
 ```
-python signal.py --config-only --directory /path/to/reads
+python signalexe.py --config-only --directory /path/to/reads
 
 # Outputs: 'reads_config.yaml' and 'reads_sample_table.csv'
+# --data can be used to specify the location of data dependancies
 ```
 
 You can also create the configuration file through modifying the `example_config.yaml` to suit your system.
@@ -248,7 +264,7 @@ bash scripts/generate_sample_table.sh -d /path/to/more/reads -e sample_table.csv
 
 ### 4. Execute pipeline:
 
-For the main `signal.py` script, positional arguments inform the rules of the pipeline to execute with flags supplementing input parameters.
+For the main `signalexe.py` script, positional arguments inform the rules of the pipeline to execute with flags supplementing input parameters.
 
 The main rules of the pipeline are as followed:
 
@@ -258,7 +274,7 @@ The main rules of the pipeline are as followed:
 
 The generated configuration file from the above steps can be used as input. To run the general pipeline:
 
-`python signal.py --configfile config.yaml --cores 4 all`
+`python signalexe.py --configfile config.yaml --cores 4 all`
 
 is equivalent to running
 
@@ -268,7 +284,7 @@ You can run the snakemake command as written above, but note that if the `--cond
 
 Alternatively, you can skip the above configuration and sample table generation steps by simply providing the directory of reads to the main script:
 
-`python signal.py --directory /path/to/reads --cores 4 all`
+`python signalexe.py --directory /path/to/reads --cores 4 all`
 
 A configuartion file and sample table will automatically be generated prior to running SIGNAL `all`.
 
@@ -278,7 +294,7 @@ FreeBayes variant calling and BreSeq mutational analysis are technically optiona
 
 As with the general pipeline, the generated configuration file from the above steps can be used as input. To run `postprocess` which summarizes the SIGNAL results:
 
-`python signal.py --configfile config.yaml --cores 1 postprocess`
+`python signalexe.py --configfile config.yaml --cores 1 postprocess`
 
 is equivalent to running
 
@@ -306,7 +322,7 @@ Related: because pipeline stages can fail, we run (and recommend running if usin
 Additionally, SIGNAL can prepare output and execute @jts' [ncov-tools](https://github.com/jts/ncov-tools)
 to generate phylogenies and alternative summaries.
 
-`python signal.py --configfile config.yaml --cores 1 ncov_tools`
+`python signalexe.py --configfile config.yaml --cores 1 ncov_tools`
 
 is equivalent to running
 
@@ -318,17 +334,19 @@ SIGNAL will then execute ncov-tools and the **output will be found within the SI
 
 ### Multiple operations:
 
-Using `signal.py` positional arguments, you can specify SIGNAL to perform multiple rules in succession.
+Using `signalexe.py` positional arguments, you can specify SIGNAL to perform multiple rules in succession.
 
-`python signal.py --configfile config.yaml --cores NCORES all postprocess ncov_tools`
+`python signalexe.py --configfile config.yaml --cores NCORES all postprocess ncov_tools`
 
 In the above command, SIGNAL `all`, `postprocess`, and `ncov_tools` will run using the provided configuration file as input, which links to a sample table.
 
 **Note: Regardless of order for positional arguments, or placement of other parameter flags, SIGNAL will always run in the set order priority: `all` > `postprocess` > `ncov_tools`!**
 
+**Note: If `install` is provided as input, it will override all other positional arguments!**
+
 If no configuration file or sample table was generated for a run, you can provide `--directory` with the path to sequencing reads and SIGNAL will auto-generate both required inputs prior to running any rules.
 
-`python signal.py --directory /path/to/reads --cores NCORES all postprocess ncov_tools`
+`python signalexe.py --directory /path/to/reads --cores NCORES all postprocess ncov_tools`
 
 Overall, this simplifies executing SIGNAL to one line!
 
@@ -358,6 +376,44 @@ Then execute the pipeline:
 - `postprocess` and `ncov_tools` as described above generate many summaries including interactive html reports
 
 - To generate summaries of BreSeq among many samples, see [how to summarize BreSeq results using gdtools](resources/dev_scripts/summaries/README.md)
+
+### Convenient extraction script:
+
+SIGNAL produces several output files and directories on its own alongside the output for ncov-tools. Select files from the output can be copied or transferred for easier parsing using a provided convenience bash script:
+
+```
+bash scripts/get_signal_results.sh
+
+Usage:
+bash get_signal_results.sh -s <SIGNAL_results_dir> -d <destination_dir> [-m] [-c]
+
+This scripts aims to copy (rsync by default, or cp) or move (mv) select output from SIGNAL 'all', 'postprocess', and 'ncov_tools'.
+
+The following files will be transferred over to the specified destination directory (if found):
+SIGNAL 'all' & 'postprocess':
+-> signal-results/<sample>/<sample>_sample.txt
+-> signal-results/<sample>/core/<sample>.consensus.fa
+-> signal-results/<sample>/core/<sample>_ivar_variants.tsv
+-> signal-results/<sample>/freebayes/<sample>.consensus.fasta
+-> signal-results/<sample>/freebayes/<sample>.variants.norm.vcf
+
+SIGNAL 'ncov_tools':
+-> ncov_tools-results/qc_annotation/<sample>.ann.vcf
+-> ncov-tools-results/qc_reports/<run_name>_ambiguous_position_report.tsv
+-> ncov-tools-results/qc_reports/<run_name>_mixture_report.tsv
+-> ncov-tools-results/qc_reports/<run_name>_ncov_watch_variants.tsv
+-> ncov-tools-results/qc_reports/<run_name>_negative_control_report.tsv
+-> ncov-tools-results/qc_reports/<run_name>_summary_qc.tsv
+
+Flags:
+        -s  :  SIGNAL results directory
+        -d  :  Directory where summary will be outputted
+        -m  :  Invoke 'mv' move command instead of 'rsync' copying of results. Optional
+        -c  :  Invoke 'cp' copy command instead of 'rsync' copying of results. Optional
+
+```
+
+The script uses `rsync` to provide accurate copies of select output files organized into `signal-results` and `ncov-tools-results` within a provided destination directory (that must exist). If the `-c` is provided, `cp` will be used instead of `rsync` to produce copies. Similarly, if `-m` is provided, `mv` will be used instead (**WARNING: Any interruption during `mv` could result in data loss.**)
 
 ## Pipeline details:
 
