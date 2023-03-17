@@ -83,10 +83,26 @@ def set_up():
 	try:
 		assert pangolin == "3" or pangolin == "4" # directly supported versions
 	except AssertionError:
-		import urllib.request as web
-		commit_url = web.urlopen(f"https://github.com/cov-lineages/pangolin/releases/latest").geturl()
-		pangolin = commit_url.split("/")[-1].split(".")[0].lower().strip("v") 
+		# import urllib.request as web
+		# commit_url = web.urlopen(f"https://github.com/cov-lineages/pangolin/releases/latest").geturl()
+		# pangolin = commit_url.split("/")[-1].split(".")[0].lower().strip("v") 
 		# latest version (should ensure temporary compatibility)
+		installed_versions = subprocess.run(["pangolin", "--all-versions"],
+								check=True,
+								stdout=subprocess.PIPE)
+		installed_versions = installed_versions.stdout.decode('utf-8')
+		installed_ver_dict = {}
+		for dep_ver in map(str.strip, installed_versions.split('\n')):
+		# skip empty line at end
+			if len(dep_ver) == 0:
+				continue
+			try:
+				dependency, version = dep_ver.split(': ')
+			except ValueError:
+				continue
+			if dependency == 'pangolin':
+				pangolin = str(version).split(".",1)[0].strip('v')
+				break
 
 ### Create data directory within ncov-tools
 	data_root = os.path.abspath(os.path.join(exec_dir, 'ncov-tools', "%s" %(result_dir)))
