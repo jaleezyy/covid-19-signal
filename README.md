@@ -203,18 +203,18 @@ The pipeline requires:
 
 **Note: Downloading the database files requires ~10GB of storage, with up to ~35GB required for all temporary downloads!**
 
-### 1.5 Prepare per-rule conda environments:
+### 1.5. Prepare per-rule conda environments (optional, but recommended):
 
 SIGNAL uses controlled conda environments for individual steps in the workflow. These are generally produced upon first execution of SIGNAL with input data; however, an option to install the per-rule environments is available through the `signalexe.py` script.
 
        python signalexe.py install
 
        # Will install per-rule environments
-       # Later versions of SIGNAL will include a testing module with curated data to ensure  function
+       # Later versions of SIGNAL will include a testing module with curated data to ensure function
 
 ### 2. Generate configuration file:
 
-You can use the `--config-only` flag to generate both `config.yaml` and `sample_table.csv` (see step 4). The directory provided will be used to auto-generate a name for the run.
+You can use the `--config-only` flag to generate both `config.yaml` and `sample_table.csv`. The directory provided will be used to auto-generate a name for the run.
 
 ```
 python signalexe.py --config-only --directory /path/to/reads
@@ -231,7 +231,7 @@ You can also create the configuration file through modifying the `example_config
 
 See the example table `example_sample_table.csv` for an idea of how to organise this table.
 
-**Using the `--config-only` flag, both configuration file and sample table will be generated (see above in step 3) from a given directory path to reads.**
+**Using the `--config-only` flag, both configuration file and sample table will be generated (see above in step 2) from a given directory path to reads.**
 
 Alternatively, you can attempt to use `generate_sample_table.sh` to circumvent manual creation of the table.
 
@@ -282,7 +282,7 @@ is equivalent to running
 
 You can run the snakemake command as written above, but note that if the `--conda-prefix` is not set as this (i.e., `$PWD/.snakemake/conda`), then all envs will be reinstalled for each time you change the `results_dir` in the `config.yaml`.
 
-Alternatively, you can skip the above configuration and sample table generation steps by simply providing the directory of reads to the main script:
+Alternatively, you can skip the above configuration and sample table generation steps by simply providing the directory of reads to the main script (see step 2):
 
 `python signalexe.py --directory /path/to/reads --cores 4 all`
 
