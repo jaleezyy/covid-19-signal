@@ -6,17 +6,21 @@ import subprocess
 import fileinput
 import glob
 
-def link_ivar(root, replace=False):
+def link_ivar(root, neg, failed, replace=False):
 	print("Linking iVar files to ncov-tools!")
 
 	for variants in snakemake.input['variants']:
 		sample = variants.split('/')[0]
+		if (sample in failed) and (sample not in neg):
+			continue
 		ln_path = f"{root}/{sample}.variants.tsv"
 		if (not os.path.exists(ln_path)) or (replace is True):
 			os.link(variants, ln_path)
 
 	for consensus in snakemake.input['consensus']:
 		sample = consensus.split('/')[0]
+		if (sample in failed) and (sample not in neg):
+			continue
 		ln_path = f"{root}/{sample}.consensus.fasta"
 		if (not os.path.exists(ln_path)) or (replace is True):
 			os.link(consensus, ln_path)
@@ -30,15 +34,17 @@ def link_ivar(root, replace=False):
 
 # take sample name from iVar results, redirect to where corresponding FreeBayes should be
 # if FreeBayes file cannot be found, break from loop, replace all with iVar
-def link_freebayes(root):
+def link_freebayes(root, neg, failed):
 	print("Linking FreeBayes files to ncov-tools!")
 
 	for variants in snakemake.input['variants']:
 		sample = variants.split('/')[0]
+		if (sample in failed) and (sample not in neg):
+			continue
 		expected_path = os.path.join(sample, 'freebayes', sample+'.variants.norm.vcf')
 		if not os.path.exists(expected_path):
 			print("Missing FreeBayes variant file! Switching to iVar input!")
-			link_ivar(root, True)
+			link_ivar(root, neg, failed, replace=True)
 			break
 		else:
 			ln_path = f"{root}/{sample}.variants.vcf"
@@ -47,10 +53,12 @@ def link_freebayes(root):
 
 	for consensus in snakemake.input['consensus']:
 		sample = consensus.split('/')[0]
+		if (sample in failed) and (sample not in neg):
+			continue
 		expected_path = os.path.join(sample, 'freebayes', sample+'.consensus.fasta')
 		if not os.path.exists(expected_path):
 			print("Missing FreeBayes variant file! Switching to iVar input!")
-			link_ivar(root, True)
+			link_ivar(root, neg, failed, replace=True)
 			break
 		else:
 			ln_path = f"{root}/{sample}.consensus.fasta"
@@ -75,10 +83,26 @@ def set_up():
 	try:
 		assert pangolin == "3" or pangolin == "4" # directly supported versions
 	except AssertionError:
-		import urllib.request as web
-		commit_url = web.urlopen(f"https://github.com/cov-lineages/pangolin/releases/latest").geturl()
-		pangolin = commit_url.split("/")[-1].split(".")[0].lower().strip("v") 
+		# import urllib.request as web
+		# commit_url = web.urlopen(f"https://github.com/cov-lineages/pangolin/releases/latest").geturl()
+		# pangolin = commit_url.split("/")[-1].split(".")[0].lower().strip("v") 
 		# latest version (should ensure temporary compatibility)
+		installed_versions = subprocess.run(["pangolin", "--all-versions"],
+								check=True,
+								stdout=subprocess.PIPE)
+		installed_versions = installed_versions.stdout.decode('utf-8')
+		installed_ver_dict = {}
+		for dep_ver in map(str.strip, installed_versions.split('\n')):
+		# skip empty line at end
+			if len(dep_ver) == 0:
+				continue
+			try:
+				dependency, version = dep_ver.split(': ')
+			except ValueError:
+				continue
+			if dependency == 'pangolin':
+				pangolin = str(version).split(".",1)[0].strip('v')
+				break
 
 ### Create data directory within ncov-tools
 	data_root = os.path.abspath(os.path.join(exec_dir, 'ncov-tools', "%s" %(result_dir)))
@@ -99,6 +123,13 @@ def set_up():
 	neg_list = list(neg_samples)
 	print("Negative control samples found include: %s" %(neg_list))
 
+### Pull failed samples (SIGNAL log file: failed_samples.log)
+	if os.path.exists(snakemake.params['failed']):
+		with open(snakemake.params['failed']) as fail:
+			failed_list = [i.strip() for i in fail.readlines()[1:]]
+	else:
+		failed_list = []
+	print("Failed samples found include: %s" %(failed_list))
 
 ### config.yaml parameters
 	config = {'data_root': f"'{data_root}'",
@@ -126,27 +157,32 @@ def set_up():
 	print("Linking alignment BAMs to ncov-tools!")
 	for bam in snakemake.input['bams']:
 		sample = bam.split('/')[0]
+		# if sample failed and not a negative, skip linking
+		if (sample in failed_list) and (sample not in neg_list):
+			continue
 		ln_path = f"{data_root}/{sample}.bam"
-		if (not os.path.exists(ln_path)) or (replace is True):
+		if not os.path.exists(ln_path):
 			os.link(bam, ln_path)
 
 	for primer_trimmed_bam in snakemake.input['primertrimmed_bams']:
 		sample = primer_trimmed_bam.split('/')[0]
+		if (sample in failed_list) and (sample not in neg_list):
+			continue
 		ln_path = f"{data_root}/{sample}.mapped.primertrimmed.sorted.bam"
-		if (not os.path.exists(ln_path)) or (replace is True):
+		if not os.path.exists(ln_path):
 			os.link(primer_trimmed_bam, ln_path)
 			
 	if snakemake.params['freebayes_run']:
-		link_freebayes(data_root)
+		link_freebayes(data_root, neg_list, failed_list)
 		config['variants_pattern'] = "'{data_root}/{sample}.variants.vcf'"
 	else:
-		link_ivar(data_root)
+		link_ivar(data_root, neg_list, failed_list, replace=False)
 
 	with open(os.path.join(exec_dir, 'ncov-tools', 'config.yaml'), 'w') as fh:
 		for key, value in config.items():
 			fh.write(f"{key}: {value}\n")
 			
-	return exec_dir, result_dir
+	return exec_dir, result_dir, data_root
 
 def run_all():
 	os.system(f"snakemake -s workflow/Snakefile --cores {snakemake.threads} all")
@@ -185,12 +221,14 @@ def move(cwd, dest, prefix):
 		print("Missing ncov-tools 'qc_analysis' directory")
 
 if __name__ == '__main__':
-	exec_dir, result_dir = set_up()
+	exec_dir, result_dir, data_root = set_up()
 	run_script = os.path.join(exec_dir, 'scripts', 'run_ncov_tools.sh')
 	#print("Don't forget to update the config.yaml file as needed prior to running ncov-tools.")
 	print("Running ncov-tools using %s cores!" %(snakemake.threads))
 
 	subprocess.run([run_script, '-c', str(snakemake.threads), '-s', str(result_dir)])
-
+	
+	# clean up
+	shutil.rmtree(data_root)
 	#run_all()
 	#move(exec_dir, result_root, result_dir)

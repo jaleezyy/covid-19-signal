@@ -127,7 +127,9 @@ rule clean_reads:
        expand('{sn}/mapped_clean_reads/{sn}_R{r}.fastq.gz', sn=sample_names, r=[1,2])
 
 rule consensus:
-    input: expand('{sn}/core/{sn}.consensus.fa', sn=sample_names)
+    input: expand('{sn}/core/{sn}.consensus.fa', sn=sample_names),
+           'all_genomes.fa',
+#           'failed_samples.log'
 
 rule ivar_variants:
     input: expand('{sn}/core/{sn}_ivar_variants.tsv', sn=sample_names)
@@ -136,14 +138,15 @@ rule breseq:
     input: expand('{sn}/breseq/output/index.html', sn=sample_names)
 
 rule freebayes:
-    input: 
+    input:
+        'all_freebayes_genomes.fa',
+#        'failed_samples.log',
         expand('{sn}/freebayes/{sn}.consensus.fasta', sn=sample_names),
         expand('{sn}/freebayes/{sn}.variants.norm.vcf', sn=sample_names),
         'freebayes_lineage_assignments.tsv',
         expand('{sn}/freebayes/quast/{sn}_quast_report.html', sn=sample_names),
         expand('{sn}/freebayes/{sn}_consensus_compare.vcf', sn=sample_names)
 
-    
 rule coverage:
     input: expand('{sn}/coverage/{sn}_depth.txt', sn=sample_names)
 
@@ -239,7 +242,8 @@ rule ncov_tools:
         negative_control_prefix = config['negative_control_prefix'],
         freebayes_run = config['run_freebayes'],
         pangolin = versions['pangolin'],
-        mode = pango_speed
+        mode = pango_speed,
+        failed = 'failed_samples.log'
     input:
         consensus = expand('{sn}/core/{sn}.consensus.fa', sn=sample_names),
         primertrimmed_bams = expand("{sn}/core/{sn}_viral_reference.mapping.primertrimmed.sorted.bam", sn=sample_names),
@@ -327,7 +331,7 @@ rule raw_reads_composite_reference_bwa_map:
     shell:
         '(bwa mem -t {threads} {params.composite_index} '
         '{input.raw_r1} {input.raw_r2} | '
-        '{params.script_path} -c {params.viral_contig_name} > {output}) 2> {log}'
+        "{params.script_path} -c {params.viral_contig_name} > {output}) 2> {log} || echo '' > {output}"
 
 rule get_host_removed_reads:
     threads: 2
@@ -375,7 +379,7 @@ rule run_trimgalore:
     shell:
         'trim_galore --quality {params.min_qual} --length {params.min_len} '
         ' -o {params.output_prefix} --cores {threads} --fastqc '
-        '--paired {input.raw_r1} {input.raw_r2} 2> {log} || touch {output}'
+        "--paired {input.raw_r1} {input.raw_r2} 2> {log} || (echo -e 'Total reads processed:  0\nReads written (passing filters):  0 (0.0%)\nTotal basepairs processed:  0 bp\nTotal written (filtered):  0 bp (0.0%)' >> {log}; touch {output})"
 
 rule run_filtering_of_residual_adapters:
     threads: 2
@@ -769,6 +773,32 @@ rule run_quast_freebayes:
          'quast {input} -r {params.genome} -g {params.fcoords} --output-dir {params.outdir} --threads {threads} >{log} && '
          'for f in {params.unlabelled_reports}; do mv $f ${{f/report/{params.sample_name}}}; done'
 
+rule collect_core_genomes:
+    output:
+        "all_genomes.fa"
+    input:
+        expand(['{sn}/core/{sn}.consensus.fa'], sn=sample_names)
+    shell:
+        """
+        cat {input} > {output}
+        sample=''
+        count=''
+        echo "Samples that failed to assemble:" > failed_samples.log
+        while read -r line;
+        do
+            if [[ $line =~ '>' ]]; then
+                sample=$(echo $line | cut -d'.' -f1 | cut -d'_' -f2)
+            else
+                count=$(echo $line | wc -c)
+                if [[ $count -eq 1 ]]; then
+                    echo $sample >> failed_samples.log
+                else
+                    continue
+                fi
+            fi
+        done < {output}
+        """
+
 rule run_lineage_assignment:
     threads: 4
     conda: 'conda_envs/assign_lineages.yaml'
@@ -777,7 +807,7 @@ rule run_lineage_assignment:
         nextclade_ver_out = 'input_nextclade_versions.txt',
         lin_out = 'lineage_assignments.tsv'
     input:
-        expand('{sn}/core/{sn}.consensus.fa', sn=sample_names)
+        'all_genomes.fa'
     params:
         pangolin_ver = versions['pangolin'],
         pangolearn_ver = versions['pangolearn'],
@@ -794,8 +824,51 @@ rule run_lineage_assignment:
     shell:
         "echo -e 'pangolin: {params.pangolin_ver}\nconstellations: {params.constellations_ver}\nscorpio: {params.scorpio_ver}\npangolearn: {params.pangolearn_ver}\npango-designation: {params.designation_ver}\npangolin-data: {params.data_ver}' > {output.pango_ver_out} && "
         "echo -e 'nextclade: {params.nextclade_ver}\nnextclade-dataset: {params.nextclade_data}\nnextclade-include-recomb: {params.nextclade_recomb}' > {output.nextclade_ver_out} && "
-        'cat {input} > all_genomes.fa && '
-        '{params.assignment_script_path} -i all_genomes.fa -t {threads} -o {output.lin_out} -p {output.pango_ver_out} -n {output.nextclade_ver_out} --mode {params.analysis_mode}'
+        '{params.assignment_script_path} -i {input} -t {threads} -o {output.lin_out} -p {output.pango_ver_out} -n {output.nextclade_ver_out} --mode {params.analysis_mode}'
+
+rule collect_freebayes_genomes:
+    output:
+        "all_freebayes_genomes.fa"
+    input:
+        expand('{sn}/freebayes/{sn}.consensus.fasta', sn=sample_names)
+    shell:
+        """
+        cat {input} > {output}
+        sample=''
+        seq=''
+        count=''
+        out=''
+        if [[ -f 'failed_samples.log' ]]; then
+            out='.failed_freebayes_samples.tmp'
+            cat failed_samples.log | sed 1,1d > $out
+            echo "Samples that failed to assemble:" > failed_samples.log
+        else
+            out='failed_samples.log'
+            echo "Samples that failed to assemble:" > $out
+        fi
+        while read -r line;
+        do
+            if [[ $line =~ '>' ]]; then
+                if [[ $(echo $seq | wc -c) -eq 1 ]]; then # check if new seq
+                    count=$(echo $seq | grep -vc 'N')
+                    if [[ $count -eq 0 ]]; then
+                        echo $sample >> $out
+                    fi
+                    sample=$(echo $line | cut -d'>' -f2) # start new seq
+                    seq=''
+                else
+                    sample=$(echo $line | cut -d'>' -f2) # first seq
+                fi
+            else
+                seq+=$line # append seq
+            fi
+        done < {output}
+        
+        if [[ ! $out == 'failed_samples.log' ]]; then
+            sort -b -d -f $out | uniq >> failed_samples.log
+            rm $out
+        fi
+        """
 
 rule run_lineage_assignment_freebayes:
     threads: 4
@@ -805,10 +878,9 @@ rule run_lineage_assignment_freebayes:
     input:
         p_vers = 'input_pangolin_versions.txt',
         n_vers = 'input_nextclade_versions.txt',
-        consensus = expand('{sn}/freebayes/{sn}.consensus.fasta', sn=sample_names)
+        consensus = 'all_freebayes_genomes.fa'
     params:
         analysis_mode = pango_speed,
         assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py')
     shell:
-        'cat {input.consensus} > all_freebayes_genomes.fa && '
-        '{params.assignment_script_path} -i all_freebayes_genomes.fa -t {threads} -o {output} -p {input.p_vers} -n {input.n_vers} --mode {params.analysis_mode} --skip'
+        '{params.assignment_script_path} -i {input.consensus} -t {threads} -o {output} -p {input.p_vers} -n {input.n_vers} --mode {params.analysis_mode} --skip'

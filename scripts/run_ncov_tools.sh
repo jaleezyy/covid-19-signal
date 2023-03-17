@@ -35,9 +35,9 @@ if [ $1 = 'help' ]; then
 fi
 
 if [ $SIGNAL = 0 ] ; then
-    echo "You must specify the name of the directory holding SIGNAL results."
-    echo "$HELP"
-    exit 1
+	echo "You must specify the name of the directory holding SIGNAL results."
+	echo "$HELP"
+	exit 1
 fi
 
 # Start point for executing from ncov-tools.py is SIGNAL results directory
@@ -48,9 +48,9 @@ RESULTS=$PWD
 cd ../ncov-tools
 
 # run ncov-tools
-snakemake -s workflow/Snakefile --cores ${CORES} all
+snakemake -k -s workflow/Snakefile --cores ${CORES} all
 
-# move ncovresults to SIGNAL results directory
+# move ncovresults to SIGNAL results directory and clean up
 mv ${SIGNAL}'_ncovresults' ${RESULTS}/ncov-tools-results
 
 # return success
