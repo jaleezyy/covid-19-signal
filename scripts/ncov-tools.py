@@ -182,7 +182,7 @@ def set_up():
 		for key, value in config.items():
 			fh.write(f"{key}: {value}\n")
 			
-	return exec_dir, result_dir
+	return exec_dir, result_dir, data_root
 
 def run_all():
 	os.system(f"snakemake -s workflow/Snakefile --cores {snakemake.threads} all")
@@ -221,12 +221,14 @@ def move(cwd, dest, prefix):
 		print("Missing ncov-tools 'qc_analysis' directory")
 
 if __name__ == '__main__':
-	exec_dir, result_dir = set_up()
+	exec_dir, result_dir, data_root = set_up()
 	run_script = os.path.join(exec_dir, 'scripts', 'run_ncov_tools.sh')
 	#print("Don't forget to update the config.yaml file as needed prior to running ncov-tools.")
 	print("Running ncov-tools using %s cores!" %(snakemake.threads))
 
 	subprocess.run([run_script, '-c', str(snakemake.threads), '-s', str(result_dir)])
-
+	
+	# clean up
+	shutil.rmtree(data_root)
 	#run_all()
 	#move(exec_dir, result_root, result_dir)

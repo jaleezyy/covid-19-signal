@@ -50,7 +50,7 @@ cd ../ncov-tools
 # run ncov-tools
 snakemake -k -s workflow/Snakefile --cores ${CORES} all
 
-# move ncovresults to SIGNAL results directory
+# move ncovresults to SIGNAL results directory and clean up
 mv ${SIGNAL}'_ncovresults' ${RESULTS}/ncov-tools-results
 
 # return success
