@@ -119,9 +119,12 @@ def check_submodule(exec_dir):
 		try:
 			print("Updating ncov-tools!")
 			subprocess.run(['git', 'submodule', 'update', '--init', '--recursive'])
+			return True
 		except subprocess.CalledProcessError:
 			print("Could not find nor update the required 'ncov-tools' directory! Manually download/update and try again!")
 			sys.exit(1)
+	else:
+		return False
 		
 def write_sample_table(sample_data, output_table):
 	"""
@@ -320,13 +323,17 @@ if __name__ == '__main__':
 					subprocess.run(f"snakemake --conda-frontend {conda_frontend} --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp {opt}", shell=True, check=True)
 				except subprocess.CalledProcessError:
 					if task == "ncov_tools":
-						check_submodule(os.getcwd())
-						if opt.split(" ")[-1] == '--rerun-incomplete': # remove redundant flag
-							opt = " ".join(opt.split(" ")[:-1])
-						try:
-							print("Retrying...ncov-tools!")
-							subprocess.run(f"snakemake --conda-frontend {conda_frontend} --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp --rerun-incomplete {opt}", shell=True, check=True)
-						except subprocess.CalledProcessError:
+						mod = check_submodule(os.getcwd())
+						if mod:
+							if opt.split(" ")[-1] == '--rerun-incomplete': # remove redundant flag
+								opt = " ".join(opt.split(" ")[:-1])
+							try:
+								print("Retrying...ncov-tools!")
+								subprocess.run(f"snakemake --conda-frontend {conda_frontend} --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp --rerun-incomplete {opt}", shell=True, check=True)
+							except subprocess.CalledProcessError:
+								print(f"Some jobs failed while running SIGNAL {task}! Check snakemake logs and the ncov-tools directory for additional details!")
+								continue
+						else:
 							print(f"Some jobs failed while running SIGNAL {task}! Check snakemake logs and the ncov-tools directory for additional details!")
 							continue
 					elif task == 'all':

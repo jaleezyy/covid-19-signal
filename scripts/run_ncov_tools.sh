@@ -35,9 +35,9 @@ if [ $1 = 'help' ]; then
 fi
 
 if [ $SIGNAL = 0 ] ; then
-    echo "You must specify the name of the directory holding SIGNAL results."
-    echo "$HELP"
-    exit 1
+	echo "You must specify the name of the directory holding SIGNAL results."
+	echo "$HELP"
+	exit 1
 fi
 
 # Start point for executing from ncov-tools.py is SIGNAL results directory
