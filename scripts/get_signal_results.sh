@@ -5,14 +5,15 @@ shopt -s extglob
 source=0
 destination=0
 move='false'
+copy='false'
 
 HELP="""
 Usage:
-bash get_signal_results.sh -s <SIGNAL_results_dir> -d <destination_dir> [-m]
+bash get_signal_results.sh -s <SIGNAL_results_dir> -d <destination_dir> [-m] [-c]
 
 This scripts aims to copy (rsync by default) or move (mv) select output from SIGNAL 'all', 'postprocess', and 'ncov_tools'.
 
-The following files will be transferred over to the specified  destination directory (if found):
+The following files will be transferred over to the specified destination directory (if found):
 SIGNAL 'all' & 'postprocess':
 -> signal-results/<sample>/<sample>_sample.txt
 -> signal-results/<sample>/core/<sample>.consensus.fa
@@ -20,7 +21,7 @@ SIGNAL 'all' & 'postprocess':
 -> signal-results/<sample>/freebayes/<sample>.consensus.fasta
 -> signal-results/<sample>/freebayes/<sample>.variants.norm.vcf
 
-'ncov_tools':
+SIGNAL 'ncov_tools':
 -> ncov_tools-results/qc_annotation/<sample>.ann.vcf
 -> ncov-tools-results/qc_reports/<run_name>_ambiguous_position_report.tsv
 -> ncov-tools-results/qc_reports/<run_name>_mixture_report.tsv
@@ -31,14 +32,16 @@ SIGNAL 'all' & 'postprocess':
 Flags:
 	-s  :  SIGNAL results directory
 	-d  :  Directory where summary will be outputted
-	-m  :  Invoke 'mv' command instead of 'rsync' copying of results. Optional
+	-m  :  Invoke 'mv' move command instead of 'rsync' copying of results. Optional
+	-c  :  Invoke 'cp' copy command instead of 'rsync' copying of results. Optional
 """
 
-while getopts ":s:d:m" option; do
+while getopts ":s:d:mc" option; do
 	case "${option}" in
 		s) source=$OPTARG;;
 		d) destination=$OPTARG;;
 		m) move='true';;
+		c) copy='true';;
 	esac
 done
 
@@ -63,8 +66,13 @@ else
 	mkdir -p $final_dir/signal-results
 fi
 	
-if ${move}; then
+if [ ${move} = true ] && [ ${copy} = true ]; then
+	echo -e "Only pick one of '-m' or '-c' depending on whether you wish to move or copy files, respectively"
+	exit
+elif [ ${move} = true ] && [ ${copy} = false ]; then
 	cmd='mv'
+elif [ ${move} = false ] && [ ${copy} = true ]; then
+	cmd='cp'
 else
 	cmd='rsync -avh'
 	# rsync -avh
