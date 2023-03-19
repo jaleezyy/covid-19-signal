@@ -14,16 +14,30 @@ def link_ivar(root, neg, failed, replace=False):
 		if (sample in failed) and (sample not in neg):
 			continue
 		ln_path = f"{root}/{sample}.variants.tsv"
-		if (not os.path.exists(ln_path)) or (replace is True):
-			os.link(variants, ln_path)
+		try:
+			if (not os.path.exists(ln_path)) or (replace is True):
+				os.link(variants, ln_path)
+		except FileExistsError:
+			if replace:
+				os.remove(ln_path)
+				os.link(variants, ln_path)
+			else:
+				pass
 
 	for consensus in snakemake.input['consensus']:
 		sample = consensus.split('/')[0]
 		if (sample in failed) and (sample not in neg):
 			continue
 		ln_path = f"{root}/{sample}.consensus.fasta"
-		if (not os.path.exists(ln_path)) or (replace is True):
-			os.link(consensus, ln_path)
+		try:
+			if (not os.path.exists(ln_path)) or (replace is True):
+				os.link(consensus, ln_path)
+		except FileExistsError:
+			if replace:
+				os.remove(ln_path)
+				os.link(variants, ln_path)
+			else:
+				pass
 		for line in fileinput.input(ln_path, inplace=True):
 			if line.startswith(">"):
 				new_header = str(">"+sample)
