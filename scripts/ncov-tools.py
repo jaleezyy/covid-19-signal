@@ -258,7 +258,7 @@ if __name__ == '__main__':
 	subprocess.run([run_script, '-c', str(snakemake.threads), '-s', str(result_dir)])
 	
 	# clean up
-	#shutil.rmtree(data_root)
+	shutil.rmtree(data_root)
 	
 	#run_all()
 	#move(exec_dir, result_root, result_dir)
