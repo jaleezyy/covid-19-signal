@@ -568,7 +568,8 @@ rule run_ivar_variants:
             '-Q 0 {input.read_bam} | '
         'ivar variants -r {input.reference} -m {params.ivar_min_coverage_depth} '
         '-p {params.output_prefix} -q {params.ivar_min_variant_quality} '
-        '-t {params.ivar_min_freq_threshold} -g {input.viral_reference_gff}) 2> {log}'
+        '-t {params.ivar_min_freq_threshold} -g {input.viral_reference_gff}) 2> {log} || '
+        ' (echo -e 'REGION\tPOS\tREF\tALT\tREF_DP\tREF_RV\tREF_QUAL\tALT_DP\tALT_RV\tALT_QUAL\tALT_FREQ\tTOTAL_DP\tPVAL\tPASS\tGFF_FEATURE\tREF_CODON\tREF_AA\tALT_CODON\tALT_AA' > {output}) '
 
 
 ################################   Based on scripts/breseq.sh   ####################################
@@ -635,7 +636,7 @@ rule run_freebayes:
                         -c {params.out}.consensus.vcf {params.out}.gvcf 
 
         # normalize variant records into canonical VCF representation
-        bcftools norm -f {input.reference} {params.out}.variants.vcf > {output.variants} 
+        bcftools norm -f {input.reference} {params.out}.variants.vcf > {output.variants} || (echo -e '##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tunknown' > {output.variants})
         bcftools norm -f {input.reference} {params.out}.consensus.vcf > {params.out}.consensus.norm.vcf
 
         # split the consensus sites file into a set that should be IUPAC codes and all other bases, using the ConsensusTag in the VCF
