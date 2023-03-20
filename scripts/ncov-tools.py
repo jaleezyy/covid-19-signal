@@ -16,8 +16,11 @@ def link_ivar(root, neg, failed, replace=False):
 		ln_path = f"{root}/{sample}.variants.tsv"
 		try:
 			if (not os.path.exists(ln_path)) or (replace is True):
+				# remove equivalent link for Freebayes VCF (namely for replace=True)
+				if os.path.exists(f"{root}/{sample}.variants.vcf"):
+					os.remove(f"{root}/{sample}.variants.vcf")
 				os.link(variants, ln_path)
-		except FileExistsError:
+		except FileExistsError: # equal link ~ error
 			if replace:
 				os.remove(ln_path)
 				os.link(variants, ln_path)
@@ -32,7 +35,7 @@ def link_ivar(root, neg, failed, replace=False):
 		try:
 			if (not os.path.exists(ln_path)) or (replace is True):
 				os.link(consensus, ln_path)
-		except FileExistsError:
+		except FileExistsError: # more likely given same link path
 			if replace:
 				os.remove(ln_path)
 				os.link(variants, ln_path)
@@ -59,35 +62,44 @@ def link_freebayes(root, neg, failed):
 		if not os.path.exists(expected_path):
 			print("Missing FreeBayes variant file! Switching to iVar input!")
 			link_ivar(root, neg, failed, replace=True)
+			vcf_method = False
 			break
 		else:
+			vcf_method = True
 			ln_path = f"{root}/{sample}.variants.vcf"
+			# redundant check however, it may play a roll in re-runs
+			if os.path.exists(f"{root}/{sample}.variants.tsv"):
+				os.remove(f"{root}/{sample}.variants.tsv")
 			if not os.path.exists(ln_path):
 				os.link(expected_path, ln_path)
 
-	for consensus in snakemake.input['consensus']:
-		sample = consensus.split('/')[0]
-		if (sample in failed) and (sample not in neg):
-			continue
-		expected_path = os.path.join(sample, 'freebayes', sample+'.consensus.fasta')
-		if not os.path.exists(expected_path):
-			print("Missing FreeBayes variant file! Switching to iVar input!")
-			link_ivar(root, neg, failed, replace=True)
-			break
-		else:
-			ln_path = f"{root}/{sample}.consensus.fasta"
-			if not os.path.exists(ln_path):
-				os.link(expected_path, ln_path)
-			for line in fileinput.input(ln_path, inplace=True):
-				if line.startswith(">"):
-					new_header = str(">"+sample)
-					new_line = line.replace(line, new_header)
-					print(new_line, end='\n')
-				else:
-					print(line, end='\n')
+	if vcf_method:
+		for consensus in snakemake.input['consensus']:
+			sample = consensus.split('/')[0]
+			if (sample in failed) and (sample not in neg):
+				continue
+			expected_path = os.path.join(sample, 'freebayes', sample+'.consensus.fasta')
+			if not os.path.exists(expected_path):
+				print("Missing FreeBayes variant file! Switching to iVar input!")
+				link_ivar(root, neg, failed, replace=True)
+				break
+			else:
+				ln_path = f"{root}/{sample}.consensus.fasta"
+				if not os.path.exists(ln_path):
+					os.link(expected_path, ln_path)
+				for line in fileinput.input(ln_path, inplace=True):
+					if line.startswith(">"):
+						new_header = str(">"+sample)
+						new_line = line.replace(line, new_header)
+						print(new_line, end='\n')
+					else:
+						print(line, end='\n')
+					
+	return vcf_method
 
 def set_up():
 	print("Writing config.yaml for ncov-tools to ncov-tools/config.yaml")
+	#vcf_variant = True # set default
 
 	exec_dir = snakemake.params['exec_dir']
 	result_dir = os.path.basename(snakemake.params['result_dir']) # basename of SIGNAL result directory
@@ -187,8 +199,11 @@ def set_up():
 			os.link(primer_trimmed_bam, ln_path)
 			
 	if snakemake.params['freebayes_run']:
-		link_freebayes(data_root, neg_list, failed_list)
-		config['variants_pattern'] = "'{data_root}/{sample}.variants.vcf'"
+		vcf_variant = link_freebayes(data_root, neg_list, failed_list)
+		if vcf_variant:
+			config['variants_pattern'] = "'{data_root}/{sample}.variants.vcf'"
+		else:
+			pass # keep as TSV
 	else:
 		link_ivar(data_root, neg_list, failed_list, replace=False)
 
@@ -243,6 +258,7 @@ if __name__ == '__main__':
 	subprocess.run([run_script, '-c', str(snakemake.threads), '-s', str(result_dir)])
 	
 	# clean up
-	shutil.rmtree(data_root)
+	#shutil.rmtree(data_root)
+	
 	#run_all()
 	#move(exec_dir, result_root, result_dir)
