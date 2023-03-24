@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # v1.6.0+
 # signalexe.py assumes Snakefile is in current working directory (i.e., SIGNAL root)
@@ -320,7 +320,7 @@ if __name__ == '__main__':
 			if (allowed[task] is True) and (task != 'install'):
 				print(f"Running SIGNAL {task}!")
 				try:
-					subprocess.run(f"snakemake --conda-frontend {conda_frontend} --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp {opt}", shell=True, check=True)
+					subprocess.run(f"snakemake --configfile {config_file} --cores={args.cores} {task} -kp {opt}", shell=True, check=True)
 				except subprocess.CalledProcessError:
 					if task == "ncov_tools":
 						mod = check_submodule(os.getcwd())
@@ -329,7 +329,7 @@ if __name__ == '__main__':
 								opt = " ".join(opt.split(" ")[:-1])
 							try:
 								print("Retrying...ncov-tools!")
-								subprocess.run(f"snakemake --conda-frontend {conda_frontend} --configfile {config_file} --cores={args.cores} --use-conda --conda-prefix=$PWD/.snakemake/conda {task} -kp --rerun-incomplete {opt}", shell=True, check=True)
+								subprocess.run(f"snakemake --configfile {config_file} --cores={args.cores} {task} -kp --rerun-incomplete {opt}", shell=True, check=True)
 							except subprocess.CalledProcessError:
 								print(f"Some jobs failed while running SIGNAL {task}! Check snakemake logs and the ncov-tools directory for additional details!")
 								continue
