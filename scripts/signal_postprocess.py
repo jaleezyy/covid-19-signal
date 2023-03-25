@@ -565,7 +565,7 @@ def parse_ivar_variants(tsv_filename, allow_missing=True):
     # Skip first line
     for line in open(tsv_filename).readlines()[1:]:
         t = line.split('\t')
-        assert len(t) == 19
+        assert (len(t) == 19) or (len(t) == 20)
 
         if t[3] != '':
             variants.append(f"{t[2]}{t[1]}{t[3]}")
