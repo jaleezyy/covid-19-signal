@@ -146,7 +146,7 @@ def generate_sample_table(project_directory, project_name):
 	"""
 	script=os.path.join(script_path, 'scripts', "generate_sample_table.sh")
 	out_table = project_name + "_sample_table.csv"
-	subprocess.run(['bash', script, '-d', project_directory, '-n', out_table])
+	subprocess.run(['bash', script, '-f', project_directory, '-n', out_table])
 
 def write_config_file(run_name, config_file, data_directory, opt_tasks):
 ### opt_tasks = [args.breseq, args.freebayes, [args.neg_prefix]] - latter only applies to SIGNAL v1.5.8 and earlier
