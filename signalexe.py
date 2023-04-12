@@ -213,16 +213,16 @@ var_min_variant_quality: 20
 pangolin_fast: False
 
 # Versions of software related to lineage calling (use numbers only, i.e., 3.1.1). Dates (YYYY-mm-dd) are accepted for pangolearn. Leave blank for latest version(s).
-pangolin: 
-constellations:
-scorpio:
+pangolin: 4.2
+constellations: 0.1.10
+scorpio: 0.3.17
 
 # Required for Pangolin <v4.0
 pangolearn: 
 pango-designation:
 
 # Required for Pangolin v4+
-pangolin-data:
+pangolin-data: 1.19
 
 # Versions for Nextclade (software & datasets)
 # Software version (nextclade) should use numbers only (i.e., 1.11.0)
