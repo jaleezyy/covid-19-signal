@@ -24,7 +24,7 @@ def write_coverage_plot(depth_file, coverage_plot_name):
         chunk_size = 2500
         nchunks = (n + chunk_size -1) // chunk_size
 
-        kwds = {'wspace':0, 'hspace':0.2, 'bottom':0.02, 'top':0.98 }
+        kwds = {'wspace':0, 'hspace':0.2, 'bottom':0.05, 'top':0.98 }
         fig, axarr = plt.subplots(nchunks, 1, sharex=True, gridspec_kw=kwds)
 
         fig.set_figwidth(8)
