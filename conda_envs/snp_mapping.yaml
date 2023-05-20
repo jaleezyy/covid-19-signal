@@ -5,9 +5,10 @@ channels:
   - defaults
 dependencies:
   - bwa=0.7.17
-  - samtools=1.7
+  - samtools=1.9
   - bedtools=2.26.0
   - breseq=0.35.0
   - pysam
-  - python=3.6.5
+  - python=3.7
   - tbb=2020.2
+  - zlib>=1.2.11
