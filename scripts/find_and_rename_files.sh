@@ -155,14 +155,14 @@ if [ -d $fasta ]; then
 
 		if [[ $num_files -eq 2 ]]; then
 			for f in $fasta/${sample}-*; do
-				store=$(echo $f | grep -o "barcode\d*..")
+				store=$(echo $f | grep -o "barcode\d*.." | tr -d "barcode")
 				if [[ $smallest -eq 0 ]]; then
 					smallest=$store
 				elif [[ $store -lt $smallest ]]; then
 					smallest=$store
 				fi
 			done
-			find $fasta -name ${sample}-barcode${smallest}.* -exec rm {} \;
+		find $fasta -name ${sample}-barcode${smallest}.* -exec rm {} \;
 		fi
 	done
 
@@ -190,14 +190,14 @@ if [ -f $fastq ]; then
 
 		if [[ $num_files -eq 2 ]]; then
 			for f in $fastq/${sample}-*; do
-				store=$(echo $f | cut -d_ -f1 | grep -o "barcode\d*..")
+				store=$(echo $f | cut -d_ -f1 | grep -o "barcode\d*.." | tr -d "barcode")
 				if [[ $smallest -eq 0 ]]; then
 					smallest=$store
 				elif [[ $store -lt $smallest ]]; then
 					smallest=$store
 				fi
 			done
-			find $fastq -name ${sample}-barcode${smallest}.* -exec rm {} \;
+		find $fastq -name ${sample}-barcode${smallest}.* -exec rm {} \;
 		fi
 	done
 
@@ -229,14 +229,14 @@ if [ -d $vcf ]; then
 
 		if [[ $num_files -eq 2 ]]; then
 			for f in $vcf/${sample}-*; do
-				store=$(echo $f | grep -o "barcode\d*..")
+				store=$(echo $f | grep -o "barcode\d*.." | tr -d "barcode")
 				if [[ $smallest -eq 0 ]]; then
 					smallest=$store
 				elif [[ $store -lt $smallest ]]; then
 					smallest=$store
 				fi
 			done
-			find $vcf -name ${sample}-barcode${smallest}.* -exec rm {} \;
+		find $vcf -name ${sample}-barcode${smallest}.* -exec rm {} \;
 		fi
 	done
 
