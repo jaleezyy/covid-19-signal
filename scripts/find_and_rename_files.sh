@@ -146,6 +146,23 @@ fi
 ### Rename files
 # FASTA
 if [ -d $fasta ]; then
+	### Remove duplicate samples
+	echo "Removing duplicates..."
+	for file in $fasta/*; do
+		smallest=0
+		sample=$(echo $file | cut -d- -f1)
+		num_files=$(ls ${sample}-* | wc -l)
+
+		if [[ $num_files -eq 2]]; then
+			for f in ${sample}-*; do
+				store=$(echo $f | grep -o "barcode\d*..")
+				if [[ $smallest -eq 0 ]]; then
+					smallest=$store
+				elif [[ $store -lt $smallest ]]; then
+					smallest=$store
+				fi
+			find $fasta -name ${sample}-barcode${smallest}.* -exec rm {} \;
+
 	if [[ $autoyes == 'true' ]]; then
 		rename 's/^1/ON-HRL-22-1/g' $fasta/*
 		rename 's/-barcode\d*\./-v1_/g' $fasta/*
@@ -161,6 +178,23 @@ if [ -d $fasta ]; then
 fi
 # FASTQ
 if [ -f $fastq ]; then
+	### Remove duplicate samples
+	echo "Removing duplicates..."
+	for file in $fastq/*; do
+		smallest=0
+		sample=$(echo $file | cut -d- -f1)
+		num_files=$(ls ${sample}-* | wc -l)
+
+		if [[ $num_files -eq 2]]; then
+			for f in ${sample}-*; do
+				store=$(echo $f | cut -d_ -f1 | grep -o "barcode\d*..")
+				if [[ $smallest -eq 0 ]]; then
+					smallest=$store
+				elif [[ $store -lt $smallest ]]; then
+					smallest=$store
+				fi
+			find $fastq -name ${sample}-barcode${smallest}.* -exec rm {} \;
+
 	if [[ $autoyes == 'true' ]]; then
 		rename 's/^1/ON-HRL-22-1/g' $fastq/*
 		rename 's/-barcode\d*_barcode\d*\.fastq/-v1\.fq/g' $fastq/*
@@ -180,6 +214,23 @@ if [ -f $fastq ]; then
 fi
 # VCF
 if [ -d $vcf ]; then
+	### Remove duplicate samples
+	echo "Removing duplicates..."
+	for file in $vcf/*; do
+		smallest=0
+		sample=$(echo $file | cut -d- -f1)
+		num_files=$(ls ${sample}-* | wc -l)
+
+		if [[ $num_files -eq 2]]; then
+			for f in ${sample}-*; do
+				store=$(echo $f | grep -o "barcode\d*..")
+				if [[ $smallest -eq 0 ]]; then
+					smallest=$store
+				elif [[ $store -lt $smallest ]]; then
+					smallest=$store
+				fi
+			find $vcf -name ${sample}-barcode${smallest}.* -exec rm {} \;
+
 	if [[ $autoyes == 'true' ]]; then
 		rename 's/1/ON-HRL-22-1/g' $vcf/*
 		rename 's/-barcode\d*\.ann/-v1/g' $vcf/*
