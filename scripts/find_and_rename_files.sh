@@ -308,7 +308,7 @@ if [ -d $vcf ]; then
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
 		rename -n 's/-barcode\d*\.ann/-v1/g' *
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/-barcode\d*\.ann/-v1/g' $vcf/* || 
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/-barcode\d*\.ann/-v1/g' * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
 		echo "Renaming controls..."
