@@ -156,12 +156,12 @@ if [ -d $fasta ]; then
 		fi
 		num_files=$(ls $fasta/${sample}-* | wc -l)
 
-		if [[ $num_files -eq 2 ]]; then
+		if [ $num_files -eq 2 ]; then
 			for f in $fasta/${sample}-*; do
 				store=$(echo $f | grep -o "barcode\d*.." | tr -d "barcode")
-				if [[ $smallest -eq 0 ]]; then
+				if [ $smallest -eq 0 ]; then
 					smallest=$store
-				elif [[ $store -lt $smallest ]]; then
+				elif [ $store -lt $smallest ]; then
 					smallest=$store
 				fi
 			done
@@ -211,12 +211,12 @@ if [ -f $fastq ]; then
 		fi
 		num_files=$(ls $fastq/${sample}-* | wc -l)
 
-		if [[ $num_files -eq 2 ]]; then
+		if [ $num_files -eq 2 ]; then
 			for f in $fastq/${sample}-*; do
 				store=$(echo $f | cut -d_ -f1 | grep -o "barcode\d*.." | tr -d "barcode")
-				if [[ $smallest -eq 0 ]]; then
+				if [ $smallest -eq 0 ]; then
 					smallest=$store
-				elif [[ $store -lt $smallest ]]; then
+				elif [ $store -lt $smallest ]; then
 					smallest=$store
 				fi
 			done
@@ -270,12 +270,12 @@ if [ -d $vcf ]; then
 		fi
 		num_files=$(ls $vcf/${sample}-* | wc -l)
 
-		if [[ $num_files -eq 2 ]]; then
+		if [ $num_files -eq 2 ]; then
 			for f in $vcf/${sample}-*; do
 				store=$(echo $f | grep -o "barcode\d*.." | tr -d "barcode")
-				if [[ $smallest -eq 0 ]]; then
+				if [ $smallest -eq 0 ]; then
 					smallest=$store
-				elif [[ $store -lt $smallest ]]; then
+				elif [ $store -lt $smallest ]; then
 					smallest=$store
 				fi
 			done
