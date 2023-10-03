@@ -161,7 +161,10 @@ if [ -d $fasta ]; then
 				elif [[ $store -lt $smallest ]]; then
 					smallest=$store
 				fi
+			done
 			find $fasta -name ${sample}-barcode${smallest}.* -exec rm {} \;
+		fi
+	done
 
 	if [[ $autoyes == 'true' ]]; then
 		rename 's/^1/ON-HRL-22-1/g' $fasta/*
@@ -193,7 +196,10 @@ if [ -f $fastq ]; then
 				elif [[ $store -lt $smallest ]]; then
 					smallest=$store
 				fi
+			done
 			find $fastq -name ${sample}-barcode${smallest}.* -exec rm {} \;
+		fi
+	done
 
 	if [[ $autoyes == 'true' ]]; then
 		rename 's/^1/ON-HRL-22-1/g' $fastq/*
@@ -229,7 +235,10 @@ if [ -d $vcf ]; then
 				elif [[ $store -lt $smallest ]]; then
 					smallest=$store
 				fi
+			done
 			find $vcf -name ${sample}-barcode${smallest}.* -exec rm {} \;
+		fi
+	done
 
 	if [[ $autoyes == 'true' ]]; then
 		rename 's/1/ON-HRL-22-1/g' $vcf/*
