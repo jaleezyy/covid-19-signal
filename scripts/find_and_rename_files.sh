@@ -47,7 +47,7 @@ This scripts aims to copy over relevant sequencing files from the HHS Illumina s
 
 Flags:
 	-o  :  Output directory for all sequencing files. If blank, only the draft data will remain under $PWD/draft
-	-r  :  (Raw) Sequencing data from HHS Illumina server and exit. Will override -f, -q, -v, -s flags and generate draft directory (see -o)
+	-r  :  (Raw) Sequencing data from HHS Illumina server. Will override -f, -q, -v, -s flags and generate draft directory (see -o)
 	-f  :  Directory containing FASTA files
 	-q  :  Directory containing FASTQ files
 	-v  :  Directory containing VCF files
@@ -137,8 +137,6 @@ if [[ $raw_data != 0 ]]; then
 		mkdir -p $qc
 	fi
 	find $raw_data -name *.tsv -exec cp {} $qc \;
-
-	exit 0
 fi
 
 ### Rename files
@@ -361,7 +359,7 @@ if [[ $output != 0 ]]; then
 	fi
 	echo "All data found under ${output}"
 else
-	echo "All data found under $PWD/draft"
+	echo -e "All data found where inputs are. If input was -r, then check $PWD/draft"
 fi
 
 exit 0
