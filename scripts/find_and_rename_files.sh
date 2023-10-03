@@ -170,33 +170,36 @@ if [ -d $fasta ]; then
 	done
 
 	if [[ $autoyes == 'true' ]]; then
+		cd $fasta
 		echo "Renaming samples..."
-		rename 's/^1/ON-HRL-22-1/g' $fasta/*
-		rename 's/-barcode\d*\./-v1_/g' $fasta/*
+		rename 's/^1/ON-HRL-22-1/g' *
+		rename 's/-barcode\d*\./-v1_/g' *
 
 		echo "Renaming controls..."
-		rename 's/^ExtractPosCtrl/Pos/g' $fasta/*
-		rename 's/^ExtractNegCtrl/Neg/g' $fasta/*
+		rename 's/^ExtractPosCtrl/Pos/g' *
+		rename 's/^ExtractNegCtrl/Neg/g' *
+		cd -
 		
 	else 
+		cd $fasta
 		echo "Renaming samples..."
-		rename -n 's/^1/ON-HRL-22-1/g' $fasta/*
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-22-1/g' $fasta/* || 
+		rename -n 's/^1/ON-HRL-22-1/g' *
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-22-1/g' * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
-		rename -n 's/-barcode\d*\./-v1_/g' $fasta/*
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/-barcode\d*\./-v1_/g' $fasta/* || 
+		rename -n 's/-barcode\d*\./-v1_/g' *
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/-barcode\d*\./-v1_/g' * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
 		echo "Renaming controls..."
-		rename -n 's/^ExtractPosCtrl/Pos/g' $fasta/*
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^ExtractPosCtrl/Pos/g' $fasta/* || 
+		rename -n 's/^ExtractPosCtrl/Pos/g' *
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^ExtractPosCtrl/Pos/g' * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 		
-		rename -n 's/^ExtractNegCtrl/Neg/g' $fasta/*
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^ExtractNegCtrl/Neg/g' $fasta/* || 
+		rename -n 's/^ExtractNegCtrl/Neg/g' *
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^ExtractNegCtrl/Neg/g' * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
-
+		cd -
 	fi
 fi
 # FASTQ
@@ -225,35 +228,39 @@ if [ -f $fastq ]; then
 	done
 
 	if [[ $autoyes == 'true' ]]; then
+		cd $fastq
 		echo "Renaming samples..."
-		rename 's/^1/ON-HRL-22-1/g' $fastq/*
-		rename 's/-barcode\d*_barcode\d*\.fastq/-v1\.fq/g' $fastq/*
+		rename 's/^1/ON-HRL-22-1/g' *
+		rename 's/-barcode\d*_barcode\d*\.fastq/-v1\.fq/g' *
 
 		echo "Renaming controls..."
-		rename 's/^ExtractPosCtrl/Pos/g' $fastq/*
-		rename 's/^ExtractNegCtrl/Neg/g' $fastq/*
+		rename 's/^ExtractPosCtrl/Pos/g' *
+		rename 's/^ExtractNegCtrl/Neg/g' *
+		cd -
 
 		echo "Zipping..."
 		gzip $fastq/*
 	else
+		cd $fastq
 		echo "Renaming samples..."
-		rename -n 's/^1/ON-HRL-22-1/g' $fastq/*
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-22-1/g' $fastq/* || 
+		rename -n 's/^1/ON-HRL-22-1/g' *
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-22-1/g' * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
-		rename -n 's/-barcode\d*_barcode\d*\.fastq/-v1\.fq/g' $fastq/*
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/-barcode\d*_barcode\d*\.fastq/-v1\.fq/g' $fastq/* || 
+		rename -n 's/-barcode\d*_barcode\d*\.fastq/-v1\.fq/g' *
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/-barcode\d*_barcode\d*\.fastq/-v1\.fq/g' * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 		
 		echo "Renaming controls..."
-		rename -n 's/^ExtractPosCtrl/Pos/g' $fastq/*
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^ExtractPosCtrl/Pos/g' $fastq/* || 
+		rename -n 's/^ExtractPosCtrl/Pos/g' *
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^ExtractPosCtrl/Pos/g' * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 		
-		rename -n 's/^ExtractNegCtrl/Neg/g' $fastq/*
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^ExtractNegCtrl/Neg/g' $fastq/* || 
+		rename -n 's/^ExtractNegCtrl/Neg/g' *
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^ExtractNegCtrl/Neg/g' * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
-		
+		cd -
+
 		echo "Zipping..."
 		gzip $fastq/*
 	fi
@@ -284,32 +291,35 @@ if [ -d $vcf ]; then
 	done
 
 	if [[ $autoyes == 'true' ]]; then
+		cd $vcf
 		echo "Renaming samples..."
-		rename 's/1/ON-HRL-22-1/g' $vcf/*
-		rename 's/-barcode\d*\.ann/-v1/g' $vcf/*
+		rename 's/^1/ON-HRL-22-1/g' *
+		rename 's/-barcode\d*\.ann/-v1/g' *
 
 		echo "Renaming controls..."
-		rename 's/ExtractPosCtrl/Pos/g' $vcf/*
-		rename 's/ExtractNegCtrl/Neg/g' $vcf/*
-
+		rename 's/^ExtractPosCtrl/Pos/g' *
+		rename 's/^ExtractNegCtrl/Neg/g' *
+		cd -
 	else
+		cd $vcf
 		echo "Renaming samples..."
-		rename -n 's/1/ON-HRL-22-1/g' $vcf/*
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/1/ON-HRL-22-1/g' $vcf/* || 
+		rename -n 's/^1/ON-HRL-22-1/g' *
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-22-1/g' * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
-		rename -n 's/-barcode\d*\.ann/-v1/g' $vcf/*
+		rename -n 's/-barcode\d*\.ann/-v1/g' *
 		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/-barcode\d*\.ann/-v1/g' $vcf/* || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
 		echo "Renaming controls..."
-		rename -n 's/ExtractPosCtrl/Pos/g' $vcf/*
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/ExtractPosCtrl/Pos/g' $vcf/* || 
+		rename -n 's/^ExtractPosCtrl/Pos/g' *
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^ExtractPosCtrl/Pos/g' * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 		
-		rename -n 's/ExtractNegCtrl/Neg/g' $vcf/*
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/ExtractNegCtrl/Neg/g' $vcf/* || 
+		rename -n 's/^ExtractNegCtrl/Neg/g' $vcf/*
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^ExtractNegCtrl/Neg/g' * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
+		cd -
 	fi
 fi
 # QC Check
