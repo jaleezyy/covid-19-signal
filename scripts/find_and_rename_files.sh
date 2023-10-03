@@ -137,9 +137,7 @@ if [[ $raw_data != 0 ]]; then
 		mkdir -p $qc
 	fi
 	find $raw_data -name *.tsv -exec cp {} $qc \;
-
-	### TODO: Add check for multiple barcodes
-	echo "Be sure to remove duplicate samples with differing barcodes..."
+	
 	exit 0
 fi
 
@@ -339,10 +337,27 @@ if [[ $output != 0 ]]; then
 		fi
 	fi
 
-	for dir in $PWD/draft/*; do 
-		cp $dir/* $output
-		echo "All data found under ${output}"
-	done
+	if [ -d $fasta ]; then
+		for f in $fasta; do 
+			cp $f/* $output
+		done
+	fi
+	if [ -d $fastq ]; then
+		for f in $fastq; do 
+			cp $f/* $output
+		done
+	fi
+	if [ -d $vcf ]; then
+		for f in $vcf; do 
+			cp $f/* $output
+		done
+	fi
+	if [ -d $qc ]; then
+		for f in $qc; do 
+			cp $f/* $output
+		done
+	fi
+	echo "All data found under ${output}"
 else
 	echo "All data found under $PWD/draft"
 fi
