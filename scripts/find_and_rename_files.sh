@@ -150,7 +150,7 @@ if [ -d $fasta ]; then
 	echo "Removing duplicates..."
 	for file in $fasta/*; do
 		smallest=0
-		sample=$(echo $file | cut -d- -f1)
+		sample=$(basename $file | cut -d- -f1)
 		num_files=$(ls ${sample}-* | wc -l)
 
 		if [[ $num_files -eq 2 ]]; then
@@ -185,7 +185,7 @@ if [ -f $fastq ]; then
 	echo "Removing duplicates..."
 	for file in $fastq/*; do
 		smallest=0
-		sample=$(echo $file | cut -d- -f1)
+		sample=$(basename $file | cut -d- -f1)
 		num_files=$(ls ${sample}-* | wc -l)
 
 		if [[ $num_files -eq 2 ]]; then
@@ -224,7 +224,7 @@ if [ -d $vcf ]; then
 	echo "Removing duplicates..."
 	for file in $vcf/*; do
 		smallest=0
-		sample=$(echo $file | cut -d- -f1)
+		sample=$(basename $file | cut -d- -f1)
 		num_files=$(ls ${sample}-* | wc -l)
 
 		if [[ $num_files -eq 2 ]]; then
