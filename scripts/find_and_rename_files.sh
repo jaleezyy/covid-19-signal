@@ -203,7 +203,7 @@ if [ -d $fasta ]; then
 	fi
 fi
 # FASTQ
-if [ -f $fastq ]; then
+if [ -d $fastq ]; then
 	### Remove duplicate samples
 	echo "Removing duplicates..."
 	for file in $fastq/*; do
