@@ -316,7 +316,7 @@ if [ -d $vcf ]; then
 		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^ExtractPosCtrl/Pos/g' * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 		
-		rename -n 's/^ExtractNegCtrl/Neg/g' $vcf/*
+		rename -n 's/^ExtractNegCtrl/Neg/g' *
 		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^ExtractNegCtrl/Neg/g' * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 		cd -
