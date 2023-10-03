@@ -137,7 +137,7 @@ if [[ $raw_data != 0 ]]; then
 		mkdir -p $qc
 	fi
 	find $raw_data -name *.tsv -exec cp {} $qc \;
-	
+
 	exit 0
 fi
 
@@ -335,6 +335,8 @@ if [[ $output != 0 ]]; then
 			rm -r $output && mkdir $output || 
 			echo -e "\nPlease update output directory and try again!" && exit 1
 		fi
+	else
+		mkdir $output
 	fi
 
 	if [ -d $fasta ]; then
