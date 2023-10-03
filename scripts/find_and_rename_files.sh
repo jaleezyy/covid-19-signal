@@ -175,12 +175,12 @@ if [ -d $fasta ]; then
 		rename 's/-barcode\d*\./-v1_/g' $fasta/*
 
 		echo "Renaming controls..."
-		rename 's/ExtractPosCtrl/Pos/g' $fasta/*
-		rename 's/ExtractNegCtrl/Neg/g' $fasta/*
+		rename 's/^ExtractPosCtrl/Pos/g' $fasta/*
+		rename 's/^ExtractNegCtrl/Neg/g' $fasta/*
 		
 	else 
 		echo "Renaming samples..."
-		rename -n 's/1/ON-HRL-22-1/g' $fasta/*
+		rename -n 's/^1/ON-HRL-22-1/g' $fasta/*
 		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-22-1/g' $fasta/* || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
@@ -189,12 +189,12 @@ if [ -d $fasta ]; then
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
 		echo "Renaming controls..."
-		rename -n 's/ExtractPosCtrl/Pos/g' $fasta/*
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/ExtractPosCtrl/Pos/g' $fasta/* || 
+		rename -n 's/^ExtractPosCtrl/Pos/g' $fasta/*
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^ExtractPosCtrl/Pos/g' $fasta/* || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 		
-		rename -n 's/ExtractNegCtrl/Neg/g' $fasta/*
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/ExtractNegCtrl/Neg/g' $fasta/* || 
+		rename -n 's/^ExtractNegCtrl/Neg/g' $fasta/*
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^ExtractNegCtrl/Neg/g' $fasta/* || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
 	fi
@@ -230,14 +230,14 @@ if [ -f $fastq ]; then
 		rename 's/-barcode\d*_barcode\d*\.fastq/-v1\.fq/g' $fastq/*
 
 		echo "Renaming controls..."
-		rename 's/ExtractPosCtrl/Pos/g' $fastq/*
-		rename 's/ExtractNegCtrl/Neg/g' $fastq/*
+		rename 's/^ExtractPosCtrl/Pos/g' $fastq/*
+		rename 's/^ExtractNegCtrl/Neg/g' $fastq/*
 
 		echo "Zipping..."
 		gzip $fastq/*
 	else
 		echo "Renaming samples..."
-		rename -n 's/1/ON-HRL-22-1/g' $fastq/*
+		rename -n 's/^1/ON-HRL-22-1/g' $fastq/*
 		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-22-1/g' $fastq/* || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
@@ -246,12 +246,12 @@ if [ -f $fastq ]; then
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 		
 		echo "Renaming controls..."
-		rename -n 's/ExtractPosCtrl/Pos/g' $fastq/*
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/ExtractPosCtrl/Pos/g' $fastq/* || 
+		rename -n 's/^ExtractPosCtrl/Pos/g' $fastq/*
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^ExtractPosCtrl/Pos/g' $fastq/* || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 		
-		rename -n 's/ExtractNegCtrl/Neg/g' $fastq/*
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/ExtractNegCtrl/Neg/g' $fastq/* || 
+		rename -n 's/^ExtractNegCtrl/Neg/g' $fastq/*
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^ExtractNegCtrl/Neg/g' $fastq/* || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 		
 		echo "Zipping..."
