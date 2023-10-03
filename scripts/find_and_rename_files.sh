@@ -153,7 +153,7 @@ if [ -d $fasta ]; then
 		sample=$(echo $file | cut -d- -f1)
 		num_files=$(ls ${sample}-* | wc -l)
 
-		if [[ $num_files -eq 2]]; then
+		if [[ $num_files -eq 2 ]]; then
 			for f in ${sample}-*; do
 				store=$(echo $f | grep -o "barcode\d*..")
 				if [[ $smallest -eq 0 ]]; then
@@ -188,7 +188,7 @@ if [ -f $fastq ]; then
 		sample=$(echo $file | cut -d- -f1)
 		num_files=$(ls ${sample}-* | wc -l)
 
-		if [[ $num_files -eq 2]]; then
+		if [[ $num_files -eq 2 ]]; then
 			for f in ${sample}-*; do
 				store=$(echo $f | cut -d_ -f1 | grep -o "barcode\d*..")
 				if [[ $smallest -eq 0 ]]; then
@@ -227,7 +227,7 @@ if [ -d $vcf ]; then
 		sample=$(echo $file | cut -d- -f1)
 		num_files=$(ls ${sample}-* | wc -l)
 
-		if [[ $num_files -eq 2]]; then
+		if [[ $num_files -eq 2 ]]; then
 			for f in ${sample}-*; do
 				store=$(echo $f | grep -o "barcode\d*..")
 				if [[ $smallest -eq 0 ]]; then
