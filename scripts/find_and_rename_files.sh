@@ -97,12 +97,17 @@ if [[ $raw_data == 0 ]] && [[ $fasta == 0 || $fastq == 0 || $vcf == 0 || $qc == 
 	exit 0
 fi
 
+### Password check
+pass_var="Enter password: "
+password=''
+check_access
+
 if [[ $raw_data != 0 ]]; then
 	echo "Generating draft data directory $PWD/draft"
 	fasta="$PWD/draft/fasta"
 	fastq="$PWD/draft/fastq"
 	vcf="$PWD/draft/vcf"
-	qc="$PWD/draft/summary_qc"
+	qc="$PWD/draft/tsv"
 
 	if [ -d $fasta ]; then
 		rm -r $fasta
@@ -113,7 +118,7 @@ if [[ $raw_data != 0 ]]; then
 		rm -r $fastq
 		mkdir -p $fastq
 	fi
-	find $raw_data -name *.f?(ast)q?(.gz) -exec cp {} $fastq \;
+	find $raw_data -name *.fastq -exec cp {} $fastq \;
 	if [ -d $vcf ]; then
 		rm -r $vcf
 		mkdir -p $vcf
@@ -125,53 +130,65 @@ if [[ $raw_data != 0 ]]; then
 	fi
 	find $raw_data -name *.tsv -exec cp {} $qc \;
 
+	### TODO: Add check for multiple barcodes
+	echo "Be sure to remove duplicate samples with differing barcodes..."
 	exit 0
 fi
-
-### Password check
-pass_var="Enter password: "
-password=''
-check_access
 
 ### Rename files
 # FASTA
 if [ -d $fasta ]; then
 	if [[ $autoyes == 'true' ]]; then
-		#rename
+		rename 's/^1/ON-HRL-22-1/g' $fasta/*
+		rename 's/-barcode\d*\./-v1_/g' $fasta/*
 	else 
-		#rename -n 
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || #&& rename || 
+		rename -n 's/1/ON-HRL-22-1/g' $fasta/*
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-22-1/g' $fasta/* || 
+		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
+
+		rename -n 's/-barcode\d*\./-v1_/g' $fasta/*
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/-barcode\d*\./-v1_/g' $fasta/* || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 	fi
 fi
 # FASTQ
 if [ -f $fastq ]; then
 	if [[ $autoyes == 'true' ]]; then
-		# rename
+		rename 's/^1/ON-HRL-22-1/g' $fastq/*
+		rename 's/-barcode\d*_barcode\d*\.fastq/-v1\.fq/g' $fastq/*
+		echo "Zipping..."
+		gzip $fastq/*
 	else
-		# rename -n
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || #&& rename || 
+		rename -n 's/1/ON-HRL-22-1/g' $fastq/*
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-22-1/g' $fastq/* || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
+
+		rename -n 's/-barcode\d*_barcode\d*\.fastq/-v1\.fq/g' $fastq/*
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/-barcode\d*_barcode\d*\.fastq/-v1\.fq/g' $fastq/* || 
+		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
+		echo "Zipping..."
+		gzip $fastq/*
 	fi
 fi
 # VCF
 if [ -d $vcf ]; then
 	if [[ $autoyes == 'true' ]]; then
-		# rename
+		rename 's/1/ON-HRL-22-1/g' $vcf/*
+		rename 's/-barcode\d*\.ann/-v1/g' $vcf/*
 	else
-		# rename -n
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || #&& rename || 
+		rename -n 's/1/ON-HRL-22-1/g' $vcf/*
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/1/ON-HRL-22-1/g' $vcf/* || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
+
+		rename -n 's/-barcode\d*\.ann/-v1/g' $vcf/*
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/-barcode\d*\.ann/-v1/g' $vcf/* || 
+		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
+
 	fi
 fi
 # QC Check
-if [ -d $qc ]; then	
-	if [[ $autoyes == 'true' ]]; then
-		# rename
-	else
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || #&& rename || 
-		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
-	fi
+if [ ! -d $qc ]; then	
+	echo "NCOV_TOOLS QC reports not found as expected!"
 fi
 
 if [[ $output != 0 ]]; then
@@ -188,5 +205,10 @@ if [[ $output != 0 ]]; then
 
 	for dir in $PWD/draft/*; do 
 		cp $dir/* $output
+		echo "All data found under ${output}"
 	done
+else
+	echo "All data found under $PWD/draft"
 fi
+
+exit 0
