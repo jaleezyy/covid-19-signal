@@ -104,6 +104,7 @@ check_access
 
 if [[ $raw_data != 0 ]]; then
 	echo "Generating draft data directory $PWD/draft"
+	draft="$PWD/draft"
 	fasta="$PWD/draft/fasta"
 	fastq="$PWD/draft/fastq"
 	vcf="$PWD/draft/vcf"
@@ -357,9 +358,15 @@ if [[ $output != 0 ]]; then
 			cp $f/* $output
 		done
 	fi
+
+	# clean up
+	if [[ $raw_data != 0 ]]; then
+		rm -r $draft
+	fi
+	
 	echo "All data found under ${output}"
 else
-	echo -e "All data found where inputs are. If input was -r, then check $PWD/draft"
+	echo -e "All data found where inputs are. If input was -r, then check to see if ${draft} remains"
 fi
 
 exit 0
