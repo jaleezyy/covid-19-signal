@@ -151,7 +151,7 @@ if [ -d $fasta ]; then
 	for file in $fasta/*; do
 		smallest=0
 		sample=$(basename $file | cut -d- -f1)
-		if [[ $sample == "ExtraPosCtrl" || $sample == "ExtraNegCtrl"]]; then
+		if [[ $sample == "ExtraPosCtrl" || $sample == "ExtraNegCtrl" ]]; then
 			sample=$(basename $file | cut -d- -f1,2)
 		fi
 		num_files=$(ls $fasta/${sample}-* | wc -l)
@@ -206,7 +206,7 @@ if [ -f $fastq ]; then
 	for file in $fastq/*; do
 		smallest=0
 		sample=$(basename $file | cut -d- -f1)
-		if [[ $sample == "ExtraPosCtrl" || $sample == "ExtraNegCtrl"]]; then
+		if [[ $sample == "ExtraPosCtrl" || $sample == "ExtraNegCtrl" ]]; then
 			sample=$(basename $file | cut -d- -f1,2)
 		fi
 		num_files=$(ls $fastq/${sample}-* | wc -l)
@@ -265,7 +265,7 @@ if [ -d $vcf ]; then
 	for file in $vcf/*; do
 		smallest=0
 		sample=$(basename $file | cut -d- -f1)
-		if [[ $sample == "ExtraPosCtrl" || $sample == "ExtraNegCtrl"]]; then
+		if [[ $sample == "ExtraPosCtrl" || $sample == "ExtraNegCtrl" ]]; then
 			sample=$(basename $file | cut -d- -f1,2)
 		fi
 		num_files=$(ls $vcf/${sample}-* | wc -l)
