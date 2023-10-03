@@ -41,7 +41,7 @@ check_access () {
 ### Parser
 HELP="""
 Usage:
-bash ohdp_rename_files.sh -r <raw_illuima_server_data> -f <fasta_dir> -q <fastq_dir> -v <vcf_dir> -s <ncov_qc_summary_dir> [-t] [-y]
+bash find_and_rename_files.sh -r <raw_illuima_server_data> -f <fasta_dir> -q <fastq_dir> -v <vcf_dir> -s <ncov_qc_summary_dir> [-t] [-y]
 
 This scripts aims to copy over relevant sequencing files from the HHS Illumina server and rename the files accordingly. 
 
