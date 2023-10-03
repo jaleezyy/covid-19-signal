@@ -47,7 +47,7 @@ This scripts aims to copy over relevant sequencing files from the HHS Illumina s
 
 Flags:
 	-o  :  Output directory for all sequencing files. If blank, only the draft data will remain under $PWD/draft
-	-r  :  (Raw) Sequencing data from HHS Illumina server. Will override -f, -q, -v, -s flags and generate draft directory (see -o)
+	-r  :  (Raw) Sequencing data from HHS Illumina server and exit. Will override -f, -q, -v, -s flags and generate draft directory (see -o)
 	-f  :  Directory containing FASTA files
 	-q  :  Directory containing FASTQ files
 	-v  :  Directory containing VCF files
