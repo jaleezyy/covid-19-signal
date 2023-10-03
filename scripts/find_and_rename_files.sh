@@ -161,8 +161,8 @@ if [ -d $fasta ]; then
 					smallest=$store
 				fi
 			done
-		find $fasta -name ${sample}-barcode${smallest}.* -exec rm {} \;
 		fi
+		find $fasta -name ${sample}-barcode${smallest}.* -exec rm {} \;
 	done
 
 	if [[ $autoyes == 'true' ]]; then
@@ -219,8 +219,8 @@ if [ -d $fastq ]; then
 					smallest=$store
 				fi
 			done
-		find $fastq -name ${sample}-barcode${smallest}_barcode${smallest}.* -exec rm {} \;
 		fi
+		find $fastq -name ${sample}-barcode${smallest}_barcode${smallest}.* -exec rm {} \;
 	done
 
 	if [[ $autoyes == 'true' ]]; then
@@ -282,8 +282,8 @@ if [ -d $vcf ]; then
 					smallest=$store
 				fi
 			done
-		find $vcf -name ${sample}-barcode${smallest}.* -exec rm {} \;
 		fi
+		find $vcf -name ${sample}-barcode${smallest}.* -exec rm {} \;
 	done
 
 	if [[ $autoyes == 'true' ]]; then
