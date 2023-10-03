@@ -112,20 +112,28 @@ if [[ $raw_data != 0 ]]; then
 	if [ -d $fasta ]; then
 		rm -r $fasta
 		mkdir -p $fasta
+	else
+		mkdir -p $fasta 
 	fi
 	find $raw_data -name *.consensus.fasta -exec cp {} $fasta \;
 	if  [ -d $fastq ]; then
 		rm -r $fastq
+		mkdir -p $fastq
+	else
 		mkdir -p $fastq
 	fi
 	find $raw_data -name *.fastq -exec cp {} $fastq \;
 	if [ -d $vcf ]; then
 		rm -r $vcf
 		mkdir -p $vcf
+	else
+		mkdir -p $vcf
 	fi
 	find $raw_data -name *.ann.vcf -exec cp {} $vcf \;
 	if [ -d $qc ]; then
 		rm -r $qc
+		mkdir -p $qc
+	else
 		mkdir -p $qc
 	fi
 	find $raw_data -name *.tsv -exec cp {} $qc \;
