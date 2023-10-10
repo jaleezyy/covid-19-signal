@@ -340,7 +340,7 @@ if [ -d $qc ]; then
 				echo -e "Missing ${sample}_mixture_report.tsv!"
 			fi
 			if [ ! -f $qc/"${sample}_negative_control_report.tsv" ]; then
-				echo -e "Missing ${sample}_negative_report.tsv!"
+				echo -e "Missing ${sample}_negative_control_report.tsv!"
 			fi
 			if [ ! -f $qc/"${sample}_summary_qc.tsv" ]; then
 				echo -e "Missing ${sample}_summary_qc.tsv!"
