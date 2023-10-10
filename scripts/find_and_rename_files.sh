@@ -147,6 +147,7 @@ fi
 ### Rename files
 # FASTA
 if [ -d $fasta ]; then
+	echo "FASTA files:"
 	### Remove duplicate samples
 	echo "Removing duplicates..."
 	for file in $fasta/*; do
@@ -205,6 +206,7 @@ if [ -d $fasta ]; then
 fi
 # FASTQ
 if [ -d $fastq ]; then
+	echo "FASTQ files:"
 	### Remove duplicate samples
 	echo "Removing duplicates..."
 	for file in $fastq/*; do
@@ -268,6 +270,7 @@ if [ -d $fastq ]; then
 fi
 # VCF
 if [ -d $vcf ]; then
+	echo "VCF files:"
 	### Remove duplicate samples
 	echo "Removing duplicates..."
 	for file in $vcf/*; do
@@ -325,6 +328,7 @@ if [ -d $vcf ]; then
 fi
 # QC Check
 if [ -d $qc ]; then
+	echo "NCOV_QC files:"
 	last=0
 	for file in $qc/*; do
 		sample=$(basename $file | cut -d_ -f1,2)
