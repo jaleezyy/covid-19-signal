@@ -326,7 +326,7 @@ fi
 # QC Check
 if [ -d $qc ]; then
 	last=0
-	for file in $qc/*; then
+	for file in $qc/*; do
 		sample=$(basename $file | cut -d_ -f1,2)
 		if [ $sample != $last ]; then
 			if [ ! -f $qc/"${sample}_ambiguous_position_report.tsv" ]; then
