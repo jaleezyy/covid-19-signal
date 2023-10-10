@@ -53,7 +53,7 @@ Flags:
 	-v  :  Directory containing VCF files
 	-s  :  Directory containing NCOV_TOOLS QC summary files
 	-t  :  DEBUG ONLY: Disable all input parameters. Check for access.
-	-y  :  Automatically answer "yes" for all checkpoint choices
+	-y  :  Automatically answer 'yes' for all checkpoint choices
 
 Credits: Script developed by Jalees A. Nasir, McArthur Lab, @Jaleezyy, 2023
 """
@@ -137,7 +137,11 @@ if [[ $raw_data != 0 ]]; then
 	else
 		mkdir -p $qc
 	fi
-	find $raw_data -name *.tsv -exec cp {} $qc \;
+	#find $raw_data -name *.tsv -exec cp {} $qc \;
+	find $raw_data -name *_ambiguous_position_report.tsv -exec cp {} $qc \;
+	find $raw_data -name *_mixture_report.tsv -exec cp {} $qc \;
+	find $raw_data -name *_negative_control_report.tsv -exec cp {} $qc \;
+	find $raw_data -name *_summary_qc.tsv -exec cp {} $qc \;
 fi
 
 ### Rename files
