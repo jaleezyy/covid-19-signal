@@ -324,8 +324,26 @@ if [ -d $vcf ]; then
 	fi
 fi
 # QC Check
-if [ ! -d $qc ]; then	
-	echo "NCOV_TOOLS QC reports not found as expected!"
+if [ -d $qc ]; then
+	last=0
+	for file in $qc/*; then
+		sample=$(basename $file | cut -d_ -f1,2)
+		if [ $sample != $last ]; then
+			if [ ! -f $qc/"${sample}_ambiguous_position_report.tsv" ]; then
+				echo -e "Missing ${sample}_ambiguous_position_report.tsv!"
+			fi
+			if [ ! -f $qc/"${sample}_mixture_report.tsv" ]; then
+				echo -e "Missing ${sample}_mixture_report.tsv!"
+			fi
+			if [ ! -f $qc/"${sample}_negative_control_report.tsv" ]; then
+				echo -e "Missing ${sample}_negative_report.tsv!"
+			fi
+			if [ ! -f $qc/"${sample}_summary_qc.tsv" ]; then
+				echo -e "Missing ${sample}_summary_qc.tsv!"
+			fi
+			last=$sample
+		fi
+	done
 fi
 
 if [[ $output != 0 ]]; then
