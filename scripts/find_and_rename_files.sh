@@ -56,6 +56,7 @@ Flags:
 	-y  :  Automatically answer 'yes' for all checkpoint choices
 
 Credits: Script developed by Jalees A. Nasir, McArthur Lab, @Jaleezyy, 2023
+Version: 1.1
 """
 
 while getopts ":o:r:f:q:v:s:ty" option; do
@@ -174,7 +175,7 @@ if [ -d $fasta ]; then
 	if [[ $autoyes == 'true' ]]; then
 		cd $fasta
 		echo "Renaming samples..."
-		rename 's/^1/ON-HRL-22-1/g' *
+		rename 's/^1/ON-HRL-23-1/g' *
 		rename 's/-barcode\d*\./-v1_/g' *
 
 		echo "Renaming controls..."
@@ -185,8 +186,8 @@ if [ -d $fasta ]; then
 	else 
 		cd $fasta
 		echo "Renaming samples..."
-		rename -n 's/^1/ON-HRL-22-1/g' *
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-22-1/g' * || 
+		rename -n 's/^1/ON-HRL-23-1/g' *
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-23-1/g' * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
 		rename -n 's/-barcode\d*\./-v1_/g' *
@@ -233,7 +234,7 @@ if [ -d $fastq ]; then
 	if [[ $autoyes == 'true' ]]; then
 		cd $fastq
 		echo "Renaming samples..."
-		rename 's/^1/ON-HRL-22-1/g' *
+		rename 's/^1/ON-HRL-23-1/g' *
 		rename 's/-barcode\d*_barcode\d*\.fastq/-v1\.fq/g' *
 
 		echo "Renaming controls..."
@@ -246,8 +247,8 @@ if [ -d $fastq ]; then
 	else
 		cd $fastq
 		echo "Renaming samples..."
-		rename -n 's/^1/ON-HRL-22-1/g' *
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-22-1/g' * || 
+		rename -n 's/^1/ON-HRL-23-1/g' *
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-23-1/g' * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
 		rename -n 's/-barcode\d*_barcode\d*\.fastq/-v1\.fq/g' *
@@ -297,7 +298,7 @@ if [ -d $vcf ]; then
 	if [[ $autoyes == 'true' ]]; then
 		cd $vcf
 		echo "Renaming samples..."
-		rename 's/^1/ON-HRL-22-1/g' *
+		rename 's/^1/ON-HRL-23-1/g' *
 		rename 's/-barcode\d*\.ann/-v1/g' *
 
 		echo "Renaming controls..."
@@ -307,8 +308,8 @@ if [ -d $vcf ]; then
 	else
 		cd $vcf
 		echo "Renaming samples..."
-		rename -n 's/^1/ON-HRL-22-1/g' *
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-22-1/g' * || 
+		rename -n 's/^1/ON-HRL-23-1/g' *
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-23-1/g' * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
 		rename -n 's/-barcode\d*\.ann/-v1/g' *
