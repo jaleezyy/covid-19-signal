@@ -99,9 +99,9 @@ if [[ $raw_data == 0 ]] && [[ $fasta == 0 || $fastq == 0 || $vcf == 0 || $qc == 
 fi
 
 ### Password check
-pass_var="Enter password: "
-password=''
-check_access
+#pass_var="Enter password: "
+#password=''
+#check_access
 
 if [[ $raw_data != 0 ]]; then
 	echo "Generating draft data directory $PWD/draft"
