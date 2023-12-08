@@ -232,7 +232,8 @@ if [ -d $fastq ]; then
 		cd -
 
 		echo "Zipping..."
-		gzip $fastq/*
+		# gzip $fastq/*
+		parallel -j ${maxthreads} --gnu pigz -p ${maxthreads} ::: $fastq/*
 	else
 		cd $fastq
 		echo "Renaming samples..."
