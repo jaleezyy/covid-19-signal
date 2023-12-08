@@ -11,22 +11,11 @@ vcf=0
 qc=0
 test='false'
 autoyes='false'
+maxthreads=$(nproc --all)
 
 ### Functions
 
 check_access () {
-	# -r read; -p echo input; -s silent mode; -n no newline
-	#while IFS= read -p "$pass_var" -r -s -n 1 letter; do
-	#	if [[ $letter == $'\0' ]]; then
-	#		break
-	#	fi
-
-		# store password
-	#	password=password+"$letter"
-
-		# put * in place
-	#	pass_var="*"
-	#done
 	read -p "$pass_var" -s password
 	hash=$(echo -n $password | md5sum | cut -d' ' -f1 | tr -d '\n')
 	#echo $hash
@@ -99,9 +88,9 @@ if [[ $raw_data == 0 ]] && [[ $fasta == 0 || $fastq == 0 || $vcf == 0 || $qc == 
 fi
 
 ### Password check
-pass_var="Enter password: "
-password=''
-check_access
+#pass_var="Enter password: "
+#password=''
+#check_access
 
 if [[ $raw_data != 0 ]]; then
 	echo "Generating draft data directory $PWD/draft"
@@ -266,7 +255,8 @@ if [ -d $fastq ]; then
 		cd -
 
 		echo "Zipping..."
-		gzip $fastq/*
+		#gzip $fastq/*
+		parallel -j ${maxthreads} --gnu pigz -p ${maxthreads} ::: $fastq/*
 	fi
 fi
 # VCF
@@ -358,11 +348,10 @@ if [[ $output != 0 ]]; then
 			mkdir -p $output
 		else
 			read -p "Do you wish to overwrite ${output} (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && 
-			rm -r $output && mkdir $output || 
-			echo -e "\nPlease update output directory and try again!" && exit 1
+			rm -r $output && mkdir -p $output || exit 1
 		fi
 	else
-		mkdir $output
+		mkdir -p $output
 	fi
 
 	if [ -d $fasta ]; then
