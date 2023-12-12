@@ -234,6 +234,7 @@ if [ -d $fastq ]; then
 		cd -
 
 		echo "Zipping..."
+		echo "WARNING: system performace may be slow during this step!"
 		# gzip $fastq/*
 		parallel -j ${maxthreads} --gnu pigz -p ${maxthreads} ::: $fastq/*
 	else
@@ -258,6 +259,7 @@ if [ -d $fastq ]; then
 		cd -
 
 		echo "Zipping..."
+		echo "WARNING: system performace may be slow during this step!"
 		#gzip $fastq/*
 		parallel -j ${maxthreads} --gnu pigz -p ${maxthreads} ::: $fastq/*
 	fi
