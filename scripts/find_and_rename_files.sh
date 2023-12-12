@@ -45,7 +45,7 @@ Flags:
 	-y  :  Automatically answer 'yes' for all checkpoint choices
 
 Credits: Script developed by Jalees A. Nasir, McArthur Lab, @Jaleezyy, 2023
-Version: 1.1
+Version: 1.1.1
 """
 
 while getopts ":o:r:f:q:v:s:ty" option; do
