@@ -136,6 +136,7 @@ fi
 
 ### Rename files
 # FASTA
+# Final output: ON-HRL-23-<barcode>-v1_consensus.fasta
 if [ -d $fasta ]; then
 	echo "FASTA files:"
 	### Remove duplicate samples
@@ -195,6 +196,7 @@ if [ -d $fasta ]; then
 	fi
 fi
 # FASTQ
+# Final output: ON-HRL-23-<barcode>-v1.fq.gz
 if [ -d $fastq ]; then
 	echo "FASTQ files:"
 	### Remove duplicate samples
@@ -261,6 +263,7 @@ if [ -d $fastq ]; then
 	fi
 fi
 # VCF
+# Final output: ON-HRL-23-<barcode>-v1.vcf
 if [ -d $vcf ]; then
 	echo "VCF files:"
 	### Remove duplicate samples
