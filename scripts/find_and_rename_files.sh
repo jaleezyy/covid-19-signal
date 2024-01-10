@@ -136,7 +136,7 @@ fi
 
 ### Rename files
 # FASTA
-# Final output: ON-HRL-23-<barcode>-v1_consensus.fasta
+# Final output: ON-HRL-24-<barcode>-v1_consensus.fasta
 if [ -d $fasta ]; then
 	echo "FASTA files:"
 	### Remove duplicate samples
@@ -165,7 +165,7 @@ if [ -d $fasta ]; then
 	if [[ $autoyes == 'true' ]]; then
 		cd $fasta
 		echo "Renaming samples..."
-		rename 's/^1/ON-HRL-23-1/g' *
+		rename 's/^1/ON-HRL-24-1/g' *
 		rename 's/-barcode\d*\./-v1_/g' *
 
 		echo "Renaming controls..."
@@ -177,7 +177,7 @@ if [ -d $fasta ]; then
 		cd $fasta
 		echo "Renaming samples..."
 		rename -n 's/^1/ON-HRL-23-1/g' *
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-23-1/g' * || 
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-24-1/g' * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
 		rename -n 's/-barcode\d*\./-v1_/g' *
@@ -196,7 +196,7 @@ if [ -d $fasta ]; then
 	fi
 fi
 # FASTQ
-# Final output: ON-HRL-23-<barcode>-v1.fq.gz
+# Final output: ON-HRL-24-<barcode>-v1.fq.gz
 if [ -d $fastq ]; then
 	echo "FASTQ files:"
 	### Remove duplicate samples
@@ -225,7 +225,7 @@ if [ -d $fastq ]; then
 	if [[ $autoyes == 'true' ]]; then
 		cd $fastq
 		echo "Renaming samples..."
-		rename 's/^1/ON-HRL-23-1/g' *
+		rename 's/^1/ON-HRL-24-1/g' *
 		rename 's/-barcode\d*_barcode\d*\.fastq/-v1\.fq/g' *
 
 		echo "Renaming controls..."
@@ -240,8 +240,8 @@ if [ -d $fastq ]; then
 	else
 		cd $fastq
 		echo "Renaming samples..."
-		rename -n 's/^1/ON-HRL-23-1/g' *
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-23-1/g' * || 
+		rename -n 's/^1/ON-HRL-24-1/g' *
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-24-1/g' * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
 		rename -n 's/-barcode\d*_barcode\d*\.fastq/-v1\.fq/g' *
@@ -265,7 +265,7 @@ if [ -d $fastq ]; then
 	fi
 fi
 # VCF
-# Final output: ON-HRL-23-<barcode>-v1.vcf
+# Final output: ON-HRL-24-<barcode>-v1.vcf
 if [ -d $vcf ]; then
 	echo "VCF files:"
 	### Remove duplicate samples
@@ -294,7 +294,7 @@ if [ -d $vcf ]; then
 	if [[ $autoyes == 'true' ]]; then
 		cd $vcf
 		echo "Renaming samples..."
-		rename 's/^1/ON-HRL-23-1/g' *
+		rename 's/^1/ON-HRL-24-1/g' *
 		rename 's/-barcode\d*\.ann/-v1/g' *
 
 		echo "Renaming controls..."
@@ -304,8 +304,8 @@ if [ -d $vcf ]; then
 	else
 		cd $vcf
 		echo "Renaming samples..."
-		rename -n 's/^1/ON-HRL-23-1/g' *
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-23-1/g' * || 
+		rename -n 's/^1/ON-HRL-24-1/g' *
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-24-1/g' * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
 		rename -n 's/-barcode\d*\.ann/-v1/g' *
