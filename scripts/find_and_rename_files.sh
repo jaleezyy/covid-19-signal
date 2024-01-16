@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+### TODO: Update script to look for >2 files and select latest barcode
+
 shopt -s extglob
 
 valid='2912419cba616797ed5f2a82c095e6e6'
@@ -12,6 +14,7 @@ qc=0
 test='false'
 autoyes='false'
 maxthreads=$(nproc --all)
+legacy='false'
 
 ### Functions
 
@@ -37,18 +40,19 @@ This scripts aims to copy over relevant sequencing files from the HHS Illumina s
 Flags:
 	-o  :  Output directory for all sequencing files. If blank, only the draft data will remain under $PWD/draft
 	-r  :  (Raw) Sequencing data from HHS Illumina server. Will override -f, -q, -v, -s flags and generate draft directory (see -o)
-	-f  :  Directory containing FASTA files
-	-q  :  Directory containing FASTQ files
-	-v  :  Directory containing VCF files
-	-s  :  Directory containing NCOV_TOOLS QC summary files
+	-f  :  Directory containing FASTA files only
+	-q  :  Directory containing FASTQ files only
+	-v  :  Directory containing VCF files only
+	-s  :  Directory containing NCOV_TOOLS QC summary files only
+	-l  :  Use legacy (pre-2024) naming structure (i.e., ON-HRL-24-*) instead of current (i.e., ON-HRL-SC2-2024-*)
 	-t  :  DEBUG ONLY: Disable all input parameters. Check for access.
 	-y  :  Automatically answer 'yes' for all checkpoint choices
 
 Credits: Script developed by Jalees A. Nasir, McArthur Lab, @Jaleezyy, 2023
-Version: 1.1.1
+Version: 1.2
 """
 
-while getopts ":o:r:f:q:v:s:ty" option; do
+while getopts ":o:r:f:q:v:s:lty" option; do
 	case "${option}" in
 		o) output=$OPTARG;;
 		r) raw_data=$OPTARG;;
@@ -56,6 +60,7 @@ while getopts ":o:r:f:q:v:s:ty" option; do
         q) fastq=$OPTARG;;
         v) vcf=$OPTARG;;
 		s) qc=$OPTARG;;
+		l) legacy='true';;
         t) test='true';;
 		y) autoyes='true';;
 	esac
@@ -91,6 +96,13 @@ fi
 #pass_var="Enter password: "
 #password=''
 #check_access
+
+### Check output format (TODO FOR 2024 FILENAME CHNAGES)
+if [[ $legacy == 'true' ]]; then
+	format='s/^1/ON-HRL-24-1/g'
+else
+	format='s/^1/ON-HRL-SC2-2024-1/g'
+fi
 
 if [[ $raw_data != 0 ]]; then
 	echo "Generating draft data directory $PWD/draft"
@@ -136,7 +148,7 @@ fi
 
 ### Rename files
 # FASTA
-# Final output: ON-HRL-24-<barcode>-v1_consensus.fasta
+# Final output: ON-HRL-SC2-2024-<barcode>-v1_consensus.fasta
 if [ -d $fasta ]; then
 	echo "FASTA files:"
 	### Remove duplicate samples
@@ -165,7 +177,7 @@ if [ -d $fasta ]; then
 	if [[ $autoyes == 'true' ]]; then
 		cd $fasta
 		echo "Renaming samples..."
-		rename 's/^1/ON-HRL-24-1/g' *
+		rename $format * 
 		rename 's/-barcode\d*\./-v1_/g' *
 
 		echo "Renaming controls..."
@@ -176,8 +188,8 @@ if [ -d $fasta ]; then
 	else 
 		cd $fasta
 		echo "Renaming samples..."
-		rename -n 's/^1/ON-HRL-23-1/g' *
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-24-1/g' * || 
+		rename -n 's/^1/ON-HRL-24-1/g' *
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename $format * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
 		rename -n 's/-barcode\d*\./-v1_/g' *
@@ -196,7 +208,7 @@ if [ -d $fasta ]; then
 	fi
 fi
 # FASTQ
-# Final output: ON-HRL-24-<barcode>-v1.fq.gz
+# Final output: ON-HRL-23-<barcode>-v1.fq.gz
 if [ -d $fastq ]; then
 	echo "FASTQ files:"
 	### Remove duplicate samples
@@ -225,7 +237,7 @@ if [ -d $fastq ]; then
 	if [[ $autoyes == 'true' ]]; then
 		cd $fastq
 		echo "Renaming samples..."
-		rename 's/^1/ON-HRL-24-1/g' *
+		rename $format * 
 		rename 's/-barcode\d*_barcode\d*\.fastq/-v1\.fq/g' *
 
 		echo "Renaming controls..."
@@ -241,7 +253,7 @@ if [ -d $fastq ]; then
 		cd $fastq
 		echo "Renaming samples..."
 		rename -n 's/^1/ON-HRL-24-1/g' *
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-24-1/g' * || 
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename $format * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
 		rename -n 's/-barcode\d*_barcode\d*\.fastq/-v1\.fq/g' *
@@ -265,7 +277,7 @@ if [ -d $fastq ]; then
 	fi
 fi
 # VCF
-# Final output: ON-HRL-24-<barcode>-v1.vcf
+# Final output: ON-HRL-23-<barcode>-v1.vcf
 if [ -d $vcf ]; then
 	echo "VCF files:"
 	### Remove duplicate samples
@@ -294,7 +306,7 @@ if [ -d $vcf ]; then
 	if [[ $autoyes == 'true' ]]; then
 		cd $vcf
 		echo "Renaming samples..."
-		rename 's/^1/ON-HRL-24-1/g' *
+		rename $format * 
 		rename 's/-barcode\d*\.ann/-v1/g' *
 
 		echo "Renaming controls..."
@@ -305,7 +317,7 @@ if [ -d $vcf ]; then
 		cd $vcf
 		echo "Renaming samples..."
 		rename -n 's/^1/ON-HRL-24-1/g' *
-		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename 's/^1/ON-HRL-24-1/g' * || 
+		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename $format * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
 		rename -n 's/-barcode\d*\.ann/-v1/g' *
