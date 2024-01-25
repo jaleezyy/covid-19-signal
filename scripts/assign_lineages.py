@@ -47,18 +47,19 @@ def update_pangolin(vers):
 	script = os.path.join(script_dir, "pangolin_specific_version_update.py")
 	subprocess.run([script, '--versions_file', vers])
 
-def nextclade_tag(dir):
+def nextclade_tag(dir, version):
 	"""
-	Pull tag value for Nextclade datasets
+	Pull tag value for Nextclade datasets. Use last_known_ver to determine whether tag.json or pathogens.json should be prioritized when determining last known setup
 	"""
+	last_known_ver = version.split(".")[0]
 	# NextClade Dataset V2
-	if os.path.exists(os.path.join(dir, 'tag.json')):
+	if os.path.exists(os.path.join(dir, 'tag.json')) and int(last_known_ver) < 3:
 		j = open(os.path.join(dir, 'tag.json'))
 		data = json.load(j)
 		tag = data['tag']
 		j.close()
-	# NextClade Dataset V3
-	elif os.path.exists(os.path.join(dir, 'pathogen.json')):
+	# NextClade Dataset V3+
+	elif os.path.exists(os.path.join(dir, 'pathogen.json')) and int(last_known_ver) >= 3:
 		j = open(os.path.join(dir, 'pathogen.json'))
 		data = json.load(j)
 		tag = data['version']['tag']
@@ -100,6 +101,7 @@ def update_nextclade_dataset(vers, skip):
 						stdout=subprocess.PIPE).stdout.decode('utf-8').strip().lower()
 	if nc_version.startswith("nextclade"):
 		nc_version = nc_version.split()[1]
+	current_tag = nextclade_tag(output_dir, nc_version) # assign current tag to existing version (last known version and thus dataset should likely match)
 
 	if skip or (vers is None):
 		return output_dir, nc_version
@@ -197,7 +199,7 @@ def update_nextclade_dataset(vers, skip):
 		dataset = 'sars-cov-2'
 
 	# If specific tag requested, attempt to install, otherwise install latest
-	current_tag = nextclade_tag(output_dir)
+	
 	
 	# Generate the command for 'nextclade dataset get'
 	cmd = nextclade_dataset_flags(dataset, output_dir, requested, updated_nc)

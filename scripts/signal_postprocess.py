@@ -22,7 +22,10 @@ short_git_id = "v1.6.3"
 # Suppresses matplotlib warning (https://github.com/jaleezyy/covid-19-signal/issues/59)
 # Creates a small memory leak, but it's nontrivial to fix, and won't be a practical concern!
 plt.rcParams.update({'figure.max_open_warning': 0})
-plt.style.use('seaborn-whitegrid')
+try:
+	plt.style.use('seaborn-whitegrid')
+except OSError: # styles need an update will finalize if matplotlib version hardcoded
+	plt.style.use('seaborn-v0_8-whitegrid')
 
 
 ########################    Helper functions/classes for text file parsing   #######################

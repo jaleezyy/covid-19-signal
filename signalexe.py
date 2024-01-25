@@ -25,7 +25,7 @@ def create_parser():
 	parser.add_argument('ncov_tools', nargs='*',
 						help="Generate configuration file and filesystem setup required and then execute ncov-tools quality control assessment. Requires 'ncov-tools' submodule! '--configfile' is required but will be generated if '--directory' is provided")
 	parser.add_argument('install', nargs='*',
-						help="Install individual rule environments and ensure SIGNAL is functional. The only parameter operable will be '--data'. Will override other operations!")
+						help="Install individual rule environments and ensure SIGNAL is functional. The only parameters operable will be '--data' and '--unlock'. Will override other operations!")
 	parser.add_argument('-c', '--configfile', type=check_file, default=None,
 						help="Configuration file (i.e., config.yaml) for SIGNAL analysis")
 	parser.add_argument('-d', '--directory', type=check_directory, default=None,
@@ -225,13 +225,15 @@ pango-designation:
 pangolin-data:
 
 # Versions for Nextclade (software & datasets)
-# Software version (nextclade) should use numbers only (i.e., 1.11.0)
-# Be as specific as possible with the desired dataset tag (nextclade-data). Can accept dates (YYYY-mm-dd) alone, but will assume corresponding timestamp (HH:MM:SS) 
-# Typical tag format is YYYY-mm-ddTHH:MM:SSZ
+# nextclade: Software version. Input should use numbers only (i.e., 2.14.0)
+# nextclade-data: The nextclade dataset tag. Refer to available nextclade datasets. Accepted tag format is 'YYYY-mm-ddTHH:MM:SSZ'
+# Be as specific as possible with the desired dataset tag. Can accept dates (YYYY-mm-dd) alone, but will assume corresponding timestamp (HH:MM:SS). SIGNAL will automatically adjust between v2 and v3 dataset tag formats
 # Leave blank for latest versions
-# Setting nextclade-include-recomb to False will download the recombinant-sequence free version of the Nextclade database
 nextclade:
 nextclade-data:
+
+# Nextclade v2 only
+# nextclade-include-recomb: set to False will download the recombinant-sequence free version of the nextclade dataset
 nextclade-include-recomb: True
 
 # ANYTHING BELOW IS ONLY NEEDED IF USING NCOV-TOOLS SUMMARIES
@@ -247,14 +249,18 @@ negative_control_prefix: {opt_tasks[2]}"""
 	with open(config_file, 'w') as fh:
 		fh.write(config)
 
-def install_signal(frontend, data='data'):
+def install_signal(frontend, data='data', unlock=False):
 	"""
 	Install SIGNAL dependencies per rule and test using a sample dataset, if desired
 	"""
 	dep_snakefile = os.path.join(script_path, 'resources', 'dependencies')
 	assert os.path.exists(dep_snakefile)
 	try:
-		subprocess.run(f"snakemake -s {dep_snakefile} --conda-frontend {frontend} --cores 1 --use-conda --conda-prefix=$PWD/.snakemake/conda", shell=True, check=True)
+		if unlock:
+			subprocess.run(f"snakemake -s {dep_snakefile} --conda-frontend {frontend} --cores 1 --use-conda --conda-prefix=$PWD/.snakemake/conda --unlock", shell=True, check=True)
+			sys.exit(0)
+		else:
+			subprocess.run(f"snakemake -s {dep_snakefile} --conda-frontend {frontend} --cores 1 --use-conda --conda-prefix=$PWD/.snakemake/conda", shell=True, check=True)
 	except subprocess.CalledProcessError: 
 		print("Installation of environments failed!")
 		sys.exit(1)
@@ -278,7 +284,7 @@ if __name__ == '__main__':
 	conda_frontend = check_frontend() # 'mamba' or 'conda'
 	
 	if allowed['install']:
-		install_signal(conda_frontend, args.data)
+		install_signal(conda_frontend, args.data, args.unlock)
 		print("Installation of environments completed successfully!")
 		sys.exit(0)
 	
