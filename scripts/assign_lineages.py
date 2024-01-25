@@ -47,24 +47,47 @@ def update_pangolin(vers):
 	script = os.path.join(script_dir, "pangolin_specific_version_update.py")
 	subprocess.run([script, '--versions_file', vers])
 
-def nextclade_dataset_flags(dataset, output, tag=None, version='3'):
+def nextclade_tag(dir):
+	"""
+	Pull tag value for Nextclade datasets
+	"""
+	# NextClade Dataset V2
+	if os.path.exists(os.path.join(dir, 'tag.json')):
+		j = open(os.path.join(dir, 'tag.json'))
+		data = json.load(j)
+		tag = data['tag']
+		j.close()
+	# NextClade Dataset V3
+	elif os.path.exists(os.path.join(dir, 'pathogen.json')):
+		j = open(os.path.join(dir, 'pathogen.json'))
+		data = json.load(j)
+		tag = data['version']['tag']
+		j.close()
+	else:
+		tag = None
+	
+	return tag
+
+def nextclade_dataset_flags(dataset, output, tag="None", version='3'):
 	"""
 	Generate the necessary flags for a nextclade dataset get, based on existing Nextclade installation
 	"""
-	cmd = ['nextclade', 'dataset' 'get']
+	cmd = [f"nextclade dataset get"]
 	params = {'name': dataset,
 			'reference': 'MN908947',
-			'tag': tag
+			'tag': tag,
 			'output-dir': output
 			}
 	if int(version.split(".")[0]) > 2:
 		del params['reference']
 		
-	for p in params:
-		cmd.append(f"--{p}")
-		cmd.append(f"{params[p]}")
+	if params['tag'] is None or params['tag'] == "None":
+		del params['tag']
 		
-	return cmd
+	for p in params:
+		cmd.append(f"--{p} {params[p]}")
+		
+	return " ".join(cmd)
 
 def update_nextclade_dataset(vers, skip):
 	"""
@@ -90,7 +113,7 @@ def update_nextclade_dataset(vers, skip):
 		requested_ver = str(line[1].split(":", 1)[1]).strip()
 		recomb = eval(str(line[2].split(":")[1]).strip())
 
-	# check current version of nextclade, if failed, we stick with the latest
+	### check current version of nextclade, if failed, we stick with the latest
 	# search mamba/conda for latest version, this will be the default
 	# PackagesNotFoundError for invalid version
 	print("\n## Existing nextclade install:")
@@ -100,7 +123,7 @@ def update_nextclade_dataset(vers, skip):
 		if software_ver != "None": # specific version requested, check if available
 			try:
 				# pull specified version
-				softrequest = subprocess.check_output(f"{frontend} search -c bioconda -f nextclade={softrequest}", shell=True).split()[-3].strip().decode('utf-8')
+				softrequest = subprocess.check_output(f"{frontend} search -c bioconda -f nextclade={software_ver}", shell=True).split()[-3].strip().decode('utf-8')
 				# check if requested version is already installed
 				if softrequest == nc_version:
 					print(f"Nextclade {softrequest} already installed! Skipping update!")
@@ -129,9 +152,9 @@ def update_nextclade_dataset(vers, skip):
 	updated_nc = subprocess.run(f"nextclade --version".split(),
 						stdout=subprocess.PIPE).stdout.decode('utf-8').strip().lower()
 	if updated_nc.startswith("nextclade"):
-		updated_nc = updated_nc.split()[1].split(".")[0]
+		updated_nc = updated_nc.split()[1]
 
-	# check nextclade_ver, if None, assign today's date    
+	### check nextclade_ver (i.e., tag date), if None, assign today's date    
 	try:
 		if requested_ver != "None":
 			# assume yyyy-mm-dd (so only yyyy and mm expected to stay consistent)
@@ -153,7 +176,13 @@ def update_nextclade_dataset(vers, skip):
 			else: # only a date provided, assume timestamp
 				day = str(submitted_date[2])
 				tags = ["12", "00", "00"]
-			requested = str("%s-%s-%sT%s:%s:%sZ" %(year, month, day, tags[0], tags[1], tags[2]))
+			
+			if int(updated_nc.split(".")[0]) > 2: 
+				# NextClade V3+ conversion 
+				requested = str("%s-%s-%s--%s-%s-%sZ" %(year, month, day, tags[0], tags[1], tags[2]))
+			else:
+				# NextClade V2 conversion
+				requested = str("%s-%s-%sT%s:%s:%sZ" %(year, month, day, tags[0], tags[1], tags[2]))
 		else:
 			requested = None
 	except (AssertionError, TypeError, ValueError): 
@@ -161,30 +190,30 @@ def update_nextclade_dataset(vers, skip):
 		print(f"\nProvided Nextclade dataset tag invalid! Downloading latest...")
 		requested = None
 
+	### recomb only relevent for NextClade V2
 	if not recomb and int(final_software_version) < 3: # nextclade <=v2
 		dataset = 'sars-cov-2-no-recomb'
 	else:
 		dataset = 'sars-cov-2'
 
 	# If specific tag requested, attempt to install, otherwise install latest
-	current_tag = None
-	if os.path.exists(os.path.join(output_dir, 'tag.json')):
-		j = open(os.path.join(output_dir, 'tag.json'))
-		data = json.load(j)
-		current_tag = data['tag']
-		j.close()
+	current_tag = nextclade_tag(output_dir)
+	
+	# Generate the command for 'nextclade dataset get'
 	cmd = nextclade_dataset_flags(dataset, output_dir, requested, updated_nc)
+	
 	if requested is not None:
 		# check existing database, if found
 			if requested == current_tag:
 				print(f"Nextclade dataset {requested} already installed! Skipping update!")
 			else:
 				try:
-					print(f"\nDownloading Nextclade {dataset} dataset tagged {requested} for reference {dataset}!")
+					print(f"\nDownloading Nextclade dataset tagged {requested} for reference {dataset}!")
 					subprocess.run(cmd, shell=True, check=True)
 				except subprocess.CalledProcessError:
-					print(f"\nDatabase not found! Please check whether {requested} tag exists! Downloading latest Nextclade {dataset} dataset for reference {dataset}...")
+					print(f"\nDatabase not found! Please check whether {requested} tag exists! Downloading latest Nextclade dataset for reference {dataset}...")
 					try:
+						cmd = nextclade_dataset_flags(dataset, output_dir, version=updated_nc)
 						subprocess.run(cmd, shell=True, check=True)
 					except subprocess.CalledProcessError:
 						if current_tag is not None:
@@ -195,7 +224,7 @@ def update_nextclade_dataset(vers, skip):
 							requested = "Unknown"
 	else:
 		try:
-			print(f"\nDownloading latest Nextclade {dataset} dataset for reference {dataset}!")
+			print(f"\nDownloading latest Nextclade dataset for reference {dataset}!")
 			subprocess.run(cmd, shell=True, check=True)
 		except subprocess.CalledProcessError:
 			if current_tag is not None:
@@ -212,13 +241,13 @@ def update_nextclade_dataset(vers, skip):
 	with open('final_nextclade_versions.txt', 'w+') as out:
 		print("\n## Nextclade and datasets now:")
 		print("Nextclade: " + updated_nc)
-		print("Reference: %s" %(accession))
+		print("Reference: MN908947")
 		print("Dataset: %s" %(dataset))
 		print("Dataset version: %s" %(requested))
 		# Output to file
 		print("## Nextclade and datasets now:", file=out)
 		print("Nextclade: " + updated_nc, file=out)
-		print("Reference: %s" %(accession), file=out)
+		print("Reference: MN908947", file=out)
 		print("Dataset: %s" %(dataset), file=out)
 		print("Dataset version: %s" %(requested), file=out)
 
