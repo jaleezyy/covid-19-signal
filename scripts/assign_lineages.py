@@ -21,6 +21,13 @@ def check_file(path: str) -> Path:
 	else:
 		raise argparse.ArgumentTypeError(f"{path} can't be read")
 
+def check_frontend():
+	try:
+		subprocess.check_call(['mamba', 'list'], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+		return 'mamba'
+	except subprocess.CalledProcessError:
+		return 'conda'
+
 def update_latest_pangolin():
 	"""
 	Ensure pangolin is updated to the latest release
@@ -40,80 +47,103 @@ def update_pangolin(vers):
 	script = os.path.join(script_dir, "pangolin_specific_version_update.py")
 	subprocess.run([script, '--versions_file', vers])
 
-def update_nextclade():
+def nextclade_dataset_flags(dataset, output, tag=None, version='3'):
 	"""
-	DEPRECIATED!
-	Ensure nextclade is updated to the latest release
+	Generate the necessary flags for a nextclade dataset get, based on existing Nextclade installation
 	"""
-	subprocess.check_output(["npm", "install", "-g", "@neherlab/nextclade"])
+	cmd = ['nextclade', 'dataset' 'get']
+	params = {'name': dataset,
+			'reference': 'MN908947',
+			'tag': tag
+			'output-dir': output
+			}
+	if int(version.split(".")[0]) > 2:
+		del params['reference']
+		
+	for p in params:
+		cmd.append(f"--{p}")
+		cmd.append(f"{params[p]}")
+		
+	return cmd
 
 def update_nextclade_dataset(vers, skip):
 	"""
 	Ensure nextclade dataset is updated to the latest dataset, placed within scripts.
 	Reference accession will be set by params.accession (viral_reference_contig_name).
 	"""
+	frontend = check_frontend()
 	output_dir = os.path.join(os.path.dirname(sys.argv[0]), 'nextclade')
-	nextclade_version = subprocess.run(f"nextclade --version".split(),
+	nc_version = subprocess.run(f"nextclade --version".split(),
 						stdout=subprocess.PIPE).stdout.decode('utf-8').strip().lower()
-	if nextclade_version.startswith("nextclade"):
-		nextclade_version = nextclade_version.split()[1]
+	if nc_version.startswith("nextclade"):
+		nc_version = nc_version.split()[1]
 
 	if skip or (vers is None):
-		return output_dir, nextclade_version
+		return output_dir, nc_version
 	if not os.path.exists(output_dir):
 		os.mkdir(output_dir)
 	with open(vers) as fh:
 		line = fh.readlines()
-		assert len(line) == 3 # should only be nextclade, nextclade-data, and recomb
+		assert len(line) == 3 
+		# should only be nextclade, nextclade-data (i.e., tag), and recomb (version <3)
 		software_ver = str(line[0].split(":", 1)[1]).strip().lstrip('v')
 		requested_ver = str(line[1].split(":", 1)[1]).strip()
 		recomb = eval(str(line[2].split(":")[1]).strip())
 
 	# check current version of nextclade, if failed, we stick with the latest
-	# search conda for latest version, this will be the default
+	# search mamba/conda for latest version, this will be the default
 	# PackagesNotFoundError for invalid version
 	print("\n## Existing nextclade install:")
-	print("Nextclade: " + nextclade_version + "\n")
+	print("Nextclade: " + nc_version + "\n")
 	print("## Changing installed versions as needed:")
 	try:
 		if software_ver != "None": # specific version requested, check if available
 			try:
-				softrequest = subprocess.check_output(f"conda search -c bioconda -f nextclade", shell=True).split()[-3].strip().decode('utf-8')
-				# check if already installed
-				if softrequest == nextclade_version:
+				# pull specified version
+				softrequest = subprocess.check_output(f"{frontend} search -c bioconda -f nextclade={softrequest}", shell=True).split()[-3].strip().decode('utf-8')
+				# check if requested version is already installed
+				if softrequest == nc_version:
 					print(f"Nextclade {softrequest} already installed! Skipping update!")
 				else:
-					print(f"Changing Nextclade from {nextclade_version} to {softrequest}!")
-					subprocess.run(f"conda install -q -y -c bioconda nextclade={softrequest}", shell=True, check=True)
+					print(f"Changing Nextclade from {nc_version} to {softrequest}!")
+					subprocess.run(f"{frontend} install -q -y -c bioconda nextclade={softrequest}", shell=True, check=True)
 			except subprocess.CalledProcessError:
 				print("Cannot find version requested, will ensure latest version!")
-				softrequest = subprocess.check_output(f"conda search -c bioconda -f nextclade", shell=True).split()[-3].strip().decode('utf-8')
-				# check if already installed
-				if softrequest == nextclade_version:
+				softrequest = subprocess.check_output(f"{frontend} search -c bioconda -f nextclade", shell=True).split()[-3].strip().decode('utf-8')
+				# check if latest already installed
+				if softrequest == nc_version:
 					print(f"Nextclade {softrequest} already installed! Skipping update!")
 				else:
-					subprocess.run(f"conda install -q -y -c bioconda nextclade={softrequest}", shell=True, check=True)
+					subprocess.run(f"{frontend} install -q -y -c bioconda nextclade={softrequest}", shell=True, check=True)
 		else:
 			print(f"Installing latest version of Nextclade!")
-			softrequest = subprocess.check_output(f"conda search -c bioconda -f nextclade", shell=True).split()[-3].strip().decode('utf-8')
-			if softrequest == nextclade_version:
+			softrequest = subprocess.check_output(f"{frontend} search -c bioconda -f nextclade", shell=True).split()[-3].strip().decode('utf-8')
+			# check if latest is already installed
+			if softrequest == nc_version:
 				print(f"Nextclade {softrequest} already installed! Skipping update!")
 			else:
-				subprocess.run(f"conda install -q -y -c bioconda nextclade={softrequest}", shell=True, check=True)
+				subprocess.run(f"{frontend} install -q -y -c bioconda nextclade={softrequest}", shell=True, check=True)
 	except subprocess.CalledProcessError:
 		print(f"Something went wrong updating Nextclade! Skipping update!")
+		
+	updated_nc = subprocess.run(f"nextclade --version".split(),
+						stdout=subprocess.PIPE).stdout.decode('utf-8').strip().lower()
+	if updated_nc.startswith("nextclade"):
+		updated_nc = updated_nc.split()[1].split(".")[0]
 
 	# check nextclade_ver, if None, assign today's date    
 	try:
 		if requested_ver != "None":
-			# assume yyyy-mm-dd (so only yyyy and mm expected to stay ccnsistent)
+			# assume yyyy-mm-dd (so only yyyy and mm expected to stay consistent)
 			submitted = requested_ver.split("-")
 			submitted_date = [s.strip() for s in submitted]
 			assert len(submitted_date) == 3
 			year = str(submitted_date[0])
 			month = str(submitted_date[1])
-			if (len(submitted_date[2].split(" ")) == 2) or (len(submitted_date[2].split("T")) == 2): # date and time part of provided tag
-				if submitted_date[2].count("T") == 1: # only applies if starting input was in quotations itself in the config file
+			if (len(submitted_date[2].split(" ")) == 2) or (len(submitted_date[2].split("T")) == 2): 
+			# date and time part of provided tag
+				if submitted_date[2].count("T") == 1: 
+				# only applies if starting input was in quotations itself in the config file
 					day = str(submitted_date[2]).split("T")[0].strip()
 					timestamp = str(submitted_date[2]).split("T")[1].split("+", 1)[0].split(":")
 				else: 
@@ -126,85 +156,73 @@ def update_nextclade_dataset(vers, skip):
 			requested = str("%s-%s-%sT%s:%s:%sZ" %(year, month, day, tags[0], tags[1], tags[2]))
 		else:
 			requested = None
-	except (AssertionError, TypeError, ValueError): # some other input that isn't in yyyy-mm-dd date format
+	except (AssertionError, TypeError, ValueError): 
+	# some other input that isn't in yyyy-mm-dd date format
 		print(f"\nProvided Nextclade dataset tag invalid! Downloading latest...")
 		requested = None
 
-	if recomb:
-		dataset = 'sars-cov-2'
-	else:
+	if not recomb and int(final_software_version) < 3: # nextclade <=v2
 		dataset = 'sars-cov-2-no-recomb'
+	else:
+		dataset = 'sars-cov-2'
 
 	# If specific tag requested, attempt to install, otherwise install latest
-	accession = 'MN908947'
 	current_tag = None
 	if os.path.exists(os.path.join(output_dir, 'tag.json')):
 		j = open(os.path.join(output_dir, 'tag.json'))
 		data = json.load(j)
 		current_tag = data['tag']
 		j.close()
+	cmd = nextclade_dataset_flags(dataset, output_dir, requested, updated_nc)
 	if requested is not None:
 		# check existing database, if found
 			if requested == current_tag:
 				print(f"Nextclade dataset {requested} already installed! Skipping update!")
 			else:
 				try:
-					print(f"\nDownloading Nextclade {dataset} dataset tagged {requested} for reference {accession}!")
-					subprocess.run(f"nextclade dataset get "
-								f"--name '{dataset}' "
-								f"--reference '{accession}' "
-								f"--tag {requested} "
-								f"--output-dir '{output_dir}'", shell=True, check=True)
+					print(f"\nDownloading Nextclade {dataset} dataset tagged {requested} for reference {dataset}!")
+					subprocess.run(cmd, shell=True, check=True)
 				except subprocess.CalledProcessError:
-					print(f"\nDatabase not found! Please check whether {requested} tag exists! Downloading latest Nextclade {dataset} dataset for reference {accession}...")
+					print(f"\nDatabase not found! Please check whether {requested} tag exists! Downloading latest Nextclade {dataset} dataset for reference {dataset}...")
 					try:
-						subprocess.run(f"nextclade dataset get "
-									f"--name '{dataset}' "
-									f"--reference '{accession}' "
-									f"--output-dir '{output_dir}'", shell=True, check=True)
+						subprocess.run(cmd, shell=True, check=True)
 					except subprocess.CalledProcessError:
 						if current_tag is not None:
-							print(f"Something went wrong updating the Nextclade dataset, using {current_tag} instead!")
+							print(f"Something went wrong updating the Nextclade dataset, using existing {current_tag} instead!")
 							requested = current_tag
 						else:
 							print(f"Something went wrong updating the Nextclade dataset! No database could be found which may result in errors! Skipping update...")
 							requested = "Unknown"
 	else:
 		try:
-			print(f"\nDownloading latest Nextclade {dataset} dataset for reference {accession}!")
-			subprocess.run(f"nextclade dataset get "
-						f"--name '{dataset}' "
-						f"--reference '{accession}' "
-						f"--output-dir '{output_dir}'", shell=True, check=True)
+			print(f"\nDownloading latest Nextclade {dataset} dataset for reference {dataset}!")
+			subprocess.run(cmd, shell=True, check=True)
 		except subprocess.CalledProcessError:
 			if current_tag is not None:
-				print(f"Something went wrong updating the Nextclade dataset, using {current_tag} instead!")
+				print(f"Something went wrong updating the Nextclade dataset, using existing {current_tag} instead!")
 				requested = current_tag
 			else:
 				print(f"Something went wrong updating the Nextclade dataset! No database could be found which may result in errors! Skipping update...")
 				requested = "Unknown"
 	
 	# Obtain final version information for output
-	nextclade_version = subprocess.run(f"nextclade --version".split(), stdout=subprocess.PIPE).stdout.decode('utf-8').strip().lower()
-	if nextclade_version.startswith("nextclade"):
-		nextclade_version = nextclade_version.split()[1]
 	if requested is None:
 		today = datetime.today().strftime('%Y-%m-%d')
 		requested = f"Latest as of {today}"
 	with open('final_nextclade_versions.txt', 'w+') as out:
 		print("\n## Nextclade and datasets now:")
-		print("Nextclade: " + nextclade_version)
+		print("Nextclade: " + updated_nc)
 		print("Reference: %s" %(accession))
 		print("Dataset: %s" %(dataset))
 		print("Dataset version: %s" %(requested))
 		# Output to file
 		print("## Nextclade and datasets now:", file=out)
-		print("Nextclade: " + nextclade_version, file=out)
+		print("Nextclade: " + updated_nc, file=out)
 		print("Reference: %s" %(accession), file=out)
 		print("Dataset: %s" %(dataset), file=out)
 		print("Dataset version: %s" %(requested), file=out)
 
-	return output_dir, nextclade_version
+	return output_dir, updated_nc
 
 
 def run_nextclade(input_genomes, dataset, threads, version):
@@ -216,7 +234,7 @@ def run_nextclade(input_genomes, dataset, threads, version):
 	# run altered commands for Nextclade v1 and v2+
 	if version.startswith("1"):
 		subprocess.check_output(f"nextclade -i {input_genomes} -j {threads} --input-dataset {dataset} -c {str(output_file)} --output-dir {output_dir}".split(), stderr=subprocess.DEVNULL)
-	elif version.startswith("2"):
+	elif version.startswith("2") or version.startswith("3"):
 		subprocess.check_output(f"nextclade run -j {threads} --input-dataset {dataset} -c {str(output_file)} {input_genomes}".split(), stderr=subprocess.DEVNULL)
 	else:
 		print("Unknown version of nextclade!")
@@ -226,8 +244,6 @@ def run_nextclade(input_genomes, dataset, threads, version):
 	nextclade_df = pd.read_csv(str(output_file), sep=";")
 
 	# get version information
-	#nextclade_version = subprocess.run(f"nextclade --version".split(), stdout=subprocess.PIPE)
-	#nextclade_version = nextclade_version.stdout.decode('utf-8').strip()
 	nextclade_df['nextclade_version'] = f"nextclade {version}"
 
 	# tidy up dataframe
