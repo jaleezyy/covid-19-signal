@@ -100,7 +100,7 @@ positional arguments:
   postprocess           Run SIGNAL postprocessing on completed SIGNAL run. '--configfile' is required but will be generated if '--directory' is provided
   ncov_tools            Generate configuration file and filesystem setup required and then execute ncov-tools quality control assessment. Requires 'ncov-tools' submodule! '--configfile' is required
                         but will be generated if '--directory' is provided
-  install               Install individual rule environments and ensure SIGNAL is functional. The only parameter operable will be '--data'. Will override other operations!
+  install               Install individual rule environments and ensure SIGNAL is functional. The only parameters operable will be '--data' and '--unlock'. Will override other operations!
 
 optional arguments:
   -h, --help            show this help message and exit
