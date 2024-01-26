@@ -49,22 +49,34 @@ def update_pangolin(vers):
 
 def nextclade_tag(dir, version):
 	"""
-	Pull tag value for Nextclade datasets. Use last_known_ver to determine whether tag.json or pathogens.json should be prioritized when determining last known setup
+	Pull tag value for Nextclade datasets. Use last_known_ver to determine whether tag.json or pathogens.json should be prioritized. Remove any residual files of the other dataset version to minimize conflicts. 
 	"""
 	last_known_ver = version.split(".")[0]
+	v2 = ['tag.json', 'primers.csv', 'qc.json', 'virus_properties.json', 'genemap.gff']
+	v3 = ['pathogens.json', 'genome_annotation.gff3', 'README.md', 'CHANGELOG.md']
+	
 	# NextClade Dataset V2
 	if os.path.exists(os.path.join(dir, 'tag.json')) and int(last_known_ver) < 3:
 		j = open(os.path.join(dir, 'tag.json'))
 		data = json.load(j)
 		tag = data['tag']
 		j.close()
+		# clean up residual V3 files not overwritten 
+		for file in v3:
+			if os.path.exists(os.path.join(dir, file)): 
+				os.remove(os.path.join(dir, file))
 	# NextClade Dataset V3+
 	elif os.path.exists(os.path.join(dir, 'pathogen.json')) and int(last_known_ver) >= 3:
 		j = open(os.path.join(dir, 'pathogen.json'))
 		data = json.load(j)
 		tag = data['version']['tag']
 		j.close()
+		# clean up residual V2 files not overwritten
+		for file in v2:
+			if os.path.exists(os.path.join(dir, file)): 
+				os.remove(os.path.join(dir, file))
 	else:
+		# no file containing a tag could be found: incomplete or non-existant
 		tag = None
 	
 	return tag
@@ -141,12 +153,12 @@ def update_nextclade_dataset(vers, skip):
 				else:
 					subprocess.run(f"{frontend} install -q -y -c bioconda nextclade={softrequest}", shell=True, check=True)
 		else:
-			print(f"Installing latest version of Nextclade!")
 			softrequest = subprocess.check_output(f"{frontend} search -c bioconda -f nextclade", shell=True).split()[-3].strip().decode('utf-8')
 			# check if latest is already installed
 			if softrequest == nc_version:
 				print(f"Nextclade {softrequest} already installed! Skipping update!")
 			else:
+				print(f"Installing latest version of Nextclade!")
 				subprocess.run(f"{frontend} install -q -y -c bioconda nextclade={softrequest}", shell=True, check=True)
 	except subprocess.CalledProcessError:
 		print(f"Something went wrong updating Nextclade! Skipping update!")
@@ -237,9 +249,11 @@ def update_nextclade_dataset(vers, skip):
 				requested = "Unknown"
 	
 	# Obtain final version information for output
+	# Doubles as a cleanup step to avoid V2 and V3 tag mix-ups
 	if requested is None:
+		tag = nextclade_tag(output_dir, updated_nc)
 		today = datetime.today().strftime('%Y-%m-%d')
-		requested = f"Latest as of {today}"
+		requested = f"Latest as of {today}: {tag}"
 	with open('final_nextclade_versions.txt', 'w+') as out:
 		print("\n## Nextclade and datasets now:")
 		print("Nextclade: " + updated_nc)
