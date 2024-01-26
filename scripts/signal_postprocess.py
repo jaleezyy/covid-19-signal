@@ -17,12 +17,15 @@ long_git_id = '$Id: b158164f87c79271ddc9d1083e64e4be1fc26d8e $'
 
 assert long_git_id.startswith('$Id: ')
 #short_git_id = long_git_id[5:12]
-short_git_id = "v1.6.2"
+short_git_id = "v1.6.3"
 
 # Suppresses matplotlib warning (https://github.com/jaleezyy/covid-19-signal/issues/59)
 # Creates a small memory leak, but it's nontrivial to fix, and won't be a practical concern!
 plt.rcParams.update({'figure.max_open_warning': 0})
-plt.style.use('seaborn-whitegrid')
+try:
+	plt.style.use('seaborn-whitegrid')
+except OSError: # styles need an update will finalize if matplotlib version hardcoded
+	plt.style.use('seaborn-v0_8-whitegrid')
 
 
 ########################    Helper functions/classes for text file parsing   #######################
