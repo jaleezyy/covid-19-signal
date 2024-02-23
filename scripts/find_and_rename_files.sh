@@ -188,7 +188,7 @@ if [ -d $fasta ]; then
 	else 
 		cd $fasta
 		echo "Renaming samples..."
-		rename -n 's/^1/ON-HRL-24-1/g' *
+		rename -n $format *
 		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename $format * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
@@ -252,7 +252,7 @@ if [ -d $fastq ]; then
 	else
 		cd $fastq
 		echo "Renaming samples..."
-		rename -n 's/^1/ON-HRL-24-1/g' *
+		rename -n $format *
 		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename $format * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
@@ -316,7 +316,7 @@ if [ -d $vcf ]; then
 	else
 		cd $vcf
 		echo "Renaming samples..."
-		rename -n 's/^1/ON-HRL-24-1/g' *
+		rename -n $format *
 		read -p "Does the above look correct? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] && echo "Renaming..." && rename $format * || 
 		read -p "Do you wish to continue? (Y/N): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]] || exit 1
 
