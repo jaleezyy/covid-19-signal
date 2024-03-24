@@ -649,7 +649,7 @@ def parse_lineage(tsv_filename, sample_names, allow_missing=True):
     # Pull each row, identify sid 
     for row in df.itertuples():
         if row.isolate.startswith("Consensus"):
-            sid = re.findall("_(.*?)\.", row.isolate)[0]
+            sid = re.findall(r"_(.*?)\.", row.isolate)[0]
         else:
             sid = str(row.isolate)
 
