@@ -274,11 +274,7 @@ if __name__ == '__main__':
 	# note: add root_dir to determine the root directory of SIGNAL
 	script_path = os.path.join(os.path.abspath(sys.argv[0]).rsplit("/",1)[0])
 	args, allowed = create_parser()
-<<<<<<< HEAD
 	version = 'v1.6.3'
-=======
-	version = 'v1.6.1'
->>>>>>> correct version number
 	alt_options = []
 	
 	if args.version:
