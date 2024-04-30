@@ -1345,16 +1345,20 @@ class Sample:
 
         if ivarlin['lineage'] != fblin['lineage'] and fblin['lineage'] is not None:
             assert ivarlin['pangolin_ver'] == fblin['pangolin_ver']
-            assert ivarlin['pangodata_ver'] == fblin['pangodata_ver']
+            try:
+                assert ivarlin['pangodata_ver'] == fblin['pangodata_ver']
+                pangodata_version = f"{ivarlin['pangodata_ver']}"
+            except AssertionError:
+                pangodata_version = f"{ivarlin['pangodata_ver']} (FB: {fblin['pangodata_ver']})"
             if ivarlin['clade'] == fblin['clade']:
                  self.lineage = { 'lineage': str(ivarlin['lineage'] + " (FB: %s)" %(fblin['lineage'])),
                                  'pangolin_ver': ivarlin['pangolin_ver'],
-                                 'pangodata_ver': ivarlin['pangodata_ver'],
+                                 'pangodata_ver': pangodata_version,
                                  'clade': ivarlin['clade'] }
             else:
                  self.lineage = { 'lineage': str(ivarlin['lineage'] + " (FB: %s)" %(fblin['lineage'])),
                                  'pangolin_ver': ivarlin['pangolin_ver'],
-                                 'pangodata_ver': ivarlin['pangodata_ver'],
+                                 'pangodata_ver': pangodata_version,
                                  'clade': str(ivarlin['clade'] + " (FB: %s)" %(fblin['clade'])) }
         else:
             self.lineage = ivarlin
