@@ -569,9 +569,9 @@ def parse_ivar_variants(tsv_filename, allow_missing=True):
     for line in open(tsv_filename).readlines()[1:]:
         t = line.split('\t')
 
-	assert (len(t) == 19) or (len(t) == 20) # added POS_AA column
+        assert (len(t) == 19) or (len(t) == 20) # added POS_AA column
 
-	if t[3] != '':
+        if t[3] != '':
             variants.append(f"{t[2]}{t[1]}{t[3]}")
 
     return { 'variants': variants }
