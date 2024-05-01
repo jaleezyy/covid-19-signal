@@ -647,9 +647,9 @@ rule run_freebayes:
         done
         
         # apply ambiguous variants first using IUPAC codes. this variant set cannot contain indels or the subsequent step will break
-        bcftools consensus -f {input.reference} -I {params.out}.ambiguous.norm.vcf.gz > {params.out}.ambiguous.fasta 
+        bcftools consensus -s '-' -f {input.reference} -I {params.out}.ambiguous.norm.vcf.gz > {params.out}.ambiguous.fasta 
         # apply remaninng variants, including indels
-        bcftools consensus -f {params.out}.ambiguous.fasta -m {params.out}.mask.txt {params.out}.fixed.norm.vcf.gz | sed s/MN908947\\.3.*/{wildcards.sn}/ > {output.consensus}
+        bcftools consensus -s '-' -f {params.out}.ambiguous.fasta -m {params.out}.mask.txt {params.out}.fixed.norm.vcf.gz | sed s/MN908947\\.3.*/{wildcards.sn}/ > {output.consensus}
         """
 
 rule consensus_compare:
