@@ -1343,18 +1343,41 @@ class Sample:
 
 
         if ivarlin['lineage'] != fblin['lineage'] and fblin['lineage'] is not None:
-            assert ivarlin['pangolin_ver'] == fblin['pangolin_ver']
-            assert ivarlin['pangodata_ver'] == fblin['pangodata_ver']
+           # pangolin version check (should match, but will report discrepency
+            try:
+                assert ivarlin['pangolin_ver'] == fblin['pangolin_ver']
+                pangolin_version = f"{ivarlin['pangolin_ver']}"
+            except AssertionError:
+                pangolin_version = f"{ivarlin['pangolin_ver']} (FB: {fblin['pangolin_ver']})"
+            
+            # pangodata version (should match, but will report discrepency)
+            try:
+                assert ivarlin['pangodata_ver'] == fblin['pangodata_ver']
+                pangodata_version = f"{ivarlin['pangodata_ver']}"
+            except AssertionError:
+                pangodata_version = f"{ivarlin['pangodata_ver']} (FB: {fblin['pangodata_ver']})"
+            
+            # report assigned clades between iVar and FreeBayes
             if ivarlin['clade'] == fblin['clade']:
-                 self.lineage = { 'lineage': str(ivarlin['lineage'] + " (FB: %s)" %(fblin['lineage'])),
-                                 'pangolin_ver': ivarlin['pangolin_ver'],
-                                 'pangodata_ver': ivarlin['pangodata_ver'],
-                                 'clade': ivarlin['clade'] }
+                assigned_clade = f"{ivarlin['clade']}"
             else:
-                 self.lineage = { 'lineage': str(ivarlin['lineage'] + " (FB: %s)" %(fblin['lineage'])),
-                                 'pangolin_ver': ivarlin['pangolin_ver'],
-                                 'pangodata_ver': ivarlin['pangodata_ver'],
-                                 'clade': str(ivarlin['clade'] + " (FB: %s)" %(fblin['clade'])) }
+                assigned_clade = f"{ivarlin['clade']} (FB: {fblin['clade']})"
+
+            self.lineage = { 'lineage': str(ivarlin['lineage'] + " (FB: %s)" %(fblin['lineage'])),
+                            'pangolin_ver': pangolin_version,
+                            'pangodata_ver': pangodata_version,
+                             'clade': assigned_clade }
+            
+            # if ivarlin['clade'] == fblin['clade']:
+                 # self.lineage = { 'lineage': str(ivarlin['lineage'] + " (FB: %s)" %(fblin['lineage'])),
+                                 # 'pangolin_ver': ivarlin['pangolin_ver'],
+                                 # 'pangodata_ver': ivarlin['pangodata_ver'],
+                                 # 'clade': ivarlin['clade'] }
+            # else:
+                 # self.lineage = { 'lineage': str(ivarlin['lineage'] + " (FB: %s)" %(fblin['lineage'])),
+                                 # 'pangolin_ver': ivarlin['pangolin_ver'],
+                                 # 'pangodata_ver': ivarlin['pangodata_ver'],
+                                 # 'clade': str(ivarlin['clade'] + " (FB: %s)" %(fblin['clade'])) }
         else:
             self.lineage = ivarlin
 
