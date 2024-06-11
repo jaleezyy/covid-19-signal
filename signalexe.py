@@ -184,6 +184,10 @@ viral_reference_feature_coords: "{data_directory}/MN908947.3.gff3"
 run_breseq: {opt_tasks[0]}
 # Used as --reference argument to 'breseq'
 breseq_reference: "{data_directory}/MN908947.3.gbk"
+# Used as --polymorphism-minimum-variant-coverage-each-strand, --polymorphism-frequency-cutoff arguments
+# Parameters needed to determine thresholds for minor variant detection
+polymorphism_variant_coverage: 2
+polymorphism_frequency: 0.05
 
 # run freebayes for variant and consensus calling (as well as ivar)
 run_freebayes: {opt_tasks[1]}

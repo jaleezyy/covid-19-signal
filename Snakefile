@@ -45,7 +45,8 @@ validate(config, 'resources/config.schema.yaml')
 samples = pd.read_table(config['samples'], sep=',')
 validate(samples, 'resources/sample.schema.yaml')
 
-# manual assignment of breseq reference
+# manual assignment of breseq parameters
+# breseq reference, minor variant thresholds
 try:
     if os.path.exists(config['breseq_reference']):
         breseq_ref = config['breseq_reference']
@@ -53,6 +54,20 @@ try:
         breseq_ref = ""
 except TypeError:
     breseq_ref = ""
+
+if "polymorphism_variant_coverage" in config.keys():
+    breseq_cov = config['polymorphism_variant_coverage']
+    if breseq_cov == "":
+        breseq_cov = 2
+else:
+    breseq_cov = 2
+
+if "polymorphism_frequency" in config.keys():
+    breseq_freq = config['polymorphism_frequency']
+    if breseq_freq == "":
+        breseq_freq = 0.05
+else:
+    breseq_freq = 0.05
 
 # set output directory
 exec_dir = os.getcwd()
@@ -588,10 +603,12 @@ rule run_breseq:
         "{sn}/benchmarks/{sn}_run_breseq.benchmark.tsv"
     params:
         ref = os.path.join(exec_dir, breseq_ref),
+        cov = breseq_cov,
+        freq = breseq_freq,
         outdir = '{sn}/breseq'
     shell:
         """
-        breseq --reference {params.ref} --num-processors {threads} --polymorphism-prediction --brief-html-output --output {params.outdir} {input} > {log} 2>&1 || touch {output}
+        breseq --reference {params.ref} --num-processors {threads} --polymorphism-prediction --polymorphism-minimum-variant-coverage-each-strand {params.cov} --polymorphism-frequency-cutoff {params.freq} --brief-html-output --output {params.outdir} {input} > {log} 2>&1 || touch {output}
         """
 
 ################## Based on https://github.com/jts/ncov2019-artic-nf/blob/be26baedcc6876a798a599071bb25e0973261861/modules/illumina.nf ##################
@@ -730,7 +747,6 @@ rule run_kraken2:
 
 
 ##################################  Based on scripts/quast.sh   ####################################
-
 
 rule run_quast:
     threads: 1
