@@ -25,7 +25,7 @@ def check_frontend():
 	try:
 		subprocess.check_call(['mamba', 'list'], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 		return 'mamba'
-	except subprocess.CalledProcessError:
+	except (subprocess.CalledProcessError, FileNotFoundError):
 		return 'conda'
 
 def update_latest_pangolin():
