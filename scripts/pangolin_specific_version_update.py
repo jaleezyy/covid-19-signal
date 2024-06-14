@@ -32,11 +32,17 @@ if __name__ == "__main__":
 
 	# provides current pangolin install details
 	# and load them in a dict for comparison
+	try:
+		installed_versions = subprocess.run(["pangolin", "--all-versions"],
+											check=True,
+											stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+		installed_versions = installed_versions.stdout.decode('utf-8')
+	except subprocess.CalledProcessError:
+		installed_versions = subprocess.run(["pangolin", "--version"],
+											check=True,
+											stdout=subprocess.PIPE)
+		installed_versions = installed_versions.stdout.decode('utf-8').replace(" ", ": ")
 	print("## Existing pangolin install:")
-	installed_versions = subprocess.run(["pangolin", "--all-versions"],
-										check=True,
-										stdout=subprocess.PIPE)
-	installed_versions = installed_versions.stdout.decode('utf-8')
 	print(installed_versions)
 
 	installed_ver_dict = {}
@@ -135,5 +141,10 @@ if __name__ == "__main__":
 	# provides pangolin install details after update to specific versions in supplied version file
 	with open('final_pangolin_versions.txt', 'w+') as out:
 		print("## Pangolin and dependencies now:", file=out)
-		out_ver = subprocess.run(["pangolin", "--all-versions"], check=True, stdout=subprocess.PIPE)
-		print(out_ver.stdout.decode("utf-8").replace("[32m****\nPangolin running in usher mode.\n****[0m", "").strip(), file=out)
+		try:
+			out_ver = subprocess.run(["pangolin", "--all-versions"], check=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+			print(out_ver.stdout.decode("utf-8").replace("[32m****\nPangolin running in usher mode.\n****[0m", "").strip(), file=out)
+		except subprocess.CalledProcessError:
+			out_ver = subprocess.run(["pangolin", "--version"], check=True, stdout=subprocess.PIPE)
+			print(out_ver.stdout.decode("utf-8").replace(" ", ": ").strip(), file=out)
+		

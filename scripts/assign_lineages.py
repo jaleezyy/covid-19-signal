@@ -315,7 +315,10 @@ def run_pangolin(input_genomes, threads, mode):
 	else:
 		analysis = f""
    # check final versions for pangolin
-	subprocess.check_output(["pangolin", "--all-versions"])
+	try:
+		subprocess.check_output(["pangolin", "--all-versions"])
+	except subprocess.CalledProcessError:
+		subprocess.check_output(["pangolin", "--version"])
 	
 	output_dir = Path(f"pangolin_tmp_{time.time()}")
 	subprocess.check_output(f"pangolin {analysis}{input_genomes} -t {threads} "
