@@ -229,7 +229,7 @@ pango-designation:
 pangolin-data:
 
 # Versions for Nextclade (software & datasets)
-# nextclade: Software version. Input should use numbers only (i.e., 2.14.0)
+# nextclade: Software version. Input should use numbers only (i.e., 2.14.0). Must be >=1.3.0.
 # nextclade-data: The nextclade dataset tag. Refer to available nextclade datasets. Accepted tag format is 'YYYY-mm-ddTHH:MM:SSZ'
 # Be as specific as possible with the desired dataset tag. Can accept dates (YYYY-mm-dd) alone, but will assume corresponding timestamp (HH:MM:SS). SIGNAL will automatically adjust between v2 and v3 dataset tag formats
 # Leave blank for latest versions
