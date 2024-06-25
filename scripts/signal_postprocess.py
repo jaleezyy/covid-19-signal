@@ -17,7 +17,7 @@ long_git_id = '$Id: b158164f87c79271ddc9d1083e64e4be1fc26d8e $'
 
 assert long_git_id.startswith('$Id: ')
 #short_git_id = long_git_id[5:12]
-short_git_id = "v1.6.4"
+short_git_id = "v1.6.5"
 
 # Suppresses matplotlib warning (https://github.com/jaleezyy/covid-19-signal/issues/59)
 # Creates a small memory leak, but it's nontrivial to fix, and won't be a practical concern!
@@ -676,12 +676,16 @@ def parse_lineage(tsv_filename, sample_names, allow_missing=True):
 def parse_breseq_output(html_filename, allow_missing=True):
     """Returns dict (field_name) -> (parsed_value), see code for list of field_names."""
 
+    # Breseq not run
     if file_is_missing(html_filename, allow_missing):
         return { 'variants': [], 'qc_varfreq': 'MISSING', 'qc_orf_frameshift': 'MISSING', 'run': False}
 
     tables = parse_html_tables(html_filename)
-
-    assert len(tables) >= 2
+    try:
+        assert len(tables) >= 2
+    except AssertionError:
+        # error in Breseq leading to index.html being present, but empty
+        return { 'variants': [], 'qc_varfreq': 'MISSING', 'qc_orf_frameshift': 'MISSING', 'run': False}
     assert tables[1][0] in [ ['Predicted mutation'], ['Predicted mutations'] ]
     assert tables[1][1] == [ 'evidence', 'position', 'mutation', 'freq', 'annotation', 'gene', 'description']
 
