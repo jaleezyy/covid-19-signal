@@ -9,6 +9,7 @@ shopt -s extglob
 
 CORES=1
 SIGNAL=0
+NCOV=0
 
 HELP="""
 This script attempts to execute ncov-tools for postprocessing of SIGNAL sequencing data.
@@ -22,10 +23,11 @@ Second argument is '-s' for SIGNAL results directory (namely the name) - much of
 
 """
 
-while getopts ":c:s:" option; do
+while getopts ":c:s:n:" option; do
 	case "${option}" in
 		c) CORES=$OPTARG;; # number of cores
 		s) SIGNAL=$OPTARG;; # SIGNAL results directory
+		n) NCOV=$OPTARG;; # ncov-tools directory
 	esac
 done
 
@@ -40,12 +42,18 @@ if [ $SIGNAL = 0 ] ; then
 	exit 1
 fi
 
+if [ $SIGNAL = 0 ]; then
+	echo "You must specify the path where ncov-tools can be found."
+	echo "$HELP"
+	exit 1
+fi
+
 # Start point for executing from ncov-tools.py is SIGNAL results directory
 RESULTS=$PWD
 
 # determine where ncov-tools is located *add check*
 # change directory to ncov-tools
-cd ../ncov-tools
+cd $NCOV
 
 # run ncov-tools
 snakemake -k -s workflow/Snakefile --cores ${CORES} all

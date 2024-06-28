@@ -255,7 +255,7 @@ if __name__ == '__main__':
 	#print("Don't forget to update the config.yaml file as needed prior to running ncov-tools.")
 	print("Running ncov-tools using %s cores!" %(snakemake.threads))
 
-	subprocess.run([run_script, '-c', str(snakemake.threads), '-s', str(result_dir)])
+	subprocess.run([run_script, '-c', str(snakemake.threads), '-s', str(result_dir), '-n', os.path.join(exec_dir, 'ncov-tools')])
 	
 	# clean up
 	shutil.rmtree(data_root)
