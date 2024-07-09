@@ -1227,6 +1227,8 @@ class SummaryHTMLWriter(HTMLWriterBase):
 
 
     def write_lines(self, title, lines, coalesce=False):
+        # ensure values in lines are strings (addresses NoneType exception)
+        lines = [str(l) for l in lines]
         if len(lines) > self.maxlines:
             n = len(lines)
             m = self.maxlines
