@@ -35,6 +35,7 @@ If you use this software please [cite](https://doi.org/10.3390/v12080895):
 - [Run using Docker](#docker)
 - [Data summaries](#data-summaries)
 - [Pipeline details](#pipeline-details)
+- [Example data and benchmarking](#example-output-and-benchmarking)
 
 ## Setup:
 
@@ -414,6 +415,11 @@ Flags:
 ```
 
 The script uses `rsync` to provide accurate copies of select output files organized into `signal-results` and `ncov-tools-results` within a provided destination directory (that must exist). If the `-c` is provided, `cp` will be used instead of `rsync` to produce copies. Similarly, if `-m` is provided, `mv` will be used instead (**WARNING: Any interruption during `mv` could result in data loss.**)
+
+## Example output and benchmarking
+
+To view standalone example output in addition to results from standardized benchmarking, please see the following [repo](https://github.com/jaleezyy/signal-example-data).
+
 
 ## Pipeline details:
 
