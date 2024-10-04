@@ -427,4 +427,4 @@ For a step-by-step walkthrough of the pipeline, see [pipeline/README.md](PIPELIN
 
 A diagram of the workflow is shown below (update pending).
 
-![Workflow Version 8](./resources/Workflow_Version_8.png)
+![Workflow Version 8](./resources/Workflow_Version_9.png)
