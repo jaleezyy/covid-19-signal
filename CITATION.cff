@@ -3,18 +3,30 @@ date-released: 2020-07-15
 version: 1.4.3
 message: "If you use SIGNAL in your research please cite it as follows:"
 repository-code: "https://github.com/jaleezyy/covid-19-signal"
-title: "A Comparison of Whole Genome Sequencing of SARS-CoV-2 Using Amplicon-Based Sequencing, Random Hexamers, and Bait Capture."
-doi: "10.3390/v12080895"
-journal: "Viruses"
+title: "SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL), a Snakemate workflow for rapid and bulk analysis of Illumina sequencing of SARS-CoV-2 genomes."
+doi: "10.1093/nargab/lqae176"
+journal: "NAR Genomics and Bioinformatics"
 authors:
   -
     affiliation: "McMaster University"
     family-names: "Nasir"
     given-names: "Jalees A"
   -
-    affiliation: "Sunnybrook Health Sciences Centre"
-    family-names: "Kozak"
-    given-names: "Robert A"
+    affiliation: "Dalhousie University"
+    family-names: "Maguire"
+    given-names: "Finlay"
+  -
+    affiliation: "Perimeter Institute"
+    family-names: "Smith"
+    given-names: "Kendrick M"
+  -
+    affiliation: "McMaster University"
+    family-names: "Panousis"
+    given-names: "Emily M"
+  -
+    affiliation: "McMaster University"
+    family-names: "Baker"
+    given-names: "Sheridan JC"
   -
     affiliation: "Sunnybrook Health Sciences Centre"
     family-names: "Aftanas"
@@ -24,37 +36,21 @@ authors:
     family-names: "Raphenya"
     given-names: "Amogelang R"
   -
-    affiliation: "Perimeter Institute"
-    family-names: "Smith"
-    given-names: "Kendrick M"
-  -
-    affiliation: "Dalhousie University"
-    family-names: "Maguire"
-    given-names: "Finlay"
+    affiliation: "McMaster University"
+    family-names: "Alcock"
+    given-names: "Brian P"
   -
     affiliation: "University Health Network, Toronto"
     family-names: "Maan"
     given-names: "Hassaan"
   -
-    affiliation: "University of Liverpool"
-    family-names: "Alruwaili"
-    given-names: "Muhannad"
-  -
-    affiliation: "McMaster University"
-    family-names: "Banerjee"
-    given-names: "Arinjay"
-  -
-    affiliation: "Sunnybrook Health Sciences Centre"
-    family-names: "Mbareche"
-    given-names: "Hamza"
-  -
-    affiliation: "McMaster University"
-    family-names: "Alcock"
-    given-names: "Brian P"
-  -
     affiliation: "Public Health Agency of Canada"
     family-names: "Knox"
     given-names: "Natalie C"
+  -
+    affiliation: "Vaccine and Infectious Disease Organization"
+    family-names: "Banerjee"
+    given-names: "Arinjay"
   -
     affiliation: "McMaster University"
     family-names: "Mossman"
@@ -64,14 +60,18 @@ authors:
     family-names: "Wang"
     given-names: "Bo"
   -
-    affiliation: "University of Liverpool"
-    family-names: "Hiscox"
-    given-names: "Julian A"
+    affiliation: "Ontario Institute for Cancer Research"
+    family-names: "Simpson"
+    given-names: "Jared T"
   -
-    affiliation: "McArthur University"
-    family-names: "McArthur"
-    given-names: "Andrew G"
+    affiliation: "Sunnybrook Health Sciences Centre"
+    family-names: "Kozak"
+    given-names: "Robert A"
   -
     affiliation: "Sunnybrook Health Sciences Centre"
     family-names: "Mubareka"
     given-names: "Samira"
+  -
+    affiliation: "McArthur University"
+    family-names: "McArthur"
+    given-names: "Andrew G"

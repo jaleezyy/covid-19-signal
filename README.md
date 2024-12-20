@@ -15,10 +15,10 @@ Coverage statistics are calculated using bedtools before a final QC via `quast` 
 Finally, data from all samples are collated via a [post-processing script](scripts/signal_postprocess.py) into an interactive summary for exploration of results and quality control.
 Optionally, users can run [ncov-tools](https://github.com/jts/ncov-tools/) to generate additional quality control and summary plots and statistics.
 
-If you use this software please [cite](https://doi.org/10.3390/v12080895):
+If you use this software please [cite](https://doi.org/10.1093/nargab/lqae176):
 
-    Nasir, Jalees A., Robert A. Kozak, Patryk Aftanas, Amogelang R. Raphenya, Kendrick M. Smith, Finlay Maguire, Hassaan Maan et al. "A Comparison of Whole Genome Sequencing of SARS-CoV-2 Using Amplicon-Based Sequencing, Random Hexamers, and Bait Capture." Viruses 12, no. 8 (2020): 895.
-    https://doi.org/10.3390/v12080895
+    Nasir, J.A., F. Maguire, K.M. Smith, E.M. Panousis, S.J.C. Baker, P. Aftanas, A.R. Raphenya, B.P. Alcock, H. Maan, N.C. Knox, A. Banerjee, K. Mossman, B. Wang, J.T. Simpson, R.A. Kozak, S. Mubareka, & A.G. McArthur. 2024. SARS-CoV-2 Illumina GeNome Assembly Line (SIGNAL), a Snakemate workflow for rapid and bulk analysis of Illumina sequencing of SARS-CoV-2 genomes. NAR Genomics and Bioinformatics, 6, lqae176.
+    doi: 10.1093/nargab/lqae176, PMID 39703420
 
 ## Contents:
 
