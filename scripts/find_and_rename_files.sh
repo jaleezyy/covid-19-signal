@@ -49,7 +49,7 @@ Flags:
 	-y  :  Automatically answer 'yes' for all checkpoint choices
 
 Credits: Script developed by Jalees A. Nasir, McArthur Lab, @Jaleezyy, 2023
-Version: 1.2
+Version: 1.3
 """
 
 while getopts ":o:r:f:q:v:s:lty" option; do
@@ -97,11 +97,11 @@ fi
 #password=''
 #check_access
 
-### Check output format (TODO FOR 2024 FILENAME CHNAGES)
+### Check output format (TODO FOR 2025 FILENAME CHNAGES)
 if [[ $legacy == 'true' ]]; then
-	format='s/^1/ON-HRL-24-1/g'
+	format='s/^1/ON-HRL-25-1/g'
 else
-	format='s/^1/ON-HRL-SC2-2024-1/g'
+	format='s/^1/ON-HRL-SC2-2025-1/g'
 fi
 
 if [[ $raw_data != 0 ]]; then
@@ -148,7 +148,7 @@ fi
 
 ### Rename files
 # FASTA
-# Final output: ON-HRL-SC2-2024-<barcode>-v1_consensus.fasta
+# Final output: ON-HRL-SC2-2025-<barcode>-v1_consensus.fasta
 if [ -d $fasta ]; then
 	echo "FASTA files:"
 	### Remove duplicate samples
@@ -208,7 +208,7 @@ if [ -d $fasta ]; then
 	fi
 fi
 # FASTQ
-# Final output: ON-HRL-23-<barcode>-v1.fq.gz
+# Final output: ON-HRL-25-<barcode>-v1.fq.gz if legacy, ON-HRL-SC2-2025-<barcode>-v1.fq.gz if default
 if [ -d $fastq ]; then
 	echo "FASTQ files:"
 	### Remove duplicate samples
@@ -277,7 +277,7 @@ if [ -d $fastq ]; then
 	fi
 fi
 # VCF
-# Final output: ON-HRL-23-<barcode>-v1.vcf
+# Final output: ON-HRL-25-<barcode>-v1.vcf if legacy, ON-HRL-SC2-2025-<barcode>-v1.vcf if default
 if [ -d $vcf ]; then
 	echo "VCF files:"
 	### Remove duplicate samples
