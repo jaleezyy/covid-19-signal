@@ -126,6 +126,16 @@ if config['pangolin_fast']:
 else:
     pango_speed = 'accurate'
 
+# Determine appropriate lineage assignment environment
+# Pangolin v3 and Pangolin v4 will be properly separated by environment to maintain consistency and compatibility
+if config['pangolin'].startswith('v3') or config['pangolin'].startswith('3'):
+    print("Resorting to legacy environments")
+    ruleorder: run_lineage_assignment_legacy > run_lineage_assignment
+	ruleorder: run_lineage_assignment_freebayes_legacy > run_lineage_assignment_freebayes
+else:
+    ruleorder: run_lineage_assignment > run_lineage_assignment_legacy
+	ruleorder: run_lineage_assignment_freebayes > run_lineage_assignment_freebayes_legacy
+
 ######################################   High-level targets   ######################################
 rule raw_read_data_symlinks:
     input: expand('{sn}/raw_fastq/{sn}_R{r}.fastq.gz', sn=sample_names, r=[1,2])
@@ -850,6 +860,34 @@ rule run_lineage_assignment:
         "echo -e 'nextclade: {params.nextclade_ver}\nnextclade-dataset: {params.nextclade_data}\nnextclade-include-recomb: {params.nextclade_recomb}' > {output.nextclade_ver_out} && "
         '{params.assignment_script_path} -i {input} -t {threads} -o {output.lin_out} -p {output.pango_ver_out} -n {output.nextclade_ver_out} --mode {params.analysis_mode} --frontend {params.conda_frontend}'
 
+rule run_lineage_assignment_legacy:
+    threads: 4
+    conda: 'conda_envs/assign_lineages_legacy.yaml'
+    output:
+        pango_ver_out = 'input_pangolin_versions.txt',
+        nextclade_ver_out = 'input_nextclade_versions.txt',
+        lin_out = 'lineage_assignments.tsv'
+    input:
+        'all_genomes.fa'
+    params:
+        pangolin_ver = versions['pangolin'],
+        pangolearn_ver = versions['pangolearn'],
+        constellations_ver = versions['constellations'],
+        scorpio_ver = versions['scorpio'],
+        designation_ver = versions['pango-designation'],
+        data_ver = versions['pangolin-data'],
+        #accession = config['viral_reference_contig_name'],
+        nextclade_ver = versions['nextclade'],
+        nextclade_data = versions['nextclade-data'],
+        nextclade_recomb = versions['nextclade-recomb'],
+        analysis_mode = pango_speed,
+        conda_frontend = frontend,
+        assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py')
+    shell:
+        "echo -e 'pangolin: {params.pangolin_ver}\nconstellations: {params.constellations_ver}\nscorpio: {params.scorpio_ver}\npangolearn: {params.pangolearn_ver}\npango-designation: {params.designation_ver}\npangolin-data: {params.data_ver}' > {output.pango_ver_out} && "
+        "echo -e 'nextclade: {params.nextclade_ver}\nnextclade-dataset: {params.nextclade_data}\nnextclade-include-recomb: {params.nextclade_recomb}' > {output.nextclade_ver_out} && "
+        '{params.assignment_script_path} -i {input} -t {threads} -o {output.lin_out} -p {output.pango_ver_out} -n {output.nextclade_ver_out} --mode {params.analysis_mode} --frontend {params.conda_frontend}'
+
 rule collect_freebayes_genomes:
     output:
         "all_freebayes_genomes.fa"
@@ -905,6 +943,23 @@ rule run_lineage_assignment_freebayes:
         consensus = 'all_freebayes_genomes.fa'
     params:
         analysis_mode = pango_speed,
+        conda_frontend = frontend,
+        assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py')
+    shell:
+        '{params.assignment_script_path} -i {input.consensus} -t {threads} -o {output} -p {input.p_vers} -n {input.n_vers} --mode {params.analysis_mode} --frontend {params.conda_frontend} --skip'
+
+rule run_lineage_assignment_freebayes_legacy:
+    threads: 4
+    conda: 'conda_envs/assign_lineages_legacy.yaml'
+    output:
+        'freebayes_lineage_assignments.tsv'
+    input:
+        p_vers = 'input_pangolin_versions.txt',
+        n_vers = 'input_nextclade_versions.txt',
+        consensus = 'all_freebayes_genomes.fa'
+    params:
+        analysis_mode = pango_speed,
+        conda_frontend = frontend,
         assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py')
     shell:
         '{params.assignment_script_path} -i {input.consensus} -t {threads} -o {output} -p {input.p_vers} -n {input.n_vers} --mode {params.analysis_mode} --skip'
