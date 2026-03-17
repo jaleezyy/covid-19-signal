@@ -102,12 +102,13 @@ def nextclade_dataset_flags(dataset, output, tag="None", version='3'):
 		
 	return " ".join(cmd)
 
-def update_nextclade_dataset(vers, skip):
+def update_nextclade_dataset(vers, skip, frontend=None):
 	"""
 	Ensure nextclade dataset is updated to the latest dataset, placed within scripts.
 	Reference accession will be set by params.accession (viral_reference_contig_name).
 	"""
-	frontend = check_frontend()
+	if frontend is None:
+		frontend = check_frontend()
 	output_dir = os.path.join(os.path.dirname(sys.argv[0]), 'nextclade')
 	nc_version = subprocess.run(f"nextclade --version".split(),
 						stdout=subprocess.PIPE).stdout.decode('utf-8').strip().lower()
@@ -137,7 +138,7 @@ def update_nextclade_dataset(vers, skip):
 		if software_ver != "None": # specific version requested, check if available
 			try:
 				# pull specified version
-				softrequest = subprocess.check_output(f"{frontend} search -c bioconda -f nextclade={software_ver}", shell=True).split()[-3].strip().decode('utf-8')
+				softrequest = subprocess.check_output(f"{frontend} search -c bioconda nextclade={software_ver}", shell=True).split()[-3].strip().decode('utf-8')
 				# check if requested version is already installed
 				if softrequest == nc_version:
 					print(f"Nextclade {softrequest} already installed! Skipping update!")
@@ -146,14 +147,14 @@ def update_nextclade_dataset(vers, skip):
 					subprocess.run(f"{frontend} install -q -y -c bioconda nextclade={softrequest}", shell=True, check=True)
 			except subprocess.CalledProcessError:
 				print("Cannot find version requested, will ensure latest version!")
-				softrequest = subprocess.check_output(f"{frontend} search -c bioconda -f nextclade", shell=True).split()[-3].strip().decode('utf-8')
+				softrequest = subprocess.check_output(f"{frontend} search -c bioconda nextclade", shell=True).split()[-3].strip().decode('utf-8')
 				# check if latest already installed
 				if softrequest == nc_version:
 					print(f"Nextclade {softrequest} already installed! Skipping update!")
 				else:
 					subprocess.run(f"{frontend} install -q -y -c bioconda nextclade={softrequest}", shell=True, check=True)
 		else:
-			softrequest = subprocess.check_output(f"{frontend} search -c bioconda -f nextclade", shell=True).split()[-3].strip().decode('utf-8')
+			softrequest = subprocess.check_output(f"{frontend} search -c bioconda nextclade", shell=True).split()[-3].strip().decode('utf-8')
 			# check if latest is already installed
 			if softrequest == nc_version:
 				print(f"Nextclade {softrequest} already installed! Skipping update!")
@@ -413,6 +414,7 @@ if __name__ == '__main__':
 	parser.add_argument("-n", "--nextclade_ver", type=check_file, required=False, default=None,
 						help="Input file containing version information for Nextclade tools")
 	parser.add_argument('--mode', default='accurate', required=False, help="Pangolin analysis mode. Either 'accurate' for Usher or 'fast' for pangolearn")
+	parser.add_argument('--frontend', default=None, required=False, help="Specify package manager to use between conda and mamba. Currently mamba >> conda, but may change in the future")
 	parser.add_argument("--skip", action="store_true", help="Skip updates to pangolin and nextclade")
 	args = parser.parse_args()
 
@@ -421,9 +423,9 @@ if __name__ == '__main__':
 			update_latest_pangolin()
 		else:
 			update_pangolin(args.pangolin_ver)
-		nextclade_dataset, nextclade_version = update_nextclade_dataset(args.nextclade_ver, False)
+		nextclade_dataset, nextclade_version = update_nextclade_dataset(args.nextclade_ver, False, args.frontend)
 	else:
-		nextclade_dataset, nextclade_version = update_nextclade_dataset(args.nextclade_ver, True)
+		nextclade_dataset, nextclade_version = update_nextclade_dataset(args.nextclade_ver, True, args.frontend)
 
 	print("\nRunning Pangolin...")
 	pangolin = run_pangolin(args.input_genomes, args.threads, args.mode)

@@ -39,6 +39,12 @@ else:
     configfile: "config.yaml"
     config_filename = os.path.join(os.getcwd(), "config.yaml")
 
+if '--conda-frontend' in sys.argv:
+    frontend = sys.argv[sys.argv.index('--conda-frontend')+1].lower()
+    assert frontend in ['conda', 'mamba']
+else:
+    frontend = None
+
 validate(config, 'resources/config.schema.yaml')
 
 # read and validate sample table specified in config.schema.yaml
@@ -837,11 +843,12 @@ rule run_lineage_assignment:
         nextclade_data = versions['nextclade-data'],
         nextclade_recomb = versions['nextclade-recomb'],
         analysis_mode = pango_speed,
+        conda_frontend = frontend,
         assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py')
     shell:
         "echo -e 'pangolin: {params.pangolin_ver}\nconstellations: {params.constellations_ver}\nscorpio: {params.scorpio_ver}\npangolearn: {params.pangolearn_ver}\npango-designation: {params.designation_ver}\npangolin-data: {params.data_ver}' > {output.pango_ver_out} && "
         "echo -e 'nextclade: {params.nextclade_ver}\nnextclade-dataset: {params.nextclade_data}\nnextclade-include-recomb: {params.nextclade_recomb}' > {output.nextclade_ver_out} && "
-        '{params.assignment_script_path} -i {input} -t {threads} -o {output.lin_out} -p {output.pango_ver_out} -n {output.nextclade_ver_out} --mode {params.analysis_mode}'
+        '{params.assignment_script_path} -i {input} -t {threads} -o {output.lin_out} -p {output.pango_ver_out} -n {output.nextclade_ver_out} --mode {params.analysis_mode} --frontend {params.conda_frontend}'
 
 rule collect_freebayes_genomes:
     output:

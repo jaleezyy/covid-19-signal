@@ -30,6 +30,8 @@ def create_parser():
 						help="Configuration file (i.e., config.yaml) for SIGNAL analysis")
 	parser.add_argument('-d', '--directory', type=check_directory, default=None,
 						help="Path to directory containing reads. Will be used to generate sample table and configuration file")
+	parser.add_argument('-f', '--frontend', default=None, 
+						help="Specify the package manager to use throughout the workflow. Accepts either 'conda' or 'mamba'. For now 'mamba' will be prioritized over 'conda' if left blank.")
 	parser.add_argument('--cores', type=int, default=1, help="Number of cores. Default = 1")
 	parser.add_argument('--config-only', action='store_true', help="Generate sample table and configuration file (i.e., config.yaml) and exit. '--directory' required")
 	parser.add_argument('--remove-freebayes', action='store_false', help="Configuration file generator parameter. Set flag to DISABLE freebayes variant calling (improves overall speed)")
@@ -285,7 +287,10 @@ if __name__ == '__main__':
 		print(f"{version}")
 		sys.exit(0)
 	
-	conda_frontend = check_frontend() # 'mamba' or 'conda'
+	if args.frontend is None:
+		conda_frontend = check_frontend() # 'mamba' or 'conda'
+	else:
+		conda_frontend = args.frontend
 	
 	if allowed['install']:
 		install_signal(conda_frontend, args.data, args.unlock)
