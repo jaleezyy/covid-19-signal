@@ -1,24 +1,23 @@
 name: assign_lineages
 channels:
-  - conda-forge
   - bioconda
+  - conda-forge
   - defaults
 dependencies:
-  - biopython=1.74
+  - biopython=1.78
   - minimap2>=2.16
-  - pip=19.3.1
-  - setuptools<66.0.0
-  - python>=3.7
+  - pip>=19.3.1
+  - python>=3.10,<3.11
   - snakemake-minimal
   - gofasta
   - usher
   - pandas
-  - pysam==0.16.0.1
+  - pysam
   - nextclade
+  - git-lfs
+  - ucsc-fatovcf
   - pip:
-    - git+https://github.com/cov-lineages/pangoLEARN.git
     - git+https://github.com/cov-lineages/scorpio.git
     - git+https://github.com/cov-lineages/constellations.git
     - git+https://github.com/cov-lineages/pangolin.git
-    - git+https://github.com/cov-lineages/pango-designation.git
     - git+https://github.com/cov-lineages/pangolin-data.git

@@ -5,6 +5,7 @@ rule all:
         "snp_mapping",
         "trim_qc",
         "assign_lineages",
+        "assign_lineages_legacy",
         "freebayes",
         "postprocessing"
     shell: "rm {input}"
@@ -32,6 +33,11 @@ rule trim_qc:
 rule assign_lineages:
     conda: "../conda_envs/assign_lineages.yaml"
     output: "assign_lineages"
+    shell: "touch {output}"
+
+rule assign_lineages_legacy:
+    conda: "../conda_envs/assign_lineages_legacy.yaml"
+    output: "assign_lineages_legacy"
     shell: "touch {output}"
 
 rule freebayes:

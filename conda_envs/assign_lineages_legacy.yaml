@@ -1,14 +1,14 @@
 name: assign_lineages_legacy
 channels:
-  - conda-forge
   - bioconda
+  - conda-forge
   - defaults
 dependencies:
   - biopython=1.74
   - minimap2>=2.16
   - pip=19.3.1
   - setuptools<66.0.0
-  - python>=3.7
+  - python>=3.7,<3.10
   - snakemake-minimal
   - gofasta
   - usher
@@ -21,4 +21,3 @@ dependencies:
     - git+https://github.com/cov-lineages/constellations.git
     - git+https://github.com/cov-lineages/pangolin.git@v3.1.20
     - git+https://github.com/cov-lineages/pango-designation.git
-    - git+https://github.com/cov-lineages/pangolin-data.git

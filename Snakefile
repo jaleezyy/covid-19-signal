@@ -962,4 +962,4 @@ rule run_lineage_assignment_freebayes_legacy:
         conda_frontend = frontend,
         assignment_script_path = os.path.join(exec_dir, 'scripts', 'assign_lineages.py')
     shell:
-        '{params.assignment_script_path} -i {input.consensus} -t {threads} -o {output} -p {input.p_vers} -n {input.n_vers} --mode {params.analysis_mode} --skip'
+        '{params.assignment_script_path} -i {input.consensus} -t {threads} -o {output} -p {input.p_vers} -n {input.n_vers} --mode {params.analysis_mode} --frontend {params.conda_frontend} --skip'
