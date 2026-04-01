@@ -128,7 +128,7 @@ else:
 
 # Determine appropriate lineage assignment environment
 # Pangolin v3 and Pangolin v4 will be properly separated by environment to maintain consistency and compatibility
-if config['pangolin'] is not None and (config['pangolin'].startswith('v3') or config['pangolin'].startswith('3')):
+if config['pangolin'] is not None and (str(config['pangolin']).startswith('v4.4') or str(config['pangolin']).startswith('4.4')):
     print("Resorting to legacy environments!")
     ruleorder: run_lineage_assignment_legacy > run_lineage_assignment
     ruleorder: run_lineage_assignment_freebayes_legacy > run_lineage_assignment_freebayes
