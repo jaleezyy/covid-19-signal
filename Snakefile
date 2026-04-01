@@ -128,13 +128,13 @@ else:
 
 # Determine appropriate lineage assignment environment
 # Pangolin v3 and Pangolin v4 will be properly separated by environment to maintain consistency and compatibility
-if config['pangolin'].startswith('v3') or config['pangolin'].startswith('3'):
-    print("Resorting to legacy environments")
+if config['pangolin'] is not None and (config['pangolin'].startswith('v3') or config['pangolin'].startswith('3')):
+    print("Resorting to legacy environments!")
     ruleorder: run_lineage_assignment_legacy > run_lineage_assignment
-	ruleorder: run_lineage_assignment_freebayes_legacy > run_lineage_assignment_freebayes
+    ruleorder: run_lineage_assignment_freebayes_legacy > run_lineage_assignment_freebayes
 else:
     ruleorder: run_lineage_assignment > run_lineage_assignment_legacy
-	ruleorder: run_lineage_assignment_freebayes > run_lineage_assignment_freebayes_legacy
+    ruleorder: run_lineage_assignment_freebayes > run_lineage_assignment_freebayes_legacy
 
 ######################################   High-level targets   ######################################
 rule raw_read_data_symlinks:
@@ -843,12 +843,11 @@ rule run_lineage_assignment:
         'all_genomes.fa'
     params:
         pangolin_ver = versions['pangolin'],
-        pangolearn_ver = versions['pangolearn'],
+        pangolearn_ver = None,
         constellations_ver = versions['constellations'],
         scorpio_ver = versions['scorpio'],
         designation_ver = versions['pango-designation'],
         data_ver = versions['pangolin-data'],
-        #accession = config['viral_reference_contig_name'],
         nextclade_ver = versions['nextclade'],
         nextclade_data = versions['nextclade-data'],
         nextclade_recomb = versions['nextclade-recomb'],
@@ -875,8 +874,7 @@ rule run_lineage_assignment_legacy:
         constellations_ver = versions['constellations'],
         scorpio_ver = versions['scorpio'],
         designation_ver = versions['pango-designation'],
-        data_ver = versions['pangolin-data'],
-        #accession = config['viral_reference_contig_name'],
+        data_ver = None,
         nextclade_ver = versions['nextclade'],
         nextclade_data = versions['nextclade-data'],
         nextclade_recomb = versions['nextclade-recomb'],

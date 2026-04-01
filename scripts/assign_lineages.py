@@ -109,6 +109,14 @@ def update_nextclade_dataset(vers, skip, frontend=None):
 	"""
 	if frontend is None:
 		frontend = check_frontend()
+
+	if frontend.lower() == "mamba":
+		# while this works, mamba seems to be pulling the oldest version
+		parse = -4
+	else:
+		# conda 
+		parse = -3
+	
 	output_dir = os.path.join(os.path.dirname(sys.argv[0]), 'nextclade')
 	nc_version = subprocess.run(f"nextclade --version".split(),
 						stdout=subprocess.PIPE).stdout.decode('utf-8').strip().lower()
@@ -138,7 +146,7 @@ def update_nextclade_dataset(vers, skip, frontend=None):
 		if software_ver != "None": # specific version requested, check if available
 			try:
 				# pull specified version
-				softrequest = subprocess.check_output(f"{frontend} search -c bioconda nextclade={software_ver}", shell=True).split()[-3].strip().decode('utf-8')
+				softrequest = subprocess.check_output(f"{frontend} search -c bioconda nextclade={software_ver}", shell=True).split()[parse].strip().decode('utf-8')
 				# check if requested version is already installed
 				if softrequest == nc_version:
 					print(f"Nextclade {softrequest} already installed! Skipping update!")
@@ -147,20 +155,20 @@ def update_nextclade_dataset(vers, skip, frontend=None):
 					subprocess.run(f"{frontend} install -q -y -c bioconda nextclade={softrequest}", shell=True, check=True)
 			except subprocess.CalledProcessError:
 				print("Cannot find version requested, will ensure latest version!")
-				softrequest = subprocess.check_output(f"{frontend} search -c bioconda nextclade", shell=True).split()[-3].strip().decode('utf-8')
+				softrequest = subprocess.check_output(f"{frontend} search -c bioconda nextclade", shell=True).strip().split()[parse].decode('utf-8')
 				# check if latest already installed
 				if softrequest == nc_version:
 					print(f"Nextclade {softrequest} already installed! Skipping update!")
 				else:
 					subprocess.run(f"{frontend} install -q -y -c bioconda nextclade={softrequest}", shell=True, check=True)
 		else:
-			softrequest = subprocess.check_output(f"{frontend} search -c bioconda nextclade", shell=True).split()[-3].strip().decode('utf-8')
+			softrequest = subprocess.check_output(f"{frontend} search -c bioconda nextclade", shell=True).strip().split()[parse].decode('utf-8')
 			# check if latest is already installed
 			if softrequest == nc_version:
 				print(f"Nextclade {softrequest} already installed! Skipping update!")
 			else:
 				print(f"Installing latest version of Nextclade!")
-				subprocess.run(f"{frontend} install -q -y -c bioconda nextclade={softrequest}", shell=True, check=True)
+				subprocess.run(f"{frontend} install -q -y -c bioconda nextclade", shell=True, check=True)
 	except subprocess.CalledProcessError:
 		print(f"Something went wrong updating Nextclade! Skipping update!")
 		
