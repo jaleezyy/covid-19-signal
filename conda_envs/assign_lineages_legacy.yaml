@@ -21,3 +21,4 @@ dependencies:
     - git+https://github.com/cov-lineages/constellations.git
     - git+https://github.com/cov-lineages/pangolin.git@v3.1.20
     - git+https://github.com/cov-lineages/pango-designation.git
+    - git+https://github.com/cov-lineages/pangolin-data.git

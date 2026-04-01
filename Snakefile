@@ -127,12 +127,16 @@ else:
     pango_speed = 'accurate'
 
 # Determine appropriate lineage assignment environment
-# Pangolin v3 and Pangolin v4 will be properly separated by environment to maintain consistency and compatibility
-if config['pangolin'] is not None and (str(config['pangolin']).startswith('v4.4') or str(config['pangolin']).startswith('4.4')):
+# Pangolin v3 (up to 4.3.4) and Pangolin v4.4+ will be properly separated by environment to maintain consistency and compatibility
+legacy_ver = ('v4.3','v4.2','v4.1','v4.0','v3','v2','v1')
+if config['pangolin'] is not None and (str(config['pangolin']).startswith(legacy_ver) or str(config['pangolin']).startswith(tuple(i.strip('v') for i in legacy_ver))):
+    # Anything <v4.4 should use legacy ruleset
+    # brute-forcing this for now until rework of compatible software/versions
     print("Resorting to legacy environments!")
     ruleorder: run_lineage_assignment_legacy > run_lineage_assignment
     ruleorder: run_lineage_assignment_freebayes_legacy > run_lineage_assignment_freebayes
 else:
+    # v4.4, v4.5 and so on should continue with standard rules
     ruleorder: run_lineage_assignment > run_lineage_assignment_legacy
     ruleorder: run_lineage_assignment_freebayes > run_lineage_assignment_freebayes_legacy
 
