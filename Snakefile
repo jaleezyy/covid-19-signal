@@ -20,6 +20,7 @@
 from snakemake.utils import validate
 import pandas as pd
 import os, sys
+import json
 
 # The config file contains a high-level summary of pipeline configuration and inputs.
 # It is ingested by the Snakefile, and also intended to be human-readable.
@@ -888,6 +889,8 @@ rule run_lineage_assignment_legacy:
     shell:
         "echo -e 'pangolin: {params.pangolin_ver}\nconstellations: {params.constellations_ver}\nscorpio: {params.scorpio_ver}\npangolearn: {params.pangolearn_ver}\npango-designation: {params.designation_ver}\npangolin-data: {params.data_ver}' > {output.pango_ver_out} && "
         "echo -e 'nextclade: {params.nextclade_ver}\nnextclade-dataset: {params.nextclade_data}\nnextclade-include-recomb: {params.nextclade_recomb}' > {output.nextclade_ver_out} && "
+        "model_path=$(find $(echo $(which pangolin) | awk -F'/' -v OFS='/' 'NF-=2')/lib/ -name 'pangolearn.smk') && "
+        "sed -i 's/import csv$/import csv, json/g' ${{model_path}} && "
         '{params.assignment_script_path} -i {input} -t {threads} -o {output.lin_out} -p {output.pango_ver_out} -n {output.nextclade_ver_out} --mode {params.analysis_mode} --frontend {params.conda_frontend}'
 
 rule collect_freebayes_genomes:
