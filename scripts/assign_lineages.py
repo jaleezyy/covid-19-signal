@@ -37,7 +37,7 @@ def update_latest_pangolin():
 	except subprocess.CalledProcessError:
 		print("Something went wrong updating Pangolin! No changes were made! Attempting to proceed...")
 
-def update_pangolin(vers):
+def update_pangolin(vers, frontend):
 	"""
 	Update pangolin to a specific version
 	"""
@@ -45,7 +45,7 @@ def update_pangolin(vers):
 		return None
 	script_dir = os.path.dirname(sys.argv[0])
 	script = os.path.join(script_dir, "pangolin_specific_version_update.py")
-	subprocess.run([script, '--versions_file', vers])
+	subprocess.run([script, '--versions_file', vers, '--frontend', frontend])
 
 def nextclade_tag(dir, version):
 	"""
@@ -430,7 +430,7 @@ if __name__ == '__main__':
 		if args.pangolin_ver is None: 
 			update_latest_pangolin()
 		else:
-			update_pangolin(args.pangolin_ver)
+			update_pangolin(args.pangolin_ver, args.frontend)
 		nextclade_dataset, nextclade_version = update_nextclade_dataset(args.nextclade_ver, False, args.frontend)
 	else:
 		nextclade_dataset, nextclade_version = update_nextclade_dataset(args.nextclade_ver, True, args.frontend)
