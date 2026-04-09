@@ -105,8 +105,12 @@ if __name__ == "__main__":
 			# Get latest version number to compare with installed when latest version is requested
 			try:
 				if (str(requested_ver) == "vNone") or (dependency == "pangolearn" and str(requested_ver) == "None"):
-					commit_url = web.urlopen(f"https://github.com/cov-lineages/{dependency}/releases/latest").geturl()
-					requested_ver = commit_url.split("/")[-1] # request version is latest
+					# add check for pango-designation requirement meaning Pangolin version <4
+					if dependency == 'pango-designation' and dependency in required:
+						requested_ver = 'v1.12' # highest pango-designation compatibility is set for v1.12
+					else:
+						commit_url = web.urlopen(f"https://github.com/cov-lineages/{dependency}/releases/latest").geturl()
+						requested_ver = commit_url.split("/")[-1] # request version is latest
 					try:
 						installed_version = installed_ver_dict[dependency]
 					except: # due to inconsistency, let's assume not installed
