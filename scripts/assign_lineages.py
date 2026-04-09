@@ -37,7 +37,7 @@ def update_latest_pangolin():
 	except subprocess.CalledProcessError:
 		print("Something went wrong updating Pangolin! No changes were made! Attempting to proceed...")
 
-def update_pangolin(vers, frontend):
+def update_pangolin(vers, frontend, scikit=None):
 	"""
 	Update pangolin to a specific version
 	"""
@@ -45,7 +45,7 @@ def update_pangolin(vers, frontend):
 		return None
 	script_dir = os.path.dirname(sys.argv[0])
 	script = os.path.join(script_dir, "pangolin_specific_version_update.py")
-	subprocess.run([script, '--versions_file', vers, '--frontend', frontend])
+	subprocess.run([script, '--versions_file', vers, '--frontend', frontend, '--scikit_learn', f"{scikit}"])
 
 def nextclade_tag(dir, version):
 	"""
@@ -422,7 +422,9 @@ if __name__ == '__main__':
 	parser.add_argument("-n", "--nextclade_ver", type=check_file, required=False, default=None,
 						help="Input file containing version information for Nextclade tools")
 	parser.add_argument('--mode', default='accurate', required=False, help="Pangolin analysis mode. Either 'accurate' for Usher or 'fast' for pangolearn")
-	parser.add_argument('--frontend', default=None, required=False, help="Specify package manager to use between conda and mamba. Currently mamba >> conda, but may change in the future")
+	parser.add_argument("-s", "--scikit_ver", required=False, default=None,
+						help="Specify version of scikit-learn used in developing the pangoLEARN model. Only relevant if Pangolin version is <4")
+	parser.add_argument('--frontend', default=None, required=False, help="Specify package manager to use between conda and mamba")
 	parser.add_argument("--skip", action="store_true", help="Skip updates to pangolin and nextclade")
 	args = parser.parse_args()
 
@@ -430,7 +432,7 @@ if __name__ == '__main__':
 		if args.pangolin_ver is None: 
 			update_latest_pangolin()
 		else:
-			update_pangolin(args.pangolin_ver, args.frontend)
+			update_pangolin(args.pangolin_ver, args.frontend, args.scikit_ver)
 		nextclade_dataset, nextclade_version = update_nextclade_dataset(args.nextclade_ver, False, args.frontend)
 	else:
 		nextclade_dataset, nextclade_version = update_nextclade_dataset(args.nextclade_ver, True, args.frontend)

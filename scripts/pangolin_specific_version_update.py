@@ -50,6 +50,8 @@ if __name__ == "__main__":
 									"\n...")
 	parser.add_argument("--frontend", default='conda',
 						help="Specify package manager frontend between 'conda' and 'mamba'. Default='conda'")
+	parser.add_argument("--scikit_learn", default=None,
+						help="Specify version of scikit-learn to install. If blank, the latest known supported version will be installed")
 	args = parser.parse_args()
 	
 	# further updates
@@ -168,8 +170,10 @@ if __name__ == "__main__":
 				print(f"Something went wrong updating {dependency}! Skipping update!")
 				continue
 				
-			if update_scikit:
-				latest_scikit()
+			if update_scikit or ('pangolin-data' not in required and args.scikit_learn is not None):
+				# either we intend to get the latest version
+				# or we know we're running pangolin <4 and scikit-learn package is not default
+				latest_scikit(args.frontend, args.scikit_learn)
 
 	# provides pangolin install details after update to specific versions in supplied version file
 	with open('final_pangolin_versions.txt', 'w+') as out:

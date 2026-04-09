@@ -89,6 +89,7 @@ versions = {'pangolin': config['pangolin'],
             'constellations': config['constellations'],
             'scorpio': config['scorpio'],
             'pango-designation': config['pango-designation'],
+            'scikit-learn': config['scikit-learn'],
             'pangolin-data': config['pangolin-data'],
             'nextclade': config['nextclade'],
             'nextclade-data': config['nextclade-data'],
@@ -852,6 +853,7 @@ rule run_lineage_assignment:
         constellations_ver = versions['constellations'],
         scorpio_ver = versions['scorpio'],
         designation_ver = versions['pango-designation'],
+        scikit_ver = versions['scikit-learn'],
         data_ver = versions['pangolin-data'],
         nextclade_ver = versions['nextclade'],
         nextclade_data = versions['nextclade-data'],
@@ -862,7 +864,7 @@ rule run_lineage_assignment:
     shell:
         "echo -e 'pangolin: {params.pangolin_ver}\nconstellations: {params.constellations_ver}\nscorpio: {params.scorpio_ver}\npangolearn: {params.pangolearn_ver}\npango-designation: {params.designation_ver}\npangolin-data: {params.data_ver}' > {output.pango_ver_out} && "
         "echo -e 'nextclade: {params.nextclade_ver}\nnextclade-dataset: {params.nextclade_data}\nnextclade-include-recomb: {params.nextclade_recomb}' > {output.nextclade_ver_out} && "
-        '{params.assignment_script_path} -i {input} -t {threads} -o {output.lin_out} -p {output.pango_ver_out} -n {output.nextclade_ver_out} --mode {params.analysis_mode} --frontend {params.conda_frontend}'
+        '{params.assignment_script_path} -i {input} -t {threads} -o {output.lin_out} -p {output.pango_ver_out} -n {output.nextclade_ver_out} --scikit_ver {params.scikit_ver} --mode {params.analysis_mode} --frontend {params.conda_frontend}'
 
 rule run_lineage_assignment_legacy:
     threads: 4
@@ -879,7 +881,8 @@ rule run_lineage_assignment_legacy:
         constellations_ver = versions['constellations'],
         scorpio_ver = versions['scorpio'],
         designation_ver = versions['pango-designation'],
-        data_ver = None,
+        scikit_ver = versions['scikit-learn'], 
+        data_ver = versions['pangolin-data'],
         nextclade_ver = versions['nextclade'],
         nextclade_data = versions['nextclade-data'],
         nextclade_recomb = versions['nextclade-recomb'],
@@ -891,7 +894,7 @@ rule run_lineage_assignment_legacy:
         "echo -e 'nextclade: {params.nextclade_ver}\nnextclade-dataset: {params.nextclade_data}\nnextclade-include-recomb: {params.nextclade_recomb}' > {output.nextclade_ver_out} && "
         "model_path=$(find $(echo $(which pangolin) | awk -F'/' -v OFS='/' 'NF-=2')/lib/ -name 'pangolearn.smk') && "
         "sed -i 's/import csv$/import csv, json/g' ${{model_path}} && "
-        '{params.assignment_script_path} -i {input} -t {threads} -o {output.lin_out} -p {output.pango_ver_out} -n {output.nextclade_ver_out} --mode {params.analysis_mode} --frontend {params.conda_frontend}'
+        '{params.assignment_script_path} -i {input} -t {threads} -o {output.lin_out} -p {output.pango_ver_out} -n {output.nextclade_ver_out} --scikit_ver {params.scikit_ver} --mode {params.analysis_mode} --frontend {params.conda_frontend}'
 
 rule collect_freebayes_genomes:
     output:
