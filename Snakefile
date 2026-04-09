@@ -20,7 +20,6 @@
 from snakemake.utils import validate
 import pandas as pd
 import os, sys
-import json
 
 # The config file contains a high-level summary of pipeline configuration and inputs.
 # It is ingested by the Snakefile, and also intended to be human-readable.
