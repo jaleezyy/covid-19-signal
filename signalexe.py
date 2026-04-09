@@ -9,6 +9,7 @@ import subprocess, os, sys
 import re
 from pathlib import Path
 import platform
+import json
 
 # for compatibility between platforms
 if platform.system() != 'Linux':
@@ -25,13 +26,13 @@ def create_parser():
 	parser.add_argument('ncov_tools', nargs='*',
 						help="Generate configuration file and filesystem setup required and then execute ncov-tools quality control assessment. Requires 'ncov-tools' submodule! '--configfile' is required but will be generated if '--directory' is provided")
 	parser.add_argument('install', nargs='*',
-						help="Install individual rule environments and ensure SIGNAL is functional. The only parameters operable will be '--data' and '--unlock'. Will override other operations!")
+						help="Install individual rule environments and ensure SIGNAL is functional. The only parameters operable will be '--data', '--unlock', and '--frontend'. Will override other operations!")
 	parser.add_argument('-c', '--configfile', type=check_file, default=None,
 						help="Configuration file (i.e., config.yaml) for SIGNAL analysis")
 	parser.add_argument('-d', '--directory', type=check_directory, default=None,
 						help="Path to directory containing reads. Will be used to generate sample table and configuration file")
 	parser.add_argument('-f', '--frontend', default="conda", 
-						help="Specify the package manager to use throughout the workflow. Accepts either 'conda' or 'mamba'. For now 'mamba' will be prioritized over 'conda' if left blank.")
+						help="Specify the package manager to use throughout the workflow. Accepts either 'conda' or 'mamba'. For now 'conda' will be prioritized over 'mamba' if left blank.")
 	parser.add_argument('--cores', type=int, default=1, help="Number of cores. Default = 1")
 	parser.add_argument('--config-only', action='store_true', help="Generate sample table and configuration file (i.e., config.yaml) and exit. '--directory' required")
 	parser.add_argument('--remove-freebayes', action='store_false', help="Configuration file generator parameter. Set flag to DISABLE freebayes variant calling (improves overall speed)")
