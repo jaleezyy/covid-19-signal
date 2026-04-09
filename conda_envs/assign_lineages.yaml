@@ -1,7 +1,7 @@
 name: assign_lineages
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
   - defaults
 dependencies:
   - biopython=1.78

@@ -1,7 +1,7 @@
 name: assign_lineages_legacy
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
   - defaults
 dependencies:
   - biopython=1.74
@@ -15,10 +15,12 @@ dependencies:
   - pandas
   - pysam==0.16.0.1
   - nextclade
+  - numpy>=1.19,<1.20
+  - scikit-learn==1.0.1
   - pip:
     - git+https://github.com/cov-lineages/pangoLEARN.git
     - git+https://github.com/cov-lineages/scorpio.git
     - git+https://github.com/cov-lineages/constellations.git
     - git+https://github.com/cov-lineages/pangolin.git@v3.1.20
-    - git+https://github.com/cov-lineages/pango-designation.git
+    - git+https://github.com/cov-lineages/pango-designation.git@v1.12
     - git+https://github.com/cov-lineages/pangolin-data.git
