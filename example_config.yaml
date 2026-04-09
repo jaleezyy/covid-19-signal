@@ -64,16 +64,23 @@ var_min_variant_quality: 20
 # Use for significantly larger datasets
 pangolin_fast: False
 
-# Versions of software related to lineage calling (use numbers only, i.e., 3.1.1). Dates (YYYY-mm-dd) are accepted for pangolearn. Leave blank for latest version(s).
+# Versions of software related to lineage calling 
+# Use numbers only, i.e., 3.1.1. Leave blank for latest version(s)..
 pangolin: 
 constellations:
 scorpio:
 
-# Required for Pangolin <v4.0
+# Required for Pangolin <v4.0 
+# Use numbers only, i.e., 1.0.1. Dates (YYYY-mm-dd) are accepted for pangolearn.
+# You are responsible for selecting compatible versions of the pangoLEARN model relative to the information in pango-designation
+# Ensure the desired scikit-learn version is based on the version used to construct the desired pangoLEARN model
+# Leaving these values blank will download the latest known supported version(s)
 pangolearn: 
 pango-designation:
+scikit-learn:
 
 # Required for Pangolin v4+
+# Use numbers only, i.e., 3.1.1. Leave blank for latest version(s).
 pangolin-data:
 
 # Versions for Nextclade (software & datasets)
