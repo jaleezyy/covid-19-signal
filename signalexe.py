@@ -9,6 +9,7 @@ import subprocess, os, sys
 import re
 from pathlib import Path
 import platform
+import json
 
 # for compatibility between platforms
 if platform.system() != 'Linux':
@@ -25,11 +26,13 @@ def create_parser():
 	parser.add_argument('ncov_tools', nargs='*',
 						help="Generate configuration file and filesystem setup required and then execute ncov-tools quality control assessment. Requires 'ncov-tools' submodule! '--configfile' is required but will be generated if '--directory' is provided")
 	parser.add_argument('install', nargs='*',
-						help="Install individual rule environments and ensure SIGNAL is functional. The only parameters operable will be '--data' and '--unlock'. Will override other operations!")
+						help="Install individual rule environments and ensure SIGNAL is functional. The only parameters operable will be '--data', '--unlock', and '--frontend'. Will override other operations!")
 	parser.add_argument('-c', '--configfile', type=check_file, default=None,
 						help="Configuration file (i.e., config.yaml) for SIGNAL analysis")
 	parser.add_argument('-d', '--directory', type=check_directory, default=None,
 						help="Path to directory containing reads. Will be used to generate sample table and configuration file")
+	parser.add_argument('-f', '--frontend', default="conda", 
+						help="Specify the package manager to use throughout the workflow. Accepts either 'conda' or 'mamba'. For now 'conda' will be prioritized over 'mamba' if left blank.")
 	parser.add_argument('--cores', type=int, default=1, help="Number of cores. Default = 1")
 	parser.add_argument('--config-only', action='store_true', help="Generate sample table and configuration file (i.e., config.yaml) and exit. '--directory' required")
 	parser.add_argument('--remove-freebayes', action='store_false', help="Configuration file generator parameter. Set flag to DISABLE freebayes variant calling (improves overall speed)")
@@ -216,16 +219,23 @@ var_min_variant_quality: 20
 # Use for significantly larger datasets
 pangolin_fast: False
 
-# Versions of software related to lineage calling (use numbers only, i.e., 3.1.1). Dates (YYYY-mm-dd) are accepted for pangolearn. Leave blank for latest version(s).
+# Versions of software related to lineage calling 
+# Use numbers only, i.e., 3.1.1. Leave blank for latest version(s).
 pangolin: 
 constellations:
 scorpio:
 
-# Required for Pangolin <v4.0
+# Required for Pangolin <v4.0 
+# Use numbers only, i.e., 1.0.1. Dates (YYYY-mm-dd) are accepted for pangolearn.
+# You are responsible for selecting compatible versions of the pangoLEARN model relative to the information in pango-designation
+# Ensure the desired scikit-learn version is based on the version used to construct the desired pangoLEARN model
+# Leaving these values blank will download the latest known supported version(s)
 pangolearn: 
 pango-designation:
+scikit-learn:
 
 # Required for Pangolin v4+
+# Use numbers only, i.e., 3.1.1. Leave blank for latest version(s).
 pangolin-data:
 
 # Versions for Nextclade (software & datasets)
@@ -278,14 +288,17 @@ if __name__ == '__main__':
 	# note: add root_dir to determine the root directory of SIGNAL
 	script_path = os.path.join(os.path.abspath(sys.argv[0]).rsplit("/",1)[0])
 	args, allowed = create_parser()
-	version = 'v1.6.7'
+	version = 'v1.7.0'
 	alt_options = []
 	
 	if args.version:
 		print(f"{version}")
 		sys.exit(0)
 	
-	conda_frontend = check_frontend() # 'mamba' or 'conda'
+	if args.frontend is None:
+		conda_frontend = check_frontend() # 'mamba' or 'conda'; use to search for mamba
+	else:
+		conda_frontend = args.frontend
 	
 	if allowed['install']:
 		install_signal(conda_frontend, args.data, args.unlock)

@@ -1,0 +1,26 @@
+name: assign_lineages_legacy
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - biopython==1.74
+  - minimap2>=2.16
+  - pip==19.3.1
+  - setuptools<66.0.0
+  - python>=3.8,<3.10
+  - snakemake-minimal
+  - gofasta
+  - usher
+  - pandas
+  - pysam
+  - nextclade
+  - scikit-learn
+  - openssl>=3.0.0
+  - pip:
+    - git+https://github.com/cov-lineages/pangoLEARN.git
+    - git+https://github.com/cov-lineages/scorpio.git
+    - git+https://github.com/cov-lineages/constellations.git
+    - git+https://github.com/cov-lineages/pangolin.git@v4.3.4
+    - git+https://github.com/cov-lineages/pango-designation.git@v1.12
+    - git+https://github.com/cov-lineages/pangolin-data.git

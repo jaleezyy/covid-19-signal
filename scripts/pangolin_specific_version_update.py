@@ -18,6 +18,38 @@ scorpio: v0.3.13
 pango-designation: v1.2.88
 """
 
+def latest_scikit(frontend='conda', version=None):
+	assert str(frontend).lower() in ['conda', 'mamba'] 
+	
+	# check currently installed (if found)
+	try:
+		installed = subprocess.check_output(f"{frontend} list scikit-learn", shell=True).split()[-3].strip().decode('utf-8')
+	except subprocess.CalledProcessError:
+		print("Package scikit-learn required but not found!")
+		installed = None
+	
+	if version is None:
+		# download latest scikit-learn via conda
+		print("Ensuring latest (supported) version of scikit-learn: 1.0.1!")
+		version = '1.0.1'
+	else:
+		if str(version).startswith("v"):
+			version = str(version).strip("v")
+		else:
+			# ensure string
+			version = str(version)
+		print(f"Ensuring requested version of scikit-learn installed: {version}")
+	
+	if version == installed:
+		print(f"Requested version of scikit-learn: {version} already found! Skipping...")
+	else:
+		try:
+			subprocess.run([f"{frontend}", 'install', '-p', '$CONDA_DEFAULT_ENV', f"conda-forge::scikit-learn={version}", '-y'],
+						check=True,
+						stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+		except subprocess.CalledProcessError:
+			print("Error updating scikit-learn! Skipping...")
+
 if __name__ == "__main__":
 
 	parser = argparse.ArgumentParser(description="Update pangolin in conda env "
@@ -28,7 +60,14 @@ if __name__ == "__main__":
 									"versions e.g., \npangolin: 3.1.14"
 									"\npangolearn: 2021-10-13"
 									"\n...")
+	parser.add_argument("--frontend", default='conda',
+						help="Specify package manager frontend between 'conda' and 'mamba'. Default='conda'")
+	parser.add_argument("--scikit_learn", default=None,
+						help="Specify version of scikit-learn to install. If blank, the latest known supported version will be installed")
 	args = parser.parse_args()
+	
+	# further updates
+	update_scikit = False
 
 	# provides current pangolin install details
 	# and load them in a dict for comparison
@@ -105,8 +144,13 @@ if __name__ == "__main__":
 			# Get latest version number to compare with installed when latest version is requested
 			try:
 				if (str(requested_ver) == "vNone") or (dependency == "pangolearn" and str(requested_ver) == "None"):
-					commit_url = web.urlopen(f"https://github.com/cov-lineages/{dependency}/releases/latest").geturl()
-					requested_ver = commit_url.split("/")[-1] # request version is latest
+					# add check for pango-designation requirement meaning Pangolin version <4
+					if dependency == 'pango-designation' and dependency in required:
+						requested_ver = 'v1.12' # highest pango-designation compatibility is set for v1.12
+						update_scikit = True
+					else:
+						commit_url = web.urlopen(f"https://github.com/cov-lineages/{dependency}/releases/latest").geturl()
+						requested_ver = commit_url.split("/")[-1] # request version is latest
 					try:
 						installed_version = installed_ver_dict[dependency]
 					except: # due to inconsistency, let's assume not installed
@@ -137,6 +181,12 @@ if __name__ == "__main__":
 			except (subprocess.CalledProcessError):
 				print(f"Something went wrong updating {dependency}! Skipping update!")
 				continue
+	
+	# check if we need to review scikit-learn installation for the current environment
+	if update_scikit or ('pangolin-data' not in required and args.scikit_learn is not None):
+		# either we intend to get the latest version
+		# or we know we're running pangolin <4 and scikit-learn package is not default
+		latest_scikit(args.frontend, args.scikit_learn)
 
 	# provides pangolin install details after update to specific versions in supplied version file
 	with open('final_pangolin_versions.txt', 'w+') as out:

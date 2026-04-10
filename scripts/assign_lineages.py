@@ -37,7 +37,7 @@ def update_latest_pangolin():
 	except subprocess.CalledProcessError:
 		print("Something went wrong updating Pangolin! No changes were made! Attempting to proceed...")
 
-def update_pangolin(vers):
+def update_pangolin(vers, frontend, scikit=None):
 	"""
 	Update pangolin to a specific version
 	"""
@@ -45,7 +45,7 @@ def update_pangolin(vers):
 		return None
 	script_dir = os.path.dirname(sys.argv[0])
 	script = os.path.join(script_dir, "pangolin_specific_version_update.py")
-	subprocess.run([script, '--versions_file', vers])
+	subprocess.run([script, '--versions_file', vers, '--frontend', frontend, '--scikit_learn', f"{scikit}"])
 
 def nextclade_tag(dir, version):
 	"""
@@ -102,12 +102,21 @@ def nextclade_dataset_flags(dataset, output, tag="None", version='3'):
 		
 	return " ".join(cmd)
 
-def update_nextclade_dataset(vers, skip):
+def update_nextclade_dataset(vers, skip, frontend=None):
 	"""
 	Ensure nextclade dataset is updated to the latest dataset, placed within scripts.
 	Reference accession will be set by params.accession (viral_reference_contig_name).
 	"""
-	frontend = check_frontend()
+	if frontend is None:
+		frontend = check_frontend()
+
+	if frontend.lower() == "mamba":
+		# while this works, mamba seems to be pulling the oldest version
+		parse = -4
+	else:
+		# conda 
+		parse = -3
+	
 	output_dir = os.path.join(os.path.dirname(sys.argv[0]), 'nextclade')
 	nc_version = subprocess.run(f"nextclade --version".split(),
 						stdout=subprocess.PIPE).stdout.decode('utf-8').strip().lower()
@@ -137,7 +146,7 @@ def update_nextclade_dataset(vers, skip):
 		if software_ver != "None": # specific version requested, check if available
 			try:
 				# pull specified version
-				softrequest = subprocess.check_output(f"{frontend} search -c bioconda -f nextclade={software_ver}", shell=True).split()[-3].strip().decode('utf-8')
+				softrequest = subprocess.check_output(f"{frontend} search -c bioconda nextclade={software_ver}", shell=True).split()[parse].strip().decode('utf-8')
 				# check if requested version is already installed
 				if softrequest == nc_version:
 					print(f"Nextclade {softrequest} already installed! Skipping update!")
@@ -146,20 +155,20 @@ def update_nextclade_dataset(vers, skip):
 					subprocess.run(f"{frontend} install -q -y -c bioconda nextclade={softrequest}", shell=True, check=True)
 			except subprocess.CalledProcessError:
 				print("Cannot find version requested, will ensure latest version!")
-				softrequest = subprocess.check_output(f"{frontend} search -c bioconda -f nextclade", shell=True).split()[-3].strip().decode('utf-8')
+				softrequest = subprocess.check_output(f"{frontend} search -c bioconda nextclade", shell=True).strip().split()[parse].decode('utf-8')
 				# check if latest already installed
 				if softrequest == nc_version:
 					print(f"Nextclade {softrequest} already installed! Skipping update!")
 				else:
 					subprocess.run(f"{frontend} install -q -y -c bioconda nextclade={softrequest}", shell=True, check=True)
 		else:
-			softrequest = subprocess.check_output(f"{frontend} search -c bioconda -f nextclade", shell=True).split()[-3].strip().decode('utf-8')
+			softrequest = subprocess.check_output(f"{frontend} search -c bioconda nextclade", shell=True).strip().split()[parse].decode('utf-8')
 			# check if latest is already installed
 			if softrequest == nc_version:
 				print(f"Nextclade {softrequest} already installed! Skipping update!")
 			else:
 				print(f"Installing latest version of Nextclade!")
-				subprocess.run(f"{frontend} install -q -y -c bioconda nextclade={softrequest}", shell=True, check=True)
+				subprocess.run(f"{frontend} install -q -y -c bioconda nextclade", shell=True, check=True)
 	except subprocess.CalledProcessError:
 		print(f"Something went wrong updating Nextclade! Skipping update!")
 		
@@ -314,11 +323,16 @@ def run_pangolin(input_genomes, threads, mode):
 		analysis = f"--analysis-mode fast "
 	else:
 		analysis = f""
+   
    # check final versions for pangolin
-	try:
-		subprocess.check_output(["pangolin", "--all-versions"])
-	except subprocess.CalledProcessError:
-		subprocess.check_output(["pangolin", "--version"])
+	# try:
+		# subprocess.check_output(["pangolin", "--all-versions"])
+	# except subprocess.CalledProcessError:
+		# subprocess.check_output(["pangolin", "--version"])
+		
+	# append to pangolearn.smk (necessary for Pangolin 3, harmless for Pangolin 4)
+	# Pangolin 3 lacks an 'import json' that is required for correct function, this one shell command makes the correction
+	subprocess.check_output(f"sed -i 's/import csv$/import csv, json/g' $(find $(echo $(which pangolin) | awk -F'/' -v OFS='/' 'NF-=2')/lib/ -name 'pangolearn.smk')", shell=True)
 	
 	output_dir = Path(f"pangolin_tmp_{time.time()}")
 	subprocess.check_output(f"pangolin {analysis}{input_genomes} -t {threads} "
@@ -413,6 +427,9 @@ if __name__ == '__main__':
 	parser.add_argument("-n", "--nextclade_ver", type=check_file, required=False, default=None,
 						help="Input file containing version information for Nextclade tools")
 	parser.add_argument('--mode', default='accurate', required=False, help="Pangolin analysis mode. Either 'accurate' for Usher or 'fast' for pangolearn")
+	parser.add_argument("-s", "--scikit_ver", required=False, default=None,
+						help="Specify version of scikit-learn used in developing the pangoLEARN model. Only relevant if Pangolin version is <4")
+	parser.add_argument('--frontend', default=None, required=False, help="Specify package manager to use between conda and mamba")
 	parser.add_argument("--skip", action="store_true", help="Skip updates to pangolin and nextclade")
 	args = parser.parse_args()
 
@@ -420,10 +437,10 @@ if __name__ == '__main__':
 		if args.pangolin_ver is None: 
 			update_latest_pangolin()
 		else:
-			update_pangolin(args.pangolin_ver)
-		nextclade_dataset, nextclade_version = update_nextclade_dataset(args.nextclade_ver, False)
+			update_pangolin(args.pangolin_ver, args.frontend, args.scikit_ver)
+		nextclade_dataset, nextclade_version = update_nextclade_dataset(args.nextclade_ver, False, args.frontend)
 	else:
-		nextclade_dataset, nextclade_version = update_nextclade_dataset(args.nextclade_ver, True)
+		nextclade_dataset, nextclade_version = update_nextclade_dataset(args.nextclade_ver, True, args.frontend)
 
 	print("\nRunning Pangolin...")
 	pangolin = run_pangolin(args.input_genomes, args.threads, args.mode)
