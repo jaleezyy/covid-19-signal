@@ -4,23 +4,23 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - biopython=1.74
+  - biopython==1.74
   - minimap2>=2.16
-  - pip=19.3.1
+  - pip==19.3.1
   - setuptools<66.0.0
-  - python>=3.7,<3.10
+  - python>=3.8,<3.10
   - snakemake-minimal
   - gofasta
   - usher
   - pandas
-  - pysam==0.16.0.1
+  - pysam
   - nextclade
-  - numpy>=1.19,<1.20
-  - scikit-learn==1.0.1
+  - scikit-learn
+  - openssl>=3.0.0
   - pip:
     - git+https://github.com/cov-lineages/pangoLEARN.git
     - git+https://github.com/cov-lineages/scorpio.git
     - git+https://github.com/cov-lineages/constellations.git
-    - git+https://github.com/cov-lineages/pangolin.git@v3.1.20
+    - git+https://github.com/cov-lineages/pangolin.git@v4.3.4
     - git+https://github.com/cov-lineages/pango-designation.git@v1.12
     - git+https://github.com/cov-lineages/pangolin-data.git
