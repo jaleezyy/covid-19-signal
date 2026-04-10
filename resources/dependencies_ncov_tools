@@ -1,0 +1,10 @@
+rule all:
+    input:
+        "ncov_tools",
+    shell: "rm {input}"
+
+rule ncov_tools:
+	conda: '../ncov-tools/workflow/envs/environment.yml'
+	output: "ncov_tools"
+	shell: "touch {output}"
+
