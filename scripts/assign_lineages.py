@@ -323,11 +323,16 @@ def run_pangolin(input_genomes, threads, mode):
 		analysis = f"--analysis-mode fast "
 	else:
 		analysis = f""
+   
    # check final versions for pangolin
-	try:
-		subprocess.check_output(["pangolin", "--all-versions"])
-	except subprocess.CalledProcessError:
-		subprocess.check_output(["pangolin", "--version"])
+	# try:
+		# subprocess.check_output(["pangolin", "--all-versions"])
+	# except subprocess.CalledProcessError:
+		# subprocess.check_output(["pangolin", "--version"])
+		
+	# append to pangolearn.smk (necessary for Pangolin 3, harmless for Pangolin 4)
+	# Pangolin 3 lacks an 'import json' that is required for correct function, this one shell command makes the correction
+	subprocess.check_output(f"sed -i 's/import csv$/import csv, json/g' $(find $(echo $(which pangolin) | awk -F'/' -v OFS='/' 'NF-=2')/lib/ -name 'pangolearn.smk')", shell=True)
 	
 	output_dir = Path(f"pangolin_tmp_{time.time()}")
 	subprocess.check_output(f"pangolin {analysis}{input_genomes} -t {threads} "

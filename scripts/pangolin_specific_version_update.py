@@ -20,6 +20,14 @@ pango-designation: v1.2.88
 
 def latest_scikit(frontend='conda', version=None):
 	assert str(frontend).lower() in ['conda', 'mamba'] 
+	
+	# check currently installed (if found)
+	try:
+		installed = subprocess.check_output(f"{frontend} list scikit-learn", shell=True).split()[-3].strip().decode('utf-8')
+	except subprocess.CalledProcessError:
+		print("Package scikit-learn required but not found!")
+		installed = None
+	
 	if version is None:
 		# download latest scikit-learn via conda
 		print("Ensuring latest (supported) version of scikit-learn: 1.0.1!")
@@ -30,13 +38,17 @@ def latest_scikit(frontend='conda', version=None):
 		else:
 			# ensure string
 			version = str(version)
-		print(f"Ensuring version of scikit-learn installed: {version}")
-	try:
-		subprocess.run([f"{frontend}", 'install', '-p', '$CONDA_DEFAULT_ENV', f"conda-forge::scikit-learn={version}", '-y'],
-					check=True,
-					stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-	except subprocess.CalledProcessError:
-		print("Error updating scikit-learn! Skipping...")
+		print(f"Ensuring requested version of scikit-learn installed: {version}")
+	
+	if version == installed:
+		print(f"Requested version of scikit-learn: {version} already found! Skipping...")
+	else:
+		try:
+			subprocess.run([f"{frontend}", 'install', '-p', '$CONDA_DEFAULT_ENV', f"conda-forge::scikit-learn={version}", '-y'],
+						check=True,
+						stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+		except subprocess.CalledProcessError:
+			print("Error updating scikit-learn! Skipping...")
 
 if __name__ == "__main__":
 
@@ -169,11 +181,12 @@ if __name__ == "__main__":
 			except (subprocess.CalledProcessError):
 				print(f"Something went wrong updating {dependency}! Skipping update!")
 				continue
-				
-			if update_scikit or ('pangolin-data' not in required and args.scikit_learn is not None):
-				# either we intend to get the latest version
-				# or we know we're running pangolin <4 and scikit-learn package is not default
-				latest_scikit(args.frontend, args.scikit_learn)
+	
+	# check if we need to review scikit-learn installation for the current environment
+	if update_scikit or ('pangolin-data' not in required and args.scikit_learn is not None):
+		# either we intend to get the latest version
+		# or we know we're running pangolin <4 and scikit-learn package is not default
+		latest_scikit(args.frontend, args.scikit_learn)
 
 	# provides pangolin install details after update to specific versions in supplied version file
 	with open('final_pangolin_versions.txt', 'w+') as out:
